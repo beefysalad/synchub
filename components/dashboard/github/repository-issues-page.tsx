@@ -8,6 +8,8 @@ import {
   MessageSquareMore,
   Plus,
   Star,
+  GitPullRequest,
+  GitCommit,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -25,6 +27,8 @@ import {
 } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
 import { useGithubIssues } from '@/hooks/use-github-issues'
+import { useGithubPulls } from '@/hooks/use-github-pulls'
+import { useGithubCommits } from '@/hooks/use-github-commits'
 import {
   useGithubRepositories,
   useUpdateGithubPreferences,
@@ -40,19 +44,36 @@ export function RepositoryIssuesPage({
   owner: string
   repo: string
 }) {
+  const [activeTab, setActiveTab] = useState<'issues' | 'pulls' | 'commits'>('issues')
   const [issueState, setIssueState] = useState<GitHubIssueState>('open')
+
   const { data: repositoryData } = useGithubRepositories()
   const updatePreferences = useUpdateGithubPreferences()
+
   const {
     data: issuesData,
-    isLoading,
-    isFetching,
-    error,
+    isLoading: isLoadingIssues,
+    isFetching: isFetchingIssues,
+    error: errorIssues,
   } = useGithubIssues({
     owner,
     repo,
     state: issueState,
   })
+
+  const {
+    data: pullsData,
+    isLoading: isLoadingPulls,
+  } = useGithubPulls({
+    owner,
+    repo,
+    state: issueState as 'open' | 'closed' | 'all',
+  })
+
+  const {
+    data: commitsData,
+    isLoading: isLoadingCommits,
+  } = useGithubCommits({ owner, repo })
 
   const repositoryFullName = `${owner}/${repo}`
   const repository =
@@ -63,7 +84,11 @@ export function RepositoryIssuesPage({
     defaultRepository: null,
     selectedRepositories: [],
   }
+
   const issues = issuesData?.issues ?? []
+  const pulls = pullsData?.pulls ?? []
+  const commits = commitsData?.commits ?? []
+
   const isTracked = preferences.selectedRepositories.includes(repositoryFullName)
   const isDefault = preferences.defaultRepository === repositoryFullName
 
@@ -120,7 +145,7 @@ export function RepositoryIssuesPage({
             <Button asChild variant="outline" className="rounded-full">
               <Link href="/issues">
                 <ArrowLeft className="size-4" />
-                Back to tracked repos
+                Back
               </Link>
             </Button>
             <Button asChild className="rounded-full">
@@ -142,24 +167,24 @@ export function RepositoryIssuesPage({
         }
       />
 
-      {error ? (
+      {errorIssues ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
-          {error.message}
+          {errorIssues.message}
         </div>
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatusCard
           icon={FolderGit2}
-          label="Issue state"
+          label="Filter state"
           value={issueState}
-          detail="Current issue filter for the repository workspace."
+          detail="Currently matching state for standard issues and PRs."
         />
         <StatusCard
           icon={MessageSquareMore}
-          label="Loaded issues"
-          value={String(issues.length)}
-          detail="Issues currently returned from GitHub for this repository."
+          label="Active items"
+          value={String(issues.length + pulls.length)}
+          detail="Total open issues and pull requests currently loaded."
         />
         <StatusCard
           icon={Star}
@@ -175,35 +200,68 @@ export function RepositoryIssuesPage({
         />
       </div>
 
+      <div className="flex items-center gap-2 border-b border-white/20 pb-4 dark:border-slate-800">
+        <Button
+          variant={activeTab === 'issues' ? 'default' : 'ghost'}
+          onClick={() => setActiveTab('issues')}
+          className="rounded-full font-medium"
+        >
+          <MessageSquareMore className="mr-2 size-4" />
+          Issues
+        </Button>
+        <Button
+          variant={activeTab === 'pulls' ? 'default' : 'ghost'}
+          onClick={() => setActiveTab('pulls')}
+          className="rounded-full font-medium"
+        >
+          <GitPullRequest className="mr-2 size-4" />
+          Pull Requests
+        </Button>
+        <Button
+          variant={activeTab === 'commits' ? 'default' : 'ghost'}
+          onClick={() => setActiveTab('commits')}
+          className="rounded-full font-medium"
+        >
+          <GitCommit className="mr-2 size-4" />
+          Commits
+        </Button>
+      </div>
+
       <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
         <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <CardTitle>Current issues</CardTitle>
+            <CardTitle>
+              {activeTab === 'issues' && 'Current issues'}
+              {activeTab === 'pulls' && 'Active Pull Requests'}
+              {activeTab === 'commits' && 'Recent Branch Commits'}
+            </CardTitle>
             <CardDescription>
-              Filter by state, inspect active work, and open a new issue with a
-              template when needed.
+              {activeTab === 'issues' && 'Filter and inspect standard issues natively.'}
+              {activeTab === 'pulls' && 'Review code submissions before merging.'}
+              {activeTab === 'commits' && 'Monitor direct branch pushes in real-time.'}
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            {issueStates.map((stateOption) => (
-              <Button
-                key={stateOption}
-                type="button"
-                variant={issueState === stateOption ? 'default' : 'outline'}
-                className="rounded-full capitalize"
-                onClick={() => setIssueState(stateOption)}
-                disabled={isFetching}
-              >
-                {issueState === stateOption && isFetching ? (
-                  <>
-                    <Spinner />
-                    Loading...
-                  </>
-                ) : (
-                  stateOption
-                )}
-              </Button>
-            ))}
+            {(activeTab === 'issues' || activeTab === 'pulls') &&
+              issueStates.map((stateOption) => (
+                <Button
+                  key={stateOption}
+                  type="button"
+                  variant={issueState === stateOption ? 'default' : 'outline'}
+                  className="rounded-full capitalize"
+                  onClick={() => setIssueState(stateOption)}
+                  disabled={isFetchingIssues}
+                >
+                  {issueState === stateOption && isFetchingIssues ? (
+                    <>
+                      <Spinner />
+                      Loading...
+                    </>
+                  ) : (
+                    stateOption
+                  )}
+                </Button>
+              ))}
             {!isTracked ? (
               <Button
                 type="button"
@@ -243,77 +301,137 @@ export function RepositoryIssuesPage({
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {isLoading ? (
-            <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
-              Loading issues from GitHub...
-            </div>
-          ) : issues.length ? (
-            issues.map((issue) => (
-              <div
-                key={issue.id}
-                className="rounded-3xl border border-slate-200/70 bg-slate-50 px-5 py-5 dark:border-slate-800 dark:bg-slate-900/60"
-              >
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white dark:bg-slate-100 dark:text-slate-950">
-                        #{issue.number}
-                      </span>
-                      <span className="rounded-full border border-slate-200 px-3 py-1 text-xs capitalize text-muted-foreground dark:border-slate-700">
-                        {issue.state}
-                      </span>
-                      {issue.labels.map((label) => (
-                        <span
-                          key={label.id}
-                          className="rounded-full px-3 py-1 text-xs font-medium"
-                          style={{
-                            backgroundColor: `#${label.color}20`,
-                            color: `#${label.color}`,
-                          }}
-                        >
-                          {label.name}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div>
-                      <p className="text-lg font-semibold">{issue.title}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Opened by {issue.user.login}{' '}
-                        {formatDistanceToNow(new Date(issue.created_at), {
-                          addSuffix: true,
-                        })}
-                      </p>
-                    </div>
-
-                    {issue.body ? (
-                      <p className="line-clamp-3 text-sm text-muted-foreground">
-                        {issue.body}
-                      </p>
-                    ) : null}
-
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <span>{issue.comments} comments</span>
-                      <span>
-                        {issue.assignees.length
-                          ? `Assignees: ${issue.assignees.map((assignee) => assignee.login).join(', ')}`
-                          : 'No assignees'}
-                      </span>
+          {activeTab === 'issues' && (
+            <>
+              {isLoadingIssues ? (
+                <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
+                  Loading issues from GitHub...
+                </div>
+              ) : issues.length ? (
+                issues.map((issue) => (
+                  <div
+                    key={issue.id}
+                    className="rounded-3xl border border-slate-200/70 bg-slate-50 px-5 py-5 dark:border-slate-800 dark:bg-slate-900/60"
+                  >
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white dark:bg-slate-100 dark:text-slate-950">
+                            #{issue.number}
+                          </span>
+                          <span className="rounded-full border border-slate-200 px-3 py-1 text-xs capitalize text-muted-foreground dark:border-slate-700">
+                            {issue.state}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-lg font-semibold">{issue.title}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Opened by {issue.user.login}{' '}
+                            {formatDistanceToNow(new Date(issue.created_at), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                      <Button asChild variant="outline" className="rounded-full shrink-0">
+                        <Link href={`/issues/${owner}/${repo}/${issue.number}`}>
+                          Open issue
+                        </Link>
+                      </Button>
                     </div>
                   </div>
-
-                  <Button asChild variant="outline" className="rounded-full">
-                    <Link href={`/issues/${owner}/${repo}/${issue.number}`}>
-                      Open issue
-                    </Link>
-                  </Button>
+                ))
+              ) : (
+                <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
+                  No issues matched this filter. Create a new issue to get started.
                 </div>
-              </div>
-            ))
-          ) : (
-            <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
-              No issues matched this filter. Create a new issue to get started.
-            </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'pulls' && (
+            <>
+              {isLoadingPulls ? (
+                <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
+                  Loading pull requests from GitHub...
+                </div>
+              ) : pulls.length ? (
+                pulls.map((pull) => (
+                  <div
+                    key={pull.id}
+                    className="rounded-3xl border border-blue-200/50 bg-blue-50/30 px-5 py-5 dark:border-blue-900/40 dark:bg-blue-900/10"
+                  >
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-medium text-white dark:bg-blue-500">
+                            PR #{pull.number}
+                          </span>
+                          <span className="rounded-full border border-slate-200 px-3 py-1 text-xs capitalize text-muted-foreground dark:border-slate-700">
+                            {pull.state}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-lg font-semibold">{pull.title}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Authored by {pull.user.login}{' '}
+                            {formatDistanceToNow(new Date(pull.created_at), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                      <Button asChild variant="outline" className="rounded-full shrink-0">
+                        <Link href={`/pulls/${owner}/${repo}/${pull.number}`}>
+                          Review PR
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
+                  No active pull requests found.
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'commits' && (
+            <>
+              {isLoadingCommits ? (
+                <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
+                  Loading recent commits from GitHub...
+                </div>
+              ) : commits.length ? (
+                <div className="divide-y border-t border-slate-200 dark:border-slate-800">
+                  {commits.map((commit) => (
+                    <div key={commit.sha} className="flex gap-4 py-4">
+                      <div className="mt-1 size-2 shrink-0 rounded-full bg-slate-300 dark:bg-slate-600" />
+                      <div className="space-y-1">
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">
+                          {commit.commit.message}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {commit.author?.login ?? commit.commit.author.name} pushed{' '}
+                          {formatDistanceToNow(new Date(commit.commit.author.date), {
+                            addSuffix: true,
+                          })}
+                        </p>
+                        <a
+                          href={commit.html_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-block text-xs text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {commit.sha.substring(0, 7)}
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
+                  No recent commits found on the default branch.
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
