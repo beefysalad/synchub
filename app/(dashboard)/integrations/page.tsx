@@ -1,9 +1,11 @@
 import { Bot, CheckCircle2, Github, MessageSquareCode } from 'lucide-react'
 
 import { getOrCreateCurrentUserRecord } from '@/lib/clerk'
+import { getDiscordCommands } from '@/lib/discord/api'
 import prisma from '@/lib/prisma'
 import { getTelegramWebhookInfo } from '@/lib/telegram/api'
 import { getTelegramWebhookUrl } from '@/lib/telegram/linking'
+import { IntegrationActionLink } from '@/components/dashboard/integration-action-link'
 import { SectionHeader } from '@/components/dashboard/section-header'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,7 +22,7 @@ const integrationCards = [
     key: 'GITHUB',
     title: 'GitHub',
     description:
-      'Clerk handles GitHub sign-in for app identity, while this separate OAuth flow grants SyncHub repository permissions for issue actions.',
+      'Manage issues, comments, and assignments without leaving SyncHub.',
     defaultCtaLabel: 'Authorize GitHub access',
     href: '/api/integrations/github/start',
     icon: Github,
@@ -29,7 +31,7 @@ const integrationCards = [
     key: 'TELEGRAM',
     title: 'Telegram',
     description:
-      'Connecting Telegram creates a single-use `PendingLink` token and redirects the user to the bot using a Telegram deep link.',
+      'Get alerts, reminders, and quick commands right inside Telegram.',
     defaultCtaLabel: 'Connect Telegram',
     href: '/api/integrations/telegram/start',
     icon: Bot,
@@ -38,7 +40,7 @@ const integrationCards = [
     key: 'DISCORD',
     title: 'Discord',
     description:
-      'Connecting Discord returns a one-time code for the `/link <CODE>` slash command flow used by the MVP integration.',
+      'Let your team run SyncHub commands from the Discord server you already use.',
     defaultCtaLabel: 'Start Discord link',
     href: '/api/integrations/discord/start',
     icon: MessageSquareCode,
@@ -49,6 +51,10 @@ type IntegrationsPageProps = {
   searchParams?: Promise<{
     github?: string
     telegramWebhook?: string
+    discordCommands?: string
+    discordCode?: string
+    discordExpiresAt?: string
+    discordInstructions?: string
     reason?: string
   }>
 }
@@ -80,6 +86,14 @@ export default async function IntegrationsPage({
     telegramWebhookInfo?.result.url &&
     expectedTelegramWebhookUrl &&
     telegramWebhookInfo.result.url === expectedTelegramWebhookUrl
+  const discordCommands = process.env.DISCORD_BOT_TOKEN
+    ? await getDiscordCommands().catch(() => null)
+    : null
+  const discordCommandsRegistered =
+    Boolean(discordCommands?.length) &&
+    ['link', 'whoami', 'status'].every((commandName) =>
+      discordCommands?.some((command) => command.name === commandName)
+    )
 
   return (
     <div className="space-y-8">
@@ -110,9 +124,30 @@ export default async function IntegrationsPage({
         </div>
       ) : null}
 
+      {resolvedSearchParams?.discordCommands === 'registered' ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100">
+          Discord slash commands registered successfully. Your server should now
+          expose `/link`, `/whoami`, and `/status`.
+        </div>
+      ) : null}
+
+      {resolvedSearchParams?.discordCommands === 'error' ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+          Discord command registration failed.
+          {resolvedSearchParams.reason ? ` ${resolvedSearchParams.reason}` : ''}
+        </div>
+      ) : null}
+
       <div className="grid gap-6 lg:grid-cols-3">
         {integrationCards.map(
-          ({ key, title, description, defaultCtaLabel, href, icon: Icon }) => {
+          ({
+            key,
+            title,
+            description,
+            defaultCtaLabel,
+            href,
+            icon: Icon,
+          }) => {
             const account = accountsByProvider.get(key)
             const isGitHubAuthorized =
               key === 'GITHUB' && Boolean(account?.accessToken)
@@ -128,7 +163,7 @@ export default async function IntegrationsPage({
                 )
               : []
             const showTelegramWebhookStatus = key === 'TELEGRAM'
-
+            const showDiscordStatus = key === 'DISCORD'
             return (
               <Card
                 key={title}
@@ -150,12 +185,6 @@ export default async function IntegrationsPage({
                   <CardDescription>{description}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm text-muted-foreground">
-                  <p>
-                    Each flow stores the external identity in `LinkedAccount`,
-                    keeping platform-specific details out of the main `User`
-                    table.
-                  </p>
-
                   {isConnected ? (
                     <div className="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
                       <p className="font-medium text-foreground">
@@ -193,22 +222,82 @@ export default async function IntegrationsPage({
                       ) : null}
                     </div>
                   ) : null}
+
+                  {showDiscordStatus ? (
+                    <div className="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+                      <p className="font-medium text-foreground">
+                        Slash commands:{' '}
+                        {discordCommandsRegistered ? 'registered' : 'not registered'}
+                      </p>
+                      {discordCommands?.length ? (
+                        <p className="mt-2 text-xs">
+                          Available commands: {discordCommands.map((command) => `/${command.name}`).join(', ')}
+                        </p>
+                      ) : null}
+                      {resolvedSearchParams?.discordCode ? (
+                        <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950">
+                          <p className="font-medium text-foreground">
+                            Your current link code: {resolvedSearchParams.discordCode}
+                          </p>
+                          {resolvedSearchParams.discordInstructions ? (
+                            <p className="mt-1 text-xs">
+                              {resolvedSearchParams.discordInstructions}
+                            </p>
+                          ) : null}
+                          {resolvedSearchParams.discordExpiresAt ? (
+                            <p className="mt-1 text-xs">
+                              Expires at: {new Date(resolvedSearchParams.discordExpiresAt).toLocaleString()}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </CardContent>
                 <CardFooter>
                   {key === 'TELEGRAM' ? (
                     <div className="flex w-full flex-col gap-3">
-                      <Button asChild className="w-full rounded-full">
-                        <a href={href}>
-                          {isConnected ? 'Reconnect Telegram' : defaultCtaLabel}
-                        </a>
-                      </Button>
-                      <Button asChild variant="outline" className="w-full rounded-full">
-                        <a href="/api/integrations/telegram/webhook/register">
-                          {telegramWebhookRegistered
+                      <IntegrationActionLink
+                        href={href}
+                        label={isConnected ? 'Reconnect Telegram' : defaultCtaLabel}
+                        loadingLabel={
+                          isConnected ? 'Reconnecting Telegram...' : 'Connecting Telegram...'
+                        }
+                        className="w-full rounded-full"
+                      />
+                      <IntegrationActionLink
+                        href="/api/integrations/telegram/webhook/register"
+                        label={
+                          telegramWebhookRegistered
                             ? 'Refresh Telegram webhook'
-                            : 'Register Telegram webhook'}
-                        </a>
-                      </Button>
+                            : 'Register Telegram webhook'
+                        }
+                        loadingLabel="Registering Telegram webhook..."
+                        variant="outline"
+                        className="w-full rounded-full"
+                      />
+                    </div>
+                  ) : key === 'DISCORD' ? (
+                    <div className="flex w-full flex-col gap-3">
+                      <IntegrationActionLink
+                        href={href}
+                        label={isConnected ? 'Reconnect Discord' : defaultCtaLabel}
+                        loadingLabel={
+                          isConnected ? 'Reconnecting Discord...' : 'Starting Discord link...'
+                        }
+                        className="w-full rounded-full"
+                      />
+                      <IntegrationActionLink
+                        href="/api/integrations/discord/commands/register"
+                        label={
+                          discordCommandsRegistered
+                            ? 'Refresh Discord commands'
+                            : 'Register Discord commands'
+                        }
+                        loadingLabel="Registering Discord commands..."
+                        variant="outline"
+                        className="w-full rounded-full"
+                      />
                     </div>
                   ) : isConnected ? (
                     <Button
@@ -218,9 +307,12 @@ export default async function IntegrationsPage({
                       {key === 'GITHUB' ? 'GitHub Authorized' : `${title} Connected`}
                     </Button>
                   ) : (
-                    <Button asChild className="w-full rounded-full">
-                      <a href={href}>{defaultCtaLabel}</a>
-                    </Button>
+                    <IntegrationActionLink
+                      href={href}
+                      label={defaultCtaLabel}
+                      loadingLabel="Redirecting..."
+                      className="w-full rounded-full"
+                    />
                   )}
                 </CardFooter>
               </Card>

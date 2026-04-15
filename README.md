@@ -18,6 +18,7 @@ This repository now contains the production-oriented foundation for the project:
 - Telegram account linking via secure, single-use deep links
 - Telegram bot commands for `/start`, `/help`, `/whoami`, and `/status`
 - Discord account linking via one-time slash-command codes
+- Discord slash commands for `/link`, `/whoami`, and `/status`
 - GitHub issue service scaffolding for listing and creating issues
 - Dashboard pages for integrations, issues, reminders, and settings
 - Professional project documentation in `README.md` and `docs/architecture.md`
@@ -82,8 +83,42 @@ npm run dev
 - Clerk: enable GitHub as a social login provider
 - GitHub OAuth App: set the callback URL to `/api/integrations/github/callback`
 - Telegram: create a bot with BotFather and set the bot webhook to `/api/telegram/webhook`
-- Discord: configure the interactions endpoint at `/api/discord/interactions`
+- Discord: configure the interactions endpoint at `/api/discord/interactions` and register application commands
 - GitHub: create an OAuth App or GitHub App for future expanded scopes
+
+## Discord Setup
+
+Use the Discord Developer Portal to create the application and bot used by SyncHub.
+
+1. Open the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Click `New Application` and name it `SyncHub`.
+3. In `General Information`, copy:
+- `Application ID` into `DISCORD_APPLICATION_ID`
+- `Application ID` again into `DISCORD_CLIENT_ID`
+- `Public Key` into `DISCORD_PUBLIC_KEY`
+4. Open `Bot`, create the bot if needed, then copy the bot token into `DISCORD_BOT_TOKEN`.
+5. Open `Installation`.
+6. Under `Guild Install Scopes`, enable:
+- `bot`
+- `applications.commands`
+7. Under `Bot Permissions`, enable:
+- `Send Messages`
+- `Use Slash Commands`
+8. Use the generated install link from the portal to add the bot to your test server.
+9. Go back to `General Information` and set `Interactions Endpoint URL` to:
+
+```text
+https://YOUR-PUBLIC-URL/api/discord/interactions
+```
+
+10. Restart SyncHub after updating env vars.
+11. In SyncHub, open `/integrations`, click `Register Discord commands`, then click `Start Discord link`.
+12. Copy the generated code and run `/link <CODE>` in your Discord server.
+13. Verify the connection with `/whoami` and `/status`.
+
+Notes:
+- `DISCORD_CLIENT_SECRET` is not required for the current slash-command MVP.
+- If your public URL changes, update the interactions endpoint in Discord again.
 
 ## Environment Variables
 
@@ -194,7 +229,7 @@ sync-hub/
 ### Phase 3: Discord Integration
 
 - Goals: slash-command account linking and command intake
-- Deliverables: one-time link code endpoint, `/link <CODE>` interaction handling
+- Deliverables: one-time link code endpoint, verified Discord interactions, and `/link`, `/whoami`, `/status` commands
 - Out of scope: Discord OAuth2 `identify` flow
 
 ### Phase 4: GitHub Issue Management

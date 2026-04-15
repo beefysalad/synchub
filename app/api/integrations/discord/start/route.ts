@@ -23,9 +23,10 @@ export async function GET() {
     'DISCORD'
   )
 
-  return NextResponse.json({
-    code: token,
-    expiresAt,
-    instructions: formatDiscordLinkInstructions(token),
-  })
+  const redirectUrl = new URL('/integrations', process.env.NEXT_PUBLIC_APP_URL)
+  redirectUrl.searchParams.set('discordCode', token)
+  redirectUrl.searchParams.set('discordExpiresAt', expiresAt.toISOString())
+  redirectUrl.searchParams.set('discordInstructions', formatDiscordLinkInstructions(token))
+
+  return NextResponse.redirect(redirectUrl)
 }

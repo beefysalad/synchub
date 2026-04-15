@@ -105,12 +105,40 @@ This adds one extra integration step after sign-in, but it makes the permission 
 1. Signed-in user clicks `Connect Discord`.
 2. SyncHub creates a single-use `PendingLink` token.
 3. The dashboard returns instructions to run `/link <CODE>`.
-4. Discord sends the slash-command interaction to SyncHub.
-5. SyncHub validates and consumes the code.
-6. SyncHub upserts a `LinkedAccount` for `DISCORD`.
+4. SyncHub registers Discord application commands and verifies interaction signatures.
+5. Discord sends the slash-command interaction to SyncHub.
+6. SyncHub validates and consumes the code.
+7. SyncHub upserts a `LinkedAccount` for `DISCORD`.
+8. Discord users can then run `/whoami` and `/status` for verification.
 
 Future enhancement:
 Add Discord OAuth2 `identify` support for friendlier user onboarding and better token management.
+
+### Discord Developer Portal Setup
+
+SyncHub's MVP Discord integration depends on a bot application plus verified interaction webhooks.
+
+1. Create a Discord application in the Discord Developer Portal.
+2. In `General Information`, collect:
+- `Application ID` for `DISCORD_APPLICATION_ID`
+- `Application ID` again for `DISCORD_CLIENT_ID`
+- `Public Key` for `DISCORD_PUBLIC_KEY`
+3. In `Bot`, create the bot user and copy its token into `DISCORD_BOT_TOKEN`.
+4. In `Installation`, enable these `Guild Install Scopes`:
+- `bot`
+- `applications.commands`
+5. In `Installation`, enable these initial `Bot Permissions`:
+- `Send Messages`
+- `Use Slash Commands`
+6. Install the bot into a test server using the generated install link.
+7. In `General Information`, set the `Interactions Endpoint URL` to:
+
+```text
+https://YOUR-PUBLIC-URL/api/discord/interactions
+```
+
+8. Use SyncHub to register `/link`, `/whoami`, and `/status`.
+9. Start the link flow from the dashboard and run `/link <CODE>` inside Discord.
 
 ## Data Flow
 
@@ -137,6 +165,11 @@ sequenceDiagram
     Telegram->>SyncHub: POST /api/telegram/webhook with /start token
     SyncHub->>Prisma: Consume PendingLink and create LinkedAccount
     SyncHub-->>Telegram: Confirmation message
+    Browser->>SyncHub: GET /api/integrations/discord/start
+    SyncHub->>Prisma: Create PendingLink for Discord code
+    SyncHub-->>Browser: Return /link code
+    Discord->>SyncHub: POST /api/discord/interactions
+    SyncHub->>Prisma: Consume PendingLink and create LinkedAccount
 ```
 
 ## Folder Structure
@@ -154,6 +187,7 @@ app/
     github/issues/route.ts
     integrations/github/callback/route.ts
     integrations/github/start/route.ts
+    integrations/discord/commands/register/route.ts
     integrations/discord/start/route.ts
     integrations/telegram/start/route.ts
     telegram/webhook/route.ts
@@ -241,8 +275,8 @@ Users need one extra linking step, but the security model is much stronger.
 ### Phase 3: Discord Integration
 
 - Goals: support MVP Discord linking
-- Tasks: issue one-time codes, parse `/link` commands, link user identities
-- Deliverables: Discord interaction scaffold
+- Tasks: issue one-time codes, register commands, verify signatures, parse `/link`, `/whoami`, and `/status`, and link user identities
+- Deliverables: Discord interaction scaffold with operational verification
 - Out of scope: OAuth2 `identify`
 
 ### Phase 4: GitHub Issue Management
