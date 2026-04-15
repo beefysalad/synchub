@@ -81,3 +81,41 @@ export type GitHubIssueDetailResponse = {
   issue: GitHubIssue
   comments: GitHubIssueComment[]
 }
+
+export type GitHubPullRequest = {
+  id: number
+  number: number
+  state: 'open' | 'closed'
+  title: string
+  body: string | null
+  created_at: string
+  html_url: string
+  user: {
+    login: string
+    avatar_url: string
+  }
+}
+
+export type GitHubCommit = {
+  sha: string
+  html_url: string
+  commit: {
+    message: string
+    author: {
+      name: string
+      date: string
+    }
+  }
+  author: {
+    login: string
+    avatar_url: string
+  } | null
+}
+
+export type GitHubPullRequestsResponse = {
+  pulls: GitHubPullRequest[]
+}
+
+export type GitHubCommitsResponse = {
+  commits: GitHubCommit[]
+}
