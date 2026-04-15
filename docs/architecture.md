@@ -66,7 +66,7 @@ flowchart LR
 
 ## Integration Flows
 
-### Clerk and GitHub Authentication
+### Clerk and GitHub Identity Sync
 
 1. User signs in with Clerk.
 2. GitHub is enabled as a Clerk social provider.
@@ -75,7 +75,20 @@ flowchart LR
 5. GitHub external account metadata is mirrored into `LinkedAccount`.
 
 Trade-off:
-This keeps authentication simple, but GitHub API access may need a dedicated OAuth or GitHub App token flow later if Clerk does not provide the scopes or token lifecycle needed for advanced issue operations.
+This keeps authentication simple, but it is intentionally treated as identity, not repository authorization.
+
+### GitHub OAuth for Issue Actions
+
+1. Signed-in user clicks `Authorize GitHub access`.
+2. SyncHub creates a short-lived `PendingLink` token for the OAuth `state`.
+3. The user is redirected to GitHub's OAuth consent screen.
+4. GitHub redirects back to `/api/integrations/github/callback`.
+5. SyncHub validates and consumes the `state` token.
+6. SyncHub exchanges the authorization `code` for an access token.
+7. SyncHub fetches the GitHub user profile and stores the token on `LinkedAccount`.
+
+Trade-off:
+This adds one extra integration step after sign-in, but it makes the permission boundary explicit and gives SyncHub a token intended for issue-management API calls.
 
 ### Telegram Linking Flow
 
@@ -112,6 +125,11 @@ sequenceDiagram
     Clerk-->>Browser: Session established
     Clerk->>SyncHub: user.created / user.updated webhook
     SyncHub->>Prisma: Upsert User and GitHub LinkedAccount
+    Browser->>SyncHub: GET /api/integrations/github/start
+    SyncHub->>Prisma: Create PendingLink for OAuth state
+    SyncHub-->>Browser: Redirect to GitHub OAuth
+    Browser->>SyncHub: GET /api/integrations/github/callback
+    SyncHub->>Prisma: Consume PendingLink and upsert GitHub LinkedAccount with token
     Browser->>SyncHub: GET /api/integrations/telegram/start
     SyncHub->>Prisma: Create PendingLink
     SyncHub-->>Browser: Redirect to Telegram deep link
@@ -133,6 +151,8 @@ app/
   api/
     discord/interactions/route.ts
     github/issues/route.ts
+    integrations/github/callback/route.ts
+    integrations/github/start/route.ts
     integrations/discord/start/route.ts
     integrations/telegram/start/route.ts
     telegram/webhook/route.ts
@@ -167,7 +187,7 @@ Reason:
 Clerk removes the need to build custom session, OAuth, and identity-management flows.
 
 Trade-off:
-Advanced GitHub API permissions may require a separate token strategy later.
+Clerk gives SyncHub a strong app-auth story, but GitHub API permissions are managed through a dedicated OAuth flow so token scope and consent stay explicit.
 
 ### Normalized external identities
 
@@ -204,9 +224,9 @@ Users need one extra linking step, but the security model is much stronger.
 
 ### Phase 1: User and GitHub Authentication
 
-- Goals: sign in with Clerk and sync GitHub identity
-- Tasks: configure Clerk GitHub social login, handle Clerk webhooks, persist GitHub metadata
-- Deliverables: internal user sync and GitHub linked-account persistence
+- Goals: sign in with Clerk, sync GitHub identity, and authorize GitHub API access
+- Tasks: configure Clerk GitHub social login, handle Clerk webhooks, persist GitHub metadata, implement GitHub OAuth callback flow
+- Deliverables: internal user sync, GitHub linked-account persistence, and stored GitHub access tokens for issue actions
 - Out of scope: advanced GitHub App installation flow
 
 ### Phase 2: Telegram Integration

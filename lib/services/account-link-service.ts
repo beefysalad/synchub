@@ -4,9 +4,11 @@ import prisma from '@/lib/prisma'
 
 type LinkInput = {
   userId: string
-  provider: 'TELEGRAM' | 'DISCORD'
+  provider: 'GITHUB' | 'TELEGRAM' | 'DISCORD'
   providerUserId: string
   username?: string | null
+  accessToken?: string | null
+  refreshToken?: string | null
   chatId?: string | null
   metadata?: Record<string, unknown>
 }
@@ -25,6 +27,8 @@ export const accountLinkService = {
       update: {
         userId: input.userId,
         username: input.username ?? null,
+        accessToken: input.accessToken ?? null,
+        refreshToken: input.refreshToken ?? null,
         chatId: input.chatId ?? null,
         metadata,
       },
@@ -33,6 +37,8 @@ export const accountLinkService = {
         provider: input.provider,
         providerUserId: input.providerUserId,
         username: input.username ?? null,
+        accessToken: input.accessToken ?? null,
+        refreshToken: input.refreshToken ?? null,
         chatId: input.chatId ?? null,
         metadata,
       },

@@ -1,6 +1,6 @@
 # SyncHub
 
-SyncHub is a GitHub issue management assistant for teams that live in chat. It combines Clerk authentication, GitHub identity sync, Telegram deep-link account linking, Discord slash-command linking, and a lightweight Next.js dashboard for configuration and monitoring.
+SyncHub is a GitHub issue management assistant for teams that live in chat. It combines Clerk authentication, GitHub identity sync, dedicated GitHub OAuth for issue permissions, Telegram deep-link account linking, Discord slash-command linking, and a lightweight Next.js dashboard for configuration and monitoring.
 
 This repository now contains the production-oriented foundation for the project:
 
@@ -14,7 +14,7 @@ This repository now contains the production-oriented foundation for the project:
 
 - Clerk authentication with GitHub social login
 - Prisma user sync keyed by Clerk `userId`
-- GitHub linked account persistence for future issue-management scopes
+- GitHub linked account persistence with OAuth-backed access tokens for issue-management scopes
 - Telegram account linking via secure, single-use deep links
 - Discord account linking via one-time slash-command codes
 - GitHub issue service scaffolding for listing and creating issues
@@ -79,6 +79,7 @@ npm run dev
 6. Configure the external services:
 
 - Clerk: enable GitHub as a social login provider
+- GitHub OAuth App: set the callback URL to `/api/integrations/github/callback`
 - Telegram: set the bot webhook to `/api/telegram/webhook`
 - Discord: configure the interactions endpoint at `/api/discord/interactions`
 - GitHub: create an OAuth App or GitHub App for future expanded scopes
@@ -109,9 +110,10 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 1. Use Clerk for all web authentication.
 2. Mirror Clerk users into Prisma via the Clerk webhook.
 3. Link chat identities through `PendingLink` records.
-4. Centralize GitHub issue operations in `lib/github`.
-5. Keep route handlers thin and push logic into `lib/services`.
-6. Build features incrementally by phase.
+4. Use GitHub OAuth to grant issue-management access beyond basic Clerk identity.
+5. Centralize GitHub issue operations in `lib/github`.
+6. Keep route handlers thin and push logic into `lib/services`.
+7. Build features incrementally by phase.
 
 Useful commands:
 
@@ -137,6 +139,9 @@ sync-hub/
 │   │   ├── discord/interactions/route.ts
 │   │   ├── github/issues/route.ts
 │   │   ├── integrations/
+│   │   │   ├── github/
+│   │   │   │   ├── callback/route.ts
+│   │   │   │   └── start/route.ts
 │   │   │   ├── discord/start/route.ts
 │   │   │   └── telegram/start/route.ts
 │   │   ├── telegram/webhook/route.ts
@@ -174,8 +179,8 @@ sync-hub/
 
 ### Phase 1: User and GitHub Authentication
 
-- Goals: authenticate with Clerk and sync GitHub identity data
-- Deliverables: Clerk webhook sync, Prisma `User`, GitHub linked account persistence
+- Goals: authenticate with Clerk, sync GitHub identity data, and support dedicated GitHub OAuth for issue permissions
+- Deliverables: Clerk webhook sync, Prisma `User`, GitHub linked account persistence, GitHub OAuth authorization flow
 - Out of scope: full GitHub App installation flow
 
 ### Phase 2: Telegram Integration

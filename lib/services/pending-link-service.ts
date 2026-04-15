@@ -1,16 +1,22 @@
 import { randomBytes } from 'crypto'
 import { addMinutes, isAfter } from 'date-fns'
+import type { Prisma } from '@/app/generated/prisma/client'
 
 import prisma from '@/lib/prisma'
 
-type LinkProvider = 'TELEGRAM' | 'DISCORD'
+type LinkProvider = 'TELEGRAM' | 'DISCORD' | 'GITHUB'
 
 function createOpaqueToken(size = 24) {
   return randomBytes(size).toString('base64url')
 }
 
 export const pendingLinkService = {
-  async createLinkToken(userId: string, provider: LinkProvider, ttlMinutes = 15) {
+  async createLinkToken(
+    userId: string,
+    provider: LinkProvider,
+    ttlMinutes = 15,
+    metadata?: Prisma.InputJsonValue
+  ) {
     const token = createOpaqueToken()
     const expiresAt = addMinutes(new Date(), ttlMinutes)
 
@@ -20,6 +26,7 @@ export const pendingLinkService = {
         provider,
         userId,
         expiresAt,
+        metadata,
       },
     })
 
