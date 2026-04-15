@@ -1,0 +1,60 @@
+name: Auto Assign Issues
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  assign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-assign based on labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const label = context.payload.label.name;
+
+            // Define assignment rules
+            const assignmentRules = {
+              'auth': ['beefysalad'], // Authentication issues
+              'database': ['beefysalad'], // Database/Prisma issues
+              'ui': ['beefysalad'], // UI/UX issues
+              'api': ['beefysalad'], // API endpoint issues
+              'security': ['beefysalad'], // Security issues (high priority)
+              'critical': ['beefysalad'], // Critical issues
+              'documentation': ['beefysalad'], // Documentation issues
+            };
+
+            // Check if the label has an assignment rule
+            if (assignmentRules[label]) {
+              const assignees = assignmentRules[label];
+              
+              // Check if already assigned
+              const currentAssignees = issue.assignees.map(a => a.login);
+              const newAssignees = assignees.filter(a => !currentAssignees.includes(a));
+              
+              if (newAssignees.length > 0) {
+                await github.rest.issues.addAssignees({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  assignees: newAssignees
+                });
+                
+                console.log(`Assigned issue #${issue.number} to: ${newAssignees.join(', ')}`);
+                
+                // Optional: Add a comment
+                const comment = `🤖 This issue has been automatically assigned to ${newAssignees.map(a => `@${a}`).join(', ')} based on the \`${label}\` label.`;
+                
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: comment
+                });
+              }
+            }

@@ -1,0 +1,34 @@
+name: Delete Merged Branch
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  delete_branch:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    permissions:
+      contents: write
+    steps:
+      - name: Delete branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const branch = context.payload.pull_request.head.ref;
+            const ref = `heads/${branch}`;
+
+            try {
+              await github.rest.git.deleteRef({
+                owner,
+                repo,
+                ref,
+              });
+              console.log(`Branch ${branch} deleted successfully.`);
+            } catch (error) {
+              console.log(`Failed to delete branch ${branch}. It might have already been deleted or created from a fork.`);
+              console.log(error);
+            }

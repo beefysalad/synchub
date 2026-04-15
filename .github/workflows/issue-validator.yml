@@ -1,0 +1,108 @@
+name: Issue Validator
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate bug reports
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const labels = issue.labels.map(l => l.name);
+
+            // Only validate bug reports
+            if (!labels.includes('bug')) {
+              console.log('Not a bug report, skipping validation');
+              return;
+            }
+
+            const body = issue.body || '';
+            const title = issue.title || '';
+
+            // Check for required sections in bug reports
+            const requiredSections = [
+              { name: 'Steps to Reproduce', pattern: /steps to reproduce|reproduction/i },
+              { name: 'Expected Behavior', pattern: /expected behavior|expected/i },
+              { name: 'Actual Behavior', pattern: /actual behavior|actual/i },
+              { name: 'Environment', pattern: /environment|os|node|version/i }
+            ];
+
+            const missingSections = [];
+
+            for (const section of requiredSections) {
+              if (!section.pattern.test(body)) {
+                missingSections.push(section.name);
+              }
+            }
+
+            // Check if body is too short (likely incomplete)
+            const isTooShort = body.length < 100;
+
+            // Check if title is too vague
+            const hasVagueTitle = /^(bug|issue|problem|help|error)$/i.test(title.trim());
+
+            const issues = [];
+
+            if (missingSections.length > 0) {
+              issues.push(`Missing required sections: ${missingSections.join(', ')}`);
+            }
+
+            if (isTooShort) {
+              issues.push('Issue description is too short. Please provide more details.');
+            }
+
+            if (hasVagueTitle) {
+              issues.push('Title is too vague. Please provide a descriptive title.');
+            }
+
+            if (issues.length > 0) {
+              // Add needs-more-info label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: ['needs-more-info']
+              });
+              
+              // Post comment requesting more information
+              const comment = `👋 Thank you for reporting this issue!
+
+            However, we need more information to help you effectively:
+
+            ${issues.map(i => `- ${i}`).join('\n')}
+
+            Please update your issue with the missing information. Once you've provided the details, we'll remove the \`needs-more-info\` label and a maintainer will review it.
+
+            **Tip:** Use our bug report template to ensure all required information is included.`;
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: comment
+              });
+              
+              console.log(`Validation failed for issue #${issue.number}`);
+            } else {
+              // Remove needs-more-info label if it exists
+              const hasLabel = labels.includes('needs-more-info');
+              
+              if (hasLabel) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  name: 'needs-more-info'
+                });
+                
+                console.log(`Validation passed for issue #${issue.number}, removed needs-more-info label`);
+              }
+            }

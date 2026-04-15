@@ -1,0 +1,77 @@
+name: Auto Label Issues
+description: Automatically label issues based on keywords in title and body
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-label based on keywords
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = issue.title.toLowerCase();
+            const body = (issue.body || '').toLowerCase();
+            const text = title + ' ' + body;
+
+            const labelMap = {
+              // Bug-related
+              'bug': ['bug', 'error', 'crash', 'broken', 'issue', 'problem', 'fail'],
+              'critical': ['critical', 'urgent', 'blocking', 'blocker'],
+              
+              // Feature-related
+              'enhancement': ['feature', 'enhancement', 'improvement', 'request'],
+              
+              // Area-specific
+              'auth': ['auth', 'authentication', 'login', 'signup', 'session', 'jwt', 'oauth'],
+              'database': ['database', 'prisma', 'sql', 'query', 'migration', 'schema'],
+              'ui': ['ui', 'ux', 'design', 'style', 'css', 'component', 'layout'],
+              'api': ['api', 'endpoint', 'route', 'request', 'response'],
+              'documentation': ['docs', 'documentation', 'readme', 'guide', 'tutorial'],
+              
+              // Priority
+              'high-priority': ['urgent', 'critical', 'asap', 'important'],
+              'low-priority': ['nice-to-have', 'minor', 'cosmetic'],
+              
+              // Type
+              'question': ['question', 'how to', 'how do i', 'help'],
+              'performance': ['performance', 'slow', 'optimization', 'speed'],
+              'security': ['security', 'vulnerability', 'exploit', 'xss', 'injection'],
+              'testing': ['test', 'testing', 'jest', 'e2e', 'unit test'],
+              'deployment': ['deploy', 'deployment', 'production', 'build'],
+              'dependencies': ['dependency', 'dependencies', 'npm', 'package', 'upgrade']
+            };
+
+            const labelsToAdd = [];
+
+            for (const [label, keywords] of Object.entries(labelMap)) {
+              if (keywords.some(keyword => text.includes(keyword))) {
+                labelsToAdd.push(label);
+              }
+            }
+
+            if (labelsToAdd.length > 0) {
+              // Get existing labels
+              const existingLabels = issue.labels.map(l => l.name);
+              
+              // Only add labels that don't already exist
+              const newLabels = labelsToAdd.filter(l => !existingLabels.includes(l));
+              
+              if (newLabels.length > 0) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  labels: newLabels
+                });
+                
+                console.log(`Added labels: ${newLabels.join(', ')}`);
+              }
+            }

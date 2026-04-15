@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/beefysalad/nexion
+    about: Check the README for common questions
+  - name: Discussions
+    url: https://github.com/beefysalad/nexion/discussions
+    about: Ask questions and discuss ideas

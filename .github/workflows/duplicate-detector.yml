@@ -1,0 +1,101 @@
+name: Duplicate Issue Detector
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  detect-duplicates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for similar issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const currentIssue = context.payload.issue;
+            const currentTitle = currentIssue.title.toLowerCase();
+            const currentBody = (currentIssue.body || '').toLowerCase();
+
+            // Get all open issues
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            // Simple similarity check based on title
+            function calculateSimilarity(str1, str2) {
+              const words1 = str1.toLowerCase().split(/\s+/);
+              const words2 = str2.toLowerCase().split(/\s+/);
+              
+              const commonWords = words1.filter(word => 
+                word.length > 3 && words2.includes(word)
+              );
+              
+              return commonWords.length / Math.max(words1.length, words2.length);
+            }
+
+            const similarIssues = [];
+
+            for (const issue of openIssues) {
+              // Skip the current issue
+              if (issue.number === currentIssue.number) continue;
+              
+              const similarity = calculateSimilarity(currentTitle, issue.title);
+              
+              // If similarity is above 50%, consider it potentially duplicate
+              if (similarity > 0.5) {
+                similarIssues.push({
+                  number: issue.number,
+                  title: issue.title,
+                  url: issue.html_url,
+                  similarity: similarity
+                });
+              }
+            }
+
+            if (similarIssues.length > 0) {
+              // Sort by similarity
+              similarIssues.sort((a, b) => b.similarity - a.similarity);
+              
+              // Add potential-duplicate label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: currentIssue.number,
+                labels: ['potential-duplicate']
+              });
+              
+              // Create comment with similar issues
+              const issueList = similarIssues
+                .slice(0, 5) // Show top 5 similar issues
+                .map(issue => `- #${issue.number}: ${issue.title}`)
+                .join('\n');
+              
+              const comment = `🔍 **Potential Duplicate Detected**
+
+            This issue appears to be similar to the following existing issue(s):
+
+            ${issueList}
+
+            Please check if any of these issues describe the same problem. If so, consider:
+            - Adding your information to the existing issue
+            - Closing this issue as a duplicate
+
+            If this is **not** a duplicate, please provide additional context to help us understand how it differs.
+
+            *This is an automated check. A maintainer will review and remove this label if needed.*`;
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: currentIssue.number,
+                body: comment
+              });
+              
+              console.log(`Found ${similarIssues.length} similar issues for #${currentIssue.number}`);
+            }
