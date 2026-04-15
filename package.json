@@ -1,11 +1,11 @@
 {
-  "name": "nexion",
+  "name": "synchub",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "dev:docker": "next dev --hostname 0.0.0.0 --port 3000",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && next build --webpack",
     "start": "next start",
     "db:generate": "prisma generate",
     "db:migrate:deploy": "prisma migrate deploy",

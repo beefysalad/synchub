@@ -3,15 +3,15 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: nexion
-      POSTGRES_USER: nexion
-      POSTGRES_PASSWORD: nexion
+      POSTGRES_DB: synchub
+      POSTGRES_USER: synchub
+      POSTGRES_PASSWORD: synchub
     ports:
-      - '5433:5432'
+      - '5434:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U nexion -d nexion']
+      test: ['CMD-SHELL', 'pg_isready -U synchub -d synchub']
       interval: 5s
       timeout: 5s
       retries: 20
@@ -24,7 +24,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://nexion:nexion@db:5432/nexion
+      DATABASE_URL: postgresql://synchub:synchub@db:5432/synchub
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-pk_test_replace_me}
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:-sk_test_replace_me}
       CLERK_WEBHOOK_SIGNING_SECRET: ${CLERK_WEBHOOK_SIGNING_SECRET:-whsec_replace_me}

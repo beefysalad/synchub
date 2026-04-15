@@ -14,21 +14,30 @@ const prisma = new PrismaClient({ adapter })
 
 async function main() {
   console.log('🌱 Seeding database...')
-  const counter = await prisma.count.findUnique({
+  const existingUser = await prisma.user.findUnique({
     where: {
-      key: 'global_counter',
+      clerkUserId: 'seed_clerk_user',
     },
   })
 
-  if (counter) {
-    console.log('Counter already exists')
+  if (existingUser) {
+    console.log('Seed user already exists')
     return
   }
 
-  await prisma.count.create({
+  await prisma.user.create({
     data: {
-      key: 'global_counter',
-      value: 0,
+      clerkUserId: 'seed_clerk_user',
+      linkedAccounts: {
+        create: {
+          provider: 'GITHUB',
+          providerUserId: 'seed-github-user',
+          username: 'synchub-demo',
+          metadata: {
+            source: 'seed',
+          },
+        },
+      },
     },
   })
 }

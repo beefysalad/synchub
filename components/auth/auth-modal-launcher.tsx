@@ -39,8 +39,8 @@ export function AuthModalLauncher({ mode }: AuthModalLauncherProps) {
   const title = mode === 'sign-in' ? 'Welcome back' : 'Create account'
   const description =
     mode === 'sign-in'
-      ? 'Opening Clerk sign-in modal. Use Google or email to continue.'
-      : 'Opening Clerk sign-up modal. Use Google or email to create your account.'
+      ? 'Opening Clerk sign-in modal. Use GitHub or another enabled Clerk method to continue.'
+      : 'Opening Clerk sign-up modal. Use GitHub or another enabled Clerk method to create your account.'
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-white px-4 selection:bg-zinc-900 selection:text-white dark:bg-neutral-950 dark:selection:bg-neutral-50 dark:selection:text-neutral-900">

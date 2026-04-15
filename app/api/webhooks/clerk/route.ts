@@ -2,7 +2,7 @@ import type { WebhookEvent } from '@clerk/nextjs/server'
 import { verifyWebhook } from '@clerk/nextjs/webhooks'
 import { NextRequest, NextResponse } from 'next/server'
 
-import { userService } from '@/lib/services/user-service'
+import { userSyncService } from '@/lib/services/user-sync-service'
 
 export async function POST(request: NextRequest) {
   let event: WebhookEvent
@@ -20,11 +20,11 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case 'user.created':
       case 'user.updated':
-        await userService.syncWebhookUserToDatabase(event.data)
+        await userSyncService.syncClerkUser(event.data)
         break
       case 'user.deleted':
         if (event.data.id) {
-          await userService.deleteClerkUserFromDatabase(event.data.id)
+          await userSyncService.deleteByClerkUserId(event.data.id)
         }
         break
       default:
