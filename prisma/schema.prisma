@@ -32,6 +32,7 @@ model User {
   linkedAccounts LinkedAccount[]
   pendingLinks   PendingLink[]
   reminders      Reminder[]
+  trackedRepos   TrackedRepo[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 }
@@ -83,4 +84,17 @@ model Reminder {
 
   @@index([userId, status])
   @@index([repository, issueNumber])
+}
+
+model TrackedRepo {
+  id        String   @id @default(cuid())
+  userId    String
+  fullName  String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fullName])
+  @@index([userId])
 }

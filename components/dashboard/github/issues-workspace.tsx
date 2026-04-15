@@ -204,7 +204,7 @@ export function IssuesWorkspace() {
         />
       </div>
 
-      <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+      <Card className="relative z-50 border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
         <CardHeader>
           <CardTitle>Add a repository to track</CardTitle>
           <CardDescription>

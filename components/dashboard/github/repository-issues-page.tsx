@@ -303,8 +303,7 @@ export function RepositoryIssuesPage({
                   </div>
 
                   <Button asChild variant="outline" className="rounded-full">
-                    <Link href={issue.html_url} target="_blank">
-                      <ExternalLink className="size-4" />
+                    <Link href={`/issues/${owner}/${repo}/${issue.number}`}>
                       Open issue
                     </Link>
                   </Button>

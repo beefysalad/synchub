@@ -8,12 +8,6 @@ import type {
   UpdateGitHubPreferencesPayload,
 } from '@/lib/github/types'
 
-function getMetadataObject(metadata: unknown) {
-  return metadata && typeof metadata === 'object' && !Array.isArray(metadata)
-    ? (metadata as Record<string, unknown>)
-    : {}
-}
-
 function parseRepositoryFullName(fullName: string) {
   const [owner, repo] = fullName.split('/')
 
@@ -22,21 +16,6 @@ function parseRepositoryFullName(fullName: string) {
   }
 
   return { owner, repo }
-}
-
-async function getGitHubAccount(userId: string) {
-  const account = await prisma.linkedAccount.findFirst({
-    where: {
-      userId,
-      provider: 'GITHUB',
-    },
-  })
-
-  if (!account) {
-    throw new Error('No GitHub account is linked to this user yet.')
-  }
-
-  return account
 }
 
 export const githubRepositoryService = {
@@ -55,19 +34,15 @@ export const githubRepositoryService = {
   },
 
   async getPreferences(userId: string): Promise<GitHubRepositoryPreferences> {
-    const account = await getGitHubAccount(userId)
-    const metadata = getMetadataObject(account.metadata)
+    const trackedRepos = await prisma.trackedRepo.findMany({
+      where: { userId },
+    })
+
+    const defaultRepo = trackedRepos.find((repo) => repo.isDefault)
 
     return {
-      defaultRepository:
-        typeof metadata.defaultRepository === 'string'
-          ? metadata.defaultRepository
-          : null,
-      selectedRepositories: Array.isArray(metadata.selectedRepositories)
-        ? metadata.selectedRepositories.filter(
-            (repository): repository is string => typeof repository === 'string'
-          )
-        : [],
+      defaultRepository: defaultRepo ? defaultRepo.fullName : null,
+      selectedRepositories: trackedRepos.map((repo) => repo.fullName),
     }
   },
 
@@ -75,8 +50,6 @@ export const githubRepositoryService = {
     userId: string,
     updates: UpdateGitHubPreferencesPayload
   ) {
-    const account = await getGitHubAccount(userId)
-    const metadata = getMetadataObject(account.metadata)
     const currentPreferences = await this.getPreferences(userId)
     let selectedRepositories =
       updates.selectedRepositories ?? currentPreferences.selectedRepositories
@@ -115,19 +88,33 @@ export const githubRepositoryService = {
       defaultRepository = selectedRepositories[0] ?? null
     }
 
-    const nextMetadata = {
-      ...metadata,
-      defaultRepository,
-      selectedRepositories,
-    } as Prisma.InputJsonValue
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete stored repositories not in the new selected list for this user
+      await tx.trackedRepo.deleteMany({
+        where: {
+          userId,
+          fullName: { notIn: selectedRepositories },
+        },
+      })
 
-    return prisma.linkedAccount.update({
-      where: {
-        id: account.id,
-      },
-      data: {
-        metadata: nextMetadata,
-      },
+      // 2. Upsert the new list
+      for (const repo of selectedRepositories) {
+        const isDefault = repo === defaultRepository
+        await tx.trackedRepo.upsert({
+          where: {
+            userId_fullName: {
+              userId,
+              fullName: repo,
+            },
+          },
+          update: { isDefault },
+          create: {
+            userId,
+            fullName: repo,
+            isDefault,
+          },
+        })
+      }
     })
   },
 

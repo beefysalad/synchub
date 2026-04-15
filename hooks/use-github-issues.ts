@@ -8,6 +8,7 @@ import {
   type CreateGitHubIssueResponse,
   type GitHubIssueState,
   type GitHubIssuesResponse,
+  type GitHubIssueDetailResponse,
 } from '@/lib/github/types'
 import { handleApiError } from '@/lib/error-handler'
 
@@ -34,6 +35,73 @@ export function useGithubIssues({
       }
     },
     enabled: Boolean(owner && repo),
+    // By giving this a 10s stale time, we prevent React Query from triggering
+    // an immediate background refetch when redirecting back to the issues list.
+    // If we didn't do this, it would fetch GitHub's backend immediately, which
+    // hasn't indexed the issue yet, wiping out the optimistically cached issue!
+    staleTime: 10 * 1000,
+  })
+}
+
+export function useGithubIssueDetail(owner: string, repo: string, issueNumber: number) {
+  return useQuery({
+    queryKey: ['github', 'issues', owner, repo, issueNumber],
+    queryFn: async () => {
+      try {
+        const response = await api.get<GitHubIssueDetailResponse>(
+          `/github/issues/${owner}/${repo}/${issueNumber}`
+        )
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    enabled: Boolean(owner && repo && issueNumber),
+  })
+}
+
+export function useUpdateGithubIssueState(owner: string, repo: string, issueNumber: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (state: 'open' | 'closed') => {
+      try {
+        const response = await api.patch(
+          `/github/issues/${owner}/${repo}/${issueNumber}`,
+          { state }
+        )
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'issues', owner, repo],
+      })
+    },
+  })
+}
+
+export function useDeleteGithubIssue(owner: string, repo: string, issueNumber: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async () => {
+      try {
+        const response = await api.delete(
+          `/github/issues/${owner}/${repo}/${issueNumber}`
+        )
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'issues', owner, repo],
+      })
+    },
   })
 }
 
@@ -53,10 +121,20 @@ export function useCreateGithubIssue() {
         return handleApiError(error)
       }
     },
-    onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({
-        queryKey: ['github', 'issues', variables.owner, variables.repo],
-      })
+    onSuccess: (data, variables) => {
+      // Because GitHub's search API takes a moment to index new issues, 
+      // invalidating immediately often returns the old list. 
+      // Instead, we manually inject the returned issue directly into the cache!
+      const updateData = (oldData: GitHubIssuesResponse | undefined) => {
+        if (!oldData) return oldData
+        return {
+          ...oldData,
+          issues: [data.issue, ...oldData.issues],
+        }
+      }
+
+      queryClient.setQueryData(['github', 'issues', variables.owner, variables.repo, 'open'], updateData)
+      queryClient.setQueryData(['github', 'issues', variables.owner, variables.repo, 'all'], updateData)
     },
   })
 }

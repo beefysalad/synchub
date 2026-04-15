@@ -30,6 +30,18 @@ export type GitHubIssue = {
   }>
   user: {
     login: string
+    avatar_url: string
+  }
+}
+
+export type GitHubIssueComment = {
+  id: number
+  body: string
+  created_at: string
+  updated_at: string
+  user: {
+    login: string
+    avatar_url: string
   }
 }
 
@@ -63,4 +75,9 @@ export type CreateGitHubIssuePayload = {
 
 export type CreateGitHubIssueResponse = {
   issue: GitHubIssue
+}
+
+export type GitHubIssueDetailResponse = {
+  issue: GitHubIssue
+  comments: GitHubIssueComment[]
 }
