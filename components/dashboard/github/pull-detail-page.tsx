@@ -1,8 +1,10 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { ArrowLeft, ExternalLink, GitPullRequest } from 'lucide-react'
 import Link from 'next/link'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 import { SectionHeader } from '@/components/dashboard/section-header'
 import { Button } from '@/components/ui/button'
@@ -80,8 +82,8 @@ export function PullDetailPage({
               <span className="font-semibold">{pull.user.login}</span> commented{' '}
               {formatDistanceToNow(new Date(pull.created_at), { addSuffix: true })}
             </div>
-            <div className="prose prose-slate prose-sm max-w-none px-5 py-5 whitespace-pre-wrap dark:prose-invert">
-              {pull.body || '*No description provided.*'}
+            <div className="prose prose-slate prose-sm max-w-none px-5 py-5 dark:prose-invert">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{pull.body || '*No description provided.*'}</ReactMarkdown>
             </div>
           </div>
         </div>
@@ -99,8 +101,8 @@ export function PullDetailPage({
                 <span className="font-semibold">{comment.user.login}</span> commented{' '}
                 {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
               </div>
-              <div className="prose prose-slate prose-sm max-w-none px-5 py-5 whitespace-pre-wrap dark:prose-invert">
-                {comment.body}
+              <div className="prose prose-slate prose-sm max-w-none px-5 py-5 dark:prose-invert">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.body}</ReactMarkdown>
               </div>
             </div>
           </div>

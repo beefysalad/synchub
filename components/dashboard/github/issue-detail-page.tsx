@@ -5,6 +5,8 @@ import { ArrowLeft, Trash2, Lock, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 import { SectionHeader } from '@/components/dashboard/section-header'
 import { Button } from '@/components/ui/button'
@@ -14,6 +16,7 @@ import {
   useUpdateGithubIssueState,
   useDeleteGithubIssue,
 } from '@/hooks/use-github-issues'
+import Image from 'next/image'
 
 export function IssueDetailPage({
   owner,
@@ -162,8 +165,8 @@ export function IssueDetailPage({
               <span className="font-semibold">{issue.user.login}</span> commented{' '}
               {formatDistanceToNow(new Date(issue.created_at), { addSuffix: true })}
             </div>
-            <div className="prose prose-slate prose-sm max-w-none px-5 py-5 whitespace-pre-wrap dark:prose-invert">
-              {issue.body || '*No description provided.*'}
+            <div className="prose prose-slate prose-sm max-w-none px-5 py-5 dark:prose-invert">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{issue.body || '*No description provided.*'}</ReactMarkdown>
             </div>
           </div>
         </div>
@@ -181,8 +184,8 @@ export function IssueDetailPage({
                 <span className="font-semibold">{comment.user.login}</span> commented{' '}
                 {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
               </div>
-              <div className="prose prose-slate prose-sm max-w-none px-5 py-5 whitespace-pre-wrap dark:prose-invert">
-                {comment.body}
+              <div className="prose prose-slate prose-sm max-w-none px-5 py-5 dark:prose-invert">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.body}</ReactMarkdown>
               </div>
             </div>
           </div>
