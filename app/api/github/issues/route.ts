@@ -1,19 +1,11 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 
+import { githubRepositoryService } from '@/lib/github/repositories'
 import prisma from '@/lib/prisma'
 import { githubIssueService } from '@/lib/github/issues'
-import { assertRepositoryInput } from '@/lib/validators/github'
-
-function getValidatedRepository(owner?: string | null, repo?: string | null) {
-  assertRepositoryInput(owner, repo)
-
-  if (!owner || !repo) {
-    throw new Error('Both "owner" and "repo" are required.')
-  }
-
-  return { owner, repo }
-}
+import { githubIssueFormSchema } from '@/lib/validators/github-issue'
 
 function getValidatedIssueState(state?: string | null): 'open' | 'closed' | 'all' {
   if (state === 'closed' || state === 'all') {
@@ -22,6 +14,16 @@ function getValidatedIssueState(state?: string | null): 'open' | 'closed' | 'all
 
   return 'open'
 }
+
+const createGithubIssueRequestSchema = githubIssueFormSchema
+  .pick({
+    title: true,
+    body: true,
+  })
+  .extend({
+  owner: z.string().trim().min(1, 'Owner is required.'),
+  repo: z.string().trim().min(1, 'Repository is required.'),
+  })
 
 export async function GET(request: NextRequest) {
   const { userId: clerkUserId } = await auth()
@@ -44,7 +46,11 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get('state')
 
   try {
-    const validatedRepository = getValidatedRepository(owner, repo)
+    const validatedRepository =
+      await githubRepositoryService.resolveRepositoryContext(user.id, {
+        owner,
+        repo,
+      })
     const validatedState = getValidatedIssueState(state)
 
     const issues = await githubIssueService.listRepositoryIssues({
@@ -78,19 +84,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
-  const body = (await request.json()) as {
-    owner?: string
-    repo?: string
-    title?: string
-    body?: string
-  }
-
   try {
-    const validatedRepository = getValidatedRepository(body.owner, body.repo)
+    const body = createGithubIssueRequestSchema.parse(await request.json())
 
-    if (!body.title) {
-      throw new Error('A title is required to create an issue.')
-    }
+    const validatedRepository =
+      await githubRepositoryService.resolveRepositoryContext(user.id, {
+        owner: body.owner,
+        repo: body.repo,
+      })
 
     const issue = await githubIssueService.createIssue({
       userId: user.id,

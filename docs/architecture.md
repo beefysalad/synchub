@@ -9,6 +9,7 @@ Primary system responsibilities:
 - Authenticate users with Clerk
 - Mirror Clerk users into Prisma using `clerkUserId`
 - Link Telegram and Discord identities to the same internal user record
+- List accessible GitHub repositories and persist a default repository choice
 - Centralize GitHub issue operations behind a reusable service layer
 - Expose a lightweight dashboard for configuration and monitoring
 
@@ -90,6 +91,13 @@ This keeps authentication simple, but it is intentionally treated as identity, n
 Trade-off:
 This adds one extra integration step after sign-in, but it makes the permission boundary explicit and gives SyncHub a token intended for issue-management API calls.
 
+### Repository Selection Flow
+
+1. SyncHub uses the GitHub OAuth token to list accessible repositories.
+2. The user chooses a repository in the dashboard.
+3. SyncHub stores the default repository in GitHub linked-account metadata.
+4. Issue listing and creation can then fall back to that saved repository when repo context is not explicitly provided.
+
 ### Telegram Linking Flow
 
 1. Signed-in user clicks `Connect Telegram`.
@@ -159,6 +167,8 @@ sequenceDiagram
     SyncHub-->>Browser: Redirect to GitHub OAuth
     Browser->>SyncHub: GET /api/integrations/github/callback
     SyncHub->>Prisma: Consume PendingLink and upsert GitHub LinkedAccount with token
+    Browser->>SyncHub: GET /api/github/repositories
+    SyncHub->>Prisma: Read saved GitHub repository preferences
     Browser->>SyncHub: GET /api/integrations/telegram/start
     SyncHub->>Prisma: Create PendingLink
     SyncHub-->>Browser: Redirect to Telegram deep link
@@ -282,8 +292,8 @@ Users need one extra linking step, but the security model is much stronger.
 ### Phase 4: GitHub Issue Management
 
 - Goals: execute issue actions through shared services
-- Tasks: list issues, create issues, add comments, labels, and assignees, close/reopen issues
-- Deliverables: reusable GitHub issue module
+- Tasks: list repositories, save a default repository, list issues, create issues, add comments, labels, and assignees, close/reopen issues
+- Deliverables: reusable GitHub issue module plus repo-selection workflow
 - Out of scope: webhook-driven real-time sync
 
 ### Phase 5: Web Dashboard

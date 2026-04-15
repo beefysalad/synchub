@@ -1,4 +1,5 @@
 import { getGitHubAccessTokenForUser, githubRequest } from '@/lib/github/client'
+import type { GitHubIssue } from '@/lib/github/types'
 
 type IssueListParams = {
   userId: string
@@ -28,7 +29,7 @@ export const githubIssueService = {
       throw new Error('No GitHub access token is linked to this user yet.')
     }
 
-    return githubRequest<unknown[]>(
+    return githubRequest<GitHubIssue[]>(
       `/repos/${owner}/${repo}/issues?state=${state}`,
       { method: 'GET' },
       accessToken
@@ -42,7 +43,7 @@ export const githubIssueService = {
       throw new Error('No GitHub access token is linked to this user yet.')
     }
 
-    return githubRequest<unknown>(
+    return githubRequest<GitHubIssue>(
       `/repos/${owner}/${repo}/issues`,
       {
         method: 'POST',

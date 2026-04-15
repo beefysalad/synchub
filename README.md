@@ -19,7 +19,7 @@ This repository now contains the production-oriented foundation for the project:
 - Telegram bot commands for `/start`, `/help`, `/whoami`, and `/status`
 - Discord account linking via one-time slash-command codes
 - Discord slash commands for `/link`, `/whoami`, and `/status`
-- GitHub issue service scaffolding for listing and creating issues
+- GitHub repository listing, default repo selection, and issue creation/listing
 - Dashboard pages for integrations, issues, reminders, and settings
 - Professional project documentation in `README.md` and `docs/architecture.md`
 
@@ -235,7 +235,7 @@ sync-hub/
 ### Phase 4: GitHub Issue Management
 
 - Goals: create, list, comment, label, assign, and close issues
-- Deliverables: GitHub API client and service layer
+- Deliverables: repository listing, default repo selection, issue listing, and issue creation
 - Out of scope: issue synchronization from GitHub webhooks
 
 ### Phase 5: Web Dashboard
