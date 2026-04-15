@@ -98,6 +98,7 @@ This adds one extra integration step after sign-in, but it makes the permission 
 4. Telegram sends `/start <TOKEN>` to the webhook route.
 5. SyncHub validates and consumes the token.
 6. SyncHub upserts a `LinkedAccount` for `TELEGRAM`.
+7. SyncHub sends a confirmation message and exposes `/help`, `/whoami`, and `/status` for follow-up verification.
 
 ### Discord Linking Flow
 
@@ -135,7 +136,7 @@ sequenceDiagram
     SyncHub-->>Browser: Redirect to Telegram deep link
     Telegram->>SyncHub: POST /api/telegram/webhook with /start token
     SyncHub->>Prisma: Consume PendingLink and create LinkedAccount
-    SyncHub-->>Telegram: Link success response
+    SyncHub-->>Telegram: Confirmation message
 ```
 
 ## Folder Structure
@@ -165,6 +166,7 @@ lib/
   discord/
   github/
   services/
+    telegram-service.ts
   telegram/
   validators/
 prisma/
@@ -232,8 +234,8 @@ Users need one extra linking step, but the security model is much stronger.
 ### Phase 2: Telegram Integration
 
 - Goals: support secure Telegram account linking
-- Tasks: issue tokens, redirect to deep links, validate webhook payloads, link chat IDs
-- Deliverables: Telegram linking and bot intake scaffold
+- Tasks: issue tokens, redirect to deep links, validate webhook payloads, link chat IDs, and send basic command responses
+- Deliverables: Telegram linking, bot intake scaffold, and operator verification commands
 - Out of scope: rich bot conversations
 
 ### Phase 3: Discord Integration

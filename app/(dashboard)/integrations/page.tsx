@@ -2,6 +2,8 @@ import { Bot, CheckCircle2, Github, MessageSquareCode } from 'lucide-react'
 
 import { getOrCreateCurrentUserRecord } from '@/lib/clerk'
 import prisma from '@/lib/prisma'
+import { getTelegramWebhookInfo } from '@/lib/telegram/api'
+import { getTelegramWebhookUrl } from '@/lib/telegram/linking'
 import { SectionHeader } from '@/components/dashboard/section-header'
 import { Button } from '@/components/ui/button'
 import {
@@ -46,6 +48,8 @@ const integrationCards = [
 type IntegrationsPageProps = {
   searchParams?: Promise<{
     github?: string
+    telegramWebhook?: string
+    reason?: string
   }>
 }
 
@@ -66,6 +70,16 @@ export default async function IntegrationsPage({
   const accountsByProvider = new Map(
     linkedAccounts.map((account) => [account.provider, account])
   )
+  const expectedTelegramWebhookUrl = process.env.NEXT_PUBLIC_APP_URL
+    ? getTelegramWebhookUrl()
+    : null
+  const telegramWebhookInfo = process.env.TELEGRAM_BOT_TOKEN
+    ? await getTelegramWebhookInfo().catch(() => null)
+    : null
+  const telegramWebhookRegistered =
+    telegramWebhookInfo?.result.url &&
+    expectedTelegramWebhookUrl &&
+    telegramWebhookInfo.result.url === expectedTelegramWebhookUrl
 
   return (
     <div className="space-y-8">
@@ -79,6 +93,20 @@ export default async function IntegrationsPage({
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100">
           GitHub authorization completed. SyncHub can now use your dedicated
           GitHub access token for issue actions.
+        </div>
+      ) : null}
+
+      {resolvedSearchParams?.telegramWebhook === 'registered' ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100">
+          Telegram webhook registered successfully. Telegram can now deliver bot
+          updates to SyncHub.
+        </div>
+      ) : null}
+
+      {resolvedSearchParams?.telegramWebhook === 'error' ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+          Telegram webhook registration failed.
+          {resolvedSearchParams.reason ? ` ${resolvedSearchParams.reason}` : ''}
         </div>
       ) : null}
 
@@ -99,6 +127,7 @@ export default async function IntegrationsPage({
                   (scope): scope is string => typeof scope === 'string'
                 )
               : []
+            const showTelegramWebhookStatus = key === 'TELEGRAM'
 
             return (
               <Card
@@ -141,9 +170,47 @@ export default async function IntegrationsPage({
                       ) : null}
                     </div>
                   ) : null}
+
+                  {showTelegramWebhookStatus ? (
+                    <div className="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+                      <p className="font-medium text-foreground">
+                        Webhook:{' '}
+                        {telegramWebhookRegistered ? 'registered' : 'not registered'}
+                      </p>
+                      <p className="mt-2 text-xs">
+                        Expected URL:{' '}
+                        {expectedTelegramWebhookUrl ?? 'Set NEXT_PUBLIC_APP_URL first'}
+                      </p>
+                      {telegramWebhookInfo?.result.url ? (
+                        <p className="mt-1 text-xs">
+                          Current URL: {telegramWebhookInfo.result.url}
+                        </p>
+                      ) : null}
+                      {telegramWebhookInfo?.result.last_error_message ? (
+                        <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                          Last Telegram error: {telegramWebhookInfo.result.last_error_message}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </CardContent>
                 <CardFooter>
-                  {isConnected ? (
+                  {key === 'TELEGRAM' ? (
+                    <div className="flex w-full flex-col gap-3">
+                      <Button asChild className="w-full rounded-full">
+                        <a href={href}>
+                          {isConnected ? 'Reconnect Telegram' : defaultCtaLabel}
+                        </a>
+                      </Button>
+                      <Button asChild variant="outline" className="w-full rounded-full">
+                        <a href="/api/integrations/telegram/webhook/register">
+                          {telegramWebhookRegistered
+                            ? 'Refresh Telegram webhook'
+                            : 'Register Telegram webhook'}
+                        </a>
+                      </Button>
+                    </div>
+                  ) : isConnected ? (
                     <Button
                       disabled
                       className="w-full rounded-full bg-emerald-600 text-white opacity-100 hover:bg-emerald-600"

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { accountLinkService } from '@/lib/services/account-link-service'
-import { pendingLinkService } from '@/lib/services/pending-link-service'
+import { telegramService } from '@/lib/services/telegram-service'
 
 type TelegramUpdate = {
   message?: {
@@ -20,14 +19,6 @@ type TelegramUpdate = {
   }
 }
 
-function extractStartToken(text?: string) {
-  if (!text?.startsWith('/start ')) {
-    return null
-  }
-
-  return text.replace('/start ', '').trim() || null
-}
-
 export async function POST(request: NextRequest) {
   const secret = request.headers.get('x-telegram-bot-api-secret-token')
   const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET
@@ -37,30 +28,18 @@ export async function POST(request: NextRequest) {
   }
 
   const payload = (await request.json()) as TelegramUpdate
-  const token = extractStartToken(payload.message?.text)
 
-  if (!token) {
+  if (!payload.message) {
     return NextResponse.json({ ok: true, ignored: true })
   }
 
-  const pendingLink = await pendingLinkService.consumeLinkToken(token, 'TELEGRAM')
+  try {
+    await telegramService.handleIncomingMessage(payload.message)
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Unable to process Telegram update'
 
-  if (!pendingLink || !payload.message?.from?.id) {
-    return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 })
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-
-  await accountLinkService.upsertLinkedAccount({
-    userId: pendingLink.userId,
-    provider: 'TELEGRAM',
-    providerUserId: String(payload.message.from.id),
-    username: payload.message.from.username ?? null,
-    chatId: payload.message.chat?.id ? String(payload.message.chat.id) : null,
-    metadata: {
-      chatType: payload.message.chat?.type ?? null,
-      firstName: payload.message.from.first_name ?? null,
-      lastName: payload.message.from.last_name ?? null,
-    },
-  })
-
-  return NextResponse.json({ ok: true, linked: true })
 }
