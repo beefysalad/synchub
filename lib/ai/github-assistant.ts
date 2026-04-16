@@ -350,7 +350,7 @@ export const githubAssistantService = {
         result.headline?.trim() || `Issue #${issueNumber} summary`,
         140
       ),
-      summary: normalizeTextList(result.summary, {
+      summary: normalizeList(result.summary, {
         min: 2,
         max: 4,
         fallback: [
@@ -358,10 +358,10 @@ export const githubAssistantService = {
           'Generate the summary again after adding more issue context.',
         ],
       }),
-      risks: normalizeTextList(result.risks, {
+      risks: normalizeList(result.risks, {
         max: 3,
       }),
-      nextSteps: normalizeTextList(result.nextSteps, {
+      nextSteps: normalizeList(result.nextSteps, {
         max: 3,
       }),
     }
