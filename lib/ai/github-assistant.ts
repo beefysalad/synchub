@@ -30,6 +30,30 @@ function truncateText(value: string, maxLength: number) {
   return `${value.slice(0, maxLength - 1).trimEnd()}…`
 }
 
+function normalizeList(
+  values: string[] | undefined,
+  {
+    min = 0,
+    max,
+    fallback = [],
+  }: {
+    min?: number
+    max: number
+    fallback?: string[]
+  }
+) {
+  const normalized = (values ?? [])
+    .map((value) => truncateText(value.trim(), 220))
+    .filter(Boolean)
+    .slice(0, max)
+
+  if (normalized.length >= min) {
+    return normalized
+  }
+
+  return fallback.slice(0, max)
+}
+
 export const githubAssistantService = {
   async draftIssueBody({
     repository,
@@ -143,7 +167,12 @@ export const githubAssistantService = {
           .join('\n')
       : 'No comments yet.'
 
-    const result = await generateGeminiJson<z.infer<typeof githubIssueSummarySchema>>({
+    const result = await generateGeminiJson<{
+      headline?: string
+      summary?: string[]
+      risks?: string[]
+      nextSteps?: string[]
+    }>({
       prompt: [
         'You are an engineering project assistant summarizing a GitHub issue thread.',
         `Repository: ${repository}`,
@@ -158,6 +187,27 @@ export const githubAssistantService = {
         '{"headline":"short title","summary":["bullet"],"risks":["bullet"],"nextSteps":["bullet"]}',
     })
 
-    return githubIssueSummarySchema.parse(result)
+    const sanitizedResult = {
+      headline: truncateText(
+        result.headline?.trim() || `Issue #${issueNumber} summary`,
+        140
+      ),
+      summary: normalizeList(result.summary, {
+        min: 2,
+        max: 4,
+        fallback: [
+          'The issue needs a clearer summary from the current discussion.',
+          'Generate the summary again after adding more issue context.',
+        ],
+      }),
+      risks: normalizeList(result.risks, {
+        max: 3,
+      }),
+      nextSteps: normalizeList(result.nextSteps, {
+        max: 3,
+      }),
+    }
+
+    return githubIssueSummarySchema.parse(sanitizedResult)
   },
 }
