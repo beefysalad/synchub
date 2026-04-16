@@ -20,7 +20,7 @@ This repository now contains the production-oriented foundation for the project:
 - Discord account linking via one-time slash-command codes
 - Discord slash commands for `/link`, `/whoami`, and `/status`
 - GitHub repository listing, default repo selection, and issue creation/listing
-- Gemini-powered issue draft generation, label suggestions, and issue thread summaries
+- Gemini-powered issue draft generation, label suggestions, issue thread summaries, and daily work summaries
 - Dashboard pages for integrations, issues, reminders, and settings
 - Professional project documentation in `README.md` and `docs/architecture.md`
 
