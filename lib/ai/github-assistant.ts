@@ -61,7 +61,7 @@ function truncateText(value: string, maxLength: number) {
   return clipped.replace(/[,:;\-–—\s.]+$/g, '').trim()
 }
 
-function normalizeList(
+function normalizeTextList(
   values: string[] | undefined,
   {
     min = 0,
@@ -143,7 +143,10 @@ export const githubAssistantService = {
           `Issues: ${
             activity.issues.length
               ? activity.issues
-                  .map((issue) => `- ${issue.title}${issue.body ? `: ${issue.body}` : ''}`)
+                  .map(
+                    (issue) =>
+                      `- ${issue.title}${issue.body ? `: ${issue.body}` : ''}`
+                  )
                   .join('\n')
               : 'None'
           }`,
@@ -161,7 +164,7 @@ export const githubAssistantService = {
       }>
     }>({
       prompt: [
-        'You are an engineering operations assistant writing a precise daily work summary.',
+        'You are a developer assistant writing a precise daily work summary.',
         `Create a professional recap for ${dateLabel}.`,
         'Use only the supplied activity. Do not invent work or generalize beyond what is present.',
         'Write complete, concrete sentences. Do not use ellipses.',
@@ -181,20 +184,23 @@ export const githubAssistantService = {
         140
       ),
       overview: truncateText(
-        result.overview?.trim() || 'A concise summary of repository activity for the day.',
+        result.overview?.trim() ||
+          'A concise summary of repository activity for the day.',
         240
       ),
-      insights: normalizeList(result.insights, {
+      insights: normalizeTextList(result.insights, {
         max: 3,
         fallback: ['Continued steady progress on current repository goals.'],
       }),
       repositories: (result.repositories ?? [])
         .map((repository) => ({
           repository: repository.repository?.trim() ?? '',
-          highlights: normalizeList(repository.highlights, {
+          highlights: normalizeTextList(repository.highlights, {
             min: 1,
             max: 5,
-            fallback: ['Worked on repository tasks captured in today’s activity.'],
+            fallback: [
+              'Worked on repository tasks captured in today’s activity.',
+            ],
           }),
         }))
         .filter((repository) => repository.repository),
@@ -216,9 +222,11 @@ export const githubAssistantService = {
     title: string
     currentBody: string
   }) {
-    const result = await generateGeminiJson<z.infer<typeof githubIssueDraftSchema>>({
+    const result = await generateGeminiJson<
+      z.infer<typeof githubIssueDraftSchema>
+    >({
       prompt: [
-        'You are an expert engineering assistant drafting a GitHub issue body.',
+        'You are an expert developer assistant drafting a GitHub issue body.',
         `Repository: ${repository}`,
         `Template type: ${template}`,
         `Issue title: ${title}`,
@@ -281,7 +289,9 @@ export const githubAssistantService = {
     }
 
     const parsed = githubLabelSuggestionsSchema.parse(sanitizedResult)
-    const allowedLabels = new Set(availableLabels.map((label) => label.toLowerCase()))
+    const allowedLabels = new Set(
+      availableLabels.map((label) => label.toLowerCase())
+    )
 
     return parsed.suggestions.filter((suggestion) =>
       allowedLabels.has(suggestion.label.toLowerCase())
@@ -340,7 +350,7 @@ export const githubAssistantService = {
         result.headline?.trim() || `Issue #${issueNumber} summary`,
         140
       ),
-      summary: normalizeList(result.summary, {
+      summary: normalizeTextList(result.summary, {
         min: 2,
         max: 4,
         fallback: [
@@ -348,10 +358,10 @@ export const githubAssistantService = {
           'Generate the summary again after adding more issue context.',
         ],
       }),
-      risks: normalizeList(result.risks, {
+      risks: normalizeTextList(result.risks, {
         max: 3,
       }),
-      nextSteps: normalizeList(result.nextSteps, {
+      nextSteps: normalizeTextList(result.nextSteps, {
         max: 3,
       }),
     }
