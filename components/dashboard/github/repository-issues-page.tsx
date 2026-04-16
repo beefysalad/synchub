@@ -113,30 +113,23 @@ function WorkspaceTabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`group flex min-w-[160px] flex-1 items-center justify-between rounded-3xl border px-4 py-4 text-left transition ${
+      className={`group inline-flex items-center gap-3 rounded-full border px-4 py-2 text-sm font-medium transition ${
         active
-          ? 'border-emerald-200 bg-emerald-50 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-500/10'
-          : 'border-slate-200/70 bg-white/70 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-950/50 dark:hover:border-slate-700'
+          ? 'border-emerald-300 bg-emerald-50 text-emerald-950 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
+          : 'border-slate-200/70 bg-white/70 text-slate-700 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-300 dark:hover:border-slate-700'
       }`}
     >
-      <div className="flex items-center gap-3">
-        <div
-          className={`flex size-10 items-center justify-center rounded-2xl ${
-            active
-              ? 'bg-emerald-600 text-white'
-              : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-          }`}
-        >
-          <Icon className="size-4" />
-        </div>
-        <div>
-          <p className="font-medium">{label}</p>
-          <p className="text-xs text-slate-600 dark:text-slate-400">
-            {active ? 'Currently selected' : 'Switch view'}
-          </p>
-        </div>
+      <div
+        className={`flex size-7 items-center justify-center rounded-full ${
+          active
+            ? 'bg-emerald-600 text-white'
+            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+        }`}
+      >
+        <Icon className="size-3.5" />
       </div>
-      <span className="rounded-full border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:text-slate-300">
+      <span>{label}</span>
+      <span className="rounded-full border border-current/15 bg-black/5 px-2 py-0.5 text-[11px] font-semibold dark:bg-white/5">
         {count}
       </span>
     </button>
@@ -324,86 +317,17 @@ export function RepositoryIssuesPage({
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card className="border-white/70 bg-white shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
-          <CardHeader className="space-y-3">
-            <CardTitle className="text-slate-950 dark:text-slate-50">
-              Repository activity
-            </CardTitle>
-            <CardDescription className="text-slate-600 dark:text-slate-300">
-              Move between the issue queue, review flow, and recent branch
-              activity from one place.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-3">
-            <WorkspaceTabButton
-              active={activeTab === 'issues'}
-              count={issues.length}
-              icon={MessageSquareMore}
-              label="Issues"
-              onClick={() => setActiveTab('issues')}
-            />
-            <WorkspaceTabButton
-              active={activeTab === 'pulls'}
-              count={pulls.length}
-              icon={GitPullRequest}
-              label="Pull requests"
-              onClick={() => setActiveTab('pulls')}
-            />
-            <WorkspaceTabButton
-              active={activeTab === 'commits'}
-              count={commits.length}
-              icon={GitCommit}
-              label="Commits"
-              onClick={() => setActiveTab('commits')}
-            />
-          </CardContent>
-        </Card>
-
-        <Card className="border-white/70 bg-white shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
-          <CardHeader>
-            <CardTitle className="text-slate-950 dark:text-slate-50">
-              Workspace controls
-            </CardTitle>
-            <CardDescription className="text-slate-600 dark:text-slate-300">
-              Keep this repository close at hand and tune the list state while
-              you work.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div
-              className={`rounded-3xl border px-4 py-4 ${tabConfig.accentClassName}`}
-            >
-              <div className="flex items-center gap-2">
-                <p className="font-medium">{tabConfig.title}</p>
-              </div>
-              <p className="mt-2 text-sm opacity-90">{tabConfig.description}</p>
+      <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+        <CardHeader className="space-y-5">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+            <div>
+              <CardTitle className="text-slate-950 dark:text-slate-50">
+                Repository activity
+              </CardTitle>
+              <CardDescription className="mt-1 text-slate-600 dark:text-slate-300">
+                Move between issues, pull requests, and commits from one shared workspace.
+              </CardDescription>
             </div>
-
-            {(activeTab === 'issues' || activeTab === 'pulls') && (
-              <div className="flex flex-wrap gap-2">
-                {issueStates.map((stateOption) => (
-                  <Button
-                    key={stateOption}
-                    type="button"
-                    variant={issueState === stateOption ? 'default' : 'outline'}
-                    className="rounded-full capitalize"
-                    onClick={() => setIssueState(stateOption)}
-                    disabled={isFetchingIssues}
-                  >
-                    {issueState === stateOption && isFetchingIssues ? (
-                      <>
-                        <Spinner />
-                        Loading...
-                      </>
-                    ) : (
-                      stateOption
-                    )}
-                  </Button>
-                ))}
-              </div>
-            )}
-
             <div className="flex flex-wrap gap-2">
               {!isTracked ? (
                 <Button
@@ -441,13 +365,67 @@ export function RepositoryIssuesPage({
                   )}
                 </Button>
               ) : null}
+              <div
+                className={`rounded-full border px-3 py-1 text-xs font-medium ${tabConfig.accentClassName}`}
+              >
+                {activeTab === 'issues' && `${issues.length} issues`}
+                {activeTab === 'pulls' && `${pulls.length} pull requests`}
+                {activeTab === 'commits' && `${commits.length} commits`}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
 
-      <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
-        <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <WorkspaceTabButton
+                active={activeTab === 'issues'}
+                count={issues.length}
+                icon={MessageSquareMore}
+                label="Issues"
+                onClick={() => setActiveTab('issues')}
+              />
+              <WorkspaceTabButton
+                active={activeTab === 'pulls'}
+                count={pulls.length}
+                icon={GitPullRequest}
+                label="Pull requests"
+                onClick={() => setActiveTab('pulls')}
+              />
+              <WorkspaceTabButton
+                active={activeTab === 'commits'}
+                count={commits.length}
+                icon={GitCommit}
+                label="Commits"
+                onClick={() => setActiveTab('commits')}
+              />
+            </div>
+
+            {(activeTab === 'issues' || activeTab === 'pulls') ? (
+              <div className="flex flex-wrap items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50 px-2 py-1 dark:border-slate-800 dark:bg-slate-900/70">
+                {issueStates.map((stateOption) => (
+                  <Button
+                    key={stateOption}
+                    type="button"
+                    variant={issueState === stateOption ? 'default' : 'ghost'}
+                    size="sm"
+                    className="h-8 rounded-full px-4 capitalize"
+                    onClick={() => setIssueState(stateOption)}
+                    disabled={isFetchingIssues}
+                  >
+                    {issueState === stateOption && isFetchingIssues ? (
+                      <>
+                        <Spinner />
+                        Loading...
+                      </>
+                    ) : (
+                      stateOption
+                    )}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
           <div>
             <CardTitle className="text-2xl text-slate-950 dark:text-slate-50">
               {tabConfig.title}
@@ -455,13 +433,6 @@ export function RepositoryIssuesPage({
             <CardDescription className="mt-1 text-sm text-slate-600 dark:text-slate-300">
               {tabConfig.description}
             </CardDescription>
-          </div>
-          <div
-            className={`rounded-full border px-3 py-1 text-xs font-medium ${tabConfig.accentClassName}`}
-          >
-            {activeTab === 'issues' && `${issues.length} issues`}
-            {activeTab === 'pulls' && `${pulls.length} pull requests`}
-            {activeTab === 'commits' && `${commits.length} commits`}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
