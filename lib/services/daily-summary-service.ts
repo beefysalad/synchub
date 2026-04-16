@@ -70,6 +70,17 @@ function getGreeting(date = new Date()) {
   return 'Good evening'
 }
 
+function getRepositoryLabel(repository: string) {
+  const trimmed = repository.trim()
+  const parts = trimmed.split('/')
+
+  return parts[parts.length - 1] || trimmed
+}
+
+function normalizeInsightVoice(insight: string) {
+  return insight.replace(/^The developer\b/i, 'You')
+}
+
 function escapeTelegramHtml(value: string) {
   return value
     .replaceAll('&', '&amp;')
@@ -104,6 +115,64 @@ function truncateForChat(value: string, maxLength: number) {
   return clipped.replace(/[,:;\-–—\s.]+$/g, '').trim()
 }
 
+function trimTrailingEllipses(value: string) {
+  return value.replace(/\.{3,}$/g, '').trim()
+}
+
+function truncateDiscordMessage(
+  sections: string[],
+  maxLength = 1900
+) {
+  const cleanedSections = sections
+    .map((section) => section.trim())
+    .filter(Boolean)
+
+  const assembled: string[] = []
+  let length = 0
+
+  for (const section of cleanedSections) {
+    const nextSection =
+      length === 0
+        ? section
+        : `\n\n${section}`
+
+    if (length + nextSection.length <= maxLength) {
+      assembled.push(section)
+      length += nextSection.length
+      continue
+    }
+
+    const remaining = maxLength - length - (length === 0 ? 0 : 2)
+
+    if (remaining < 40) {
+      break
+    }
+
+    const lines = section.split('\n')
+    const acceptedLines: string[] = []
+    let sectionLength = 0
+
+    for (const line of lines) {
+      const nextLine = acceptedLines.length === 0 ? line : `\n${line}`
+
+      if (sectionLength + nextLine.length > remaining) {
+        break
+      }
+
+      acceptedLines.push(line)
+      sectionLength += nextLine.length
+    }
+
+    if (acceptedLines.length > 0) {
+      assembled.push(acceptedLines.join('\n'))
+    }
+
+    break
+  }
+
+  return trimTrailingEllipses(assembled.join('\n\n'))
+}
+
 function normalizeDailySummary(
   value: Partial<GithubDailySummaryResponse> | null | undefined,
   dateLabel: string
@@ -122,14 +191,18 @@ function normalizeDailySummary(
       ) || 'SyncHub did not find any tracked GitHub activity for today yet.',
     insights: Array.isArray(value?.insights)
       ? value.insights
-          .map((insight) => truncateForChat(insight, 220))
+          .map((insight) =>
+            truncateForChat(normalizeInsightVoice(insight), 220)
+          )
           .filter(Boolean)
           .slice(0, 3)
       : [],
     repositories: Array.isArray(value?.repositories)
       ? value.repositories
           .map((repository) => ({
-            repository: repository.repository?.trim() ?? '',
+            repository: getRepositoryLabel(
+              repository.repository?.trim() ?? ''
+            ).toUpperCase(),
             highlights: Array.isArray(repository.highlights)
               ? repository.highlights
                   .map((highlight) => truncateForChat(highlight, 220))
@@ -236,7 +309,7 @@ function formatDiscordDailySummaryMessage({
         .join('\n\n')
     : '- No tracked GitHub activity was found for this day.'
 
-  return truncateForChat(
+  return truncateDiscordMessage(
     [
       `**${getGreeting()} ${recipientName}**`,
       `Here is your daily summary for **${dateLabel}**.`,
@@ -246,7 +319,7 @@ function formatDiscordDailySummaryMessage({
       '',
       ...(insights ? [insights, ''] : []),
       sections,
-    ].join('\n'),
+    ],
     1900
   )
 }
@@ -395,7 +468,7 @@ async function collectDailyActivities({
         }))
 
       return {
-        repository: trackedRepo.fullName,
+        repository: getRepositoryLabel(trackedRepo.fullName).toUpperCase(),
         trackingEvents,
         commits: commitHighlights,
         pullRequests: pullHighlights,
