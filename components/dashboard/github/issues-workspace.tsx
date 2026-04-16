@@ -522,8 +522,8 @@ export function IssuesWorkspace({
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      <Button asChild className="rounded-full">
+                    <div className="space-y-3">
+                      <Button asChild className="h-11 w-full rounded-2xl">
                         <Link
                           href={`/repos/${repository.owner.login}/${repository.name}`}
                         >
@@ -531,48 +531,50 @@ export function IssuesWorkspace({
                         </Link>
                       </Button>
 
-                      {isReposMode ? (
-                        <Button
-                          asChild
-                          variant="outline"
-                          className="rounded-full"
-                        >
-                          <Link
-                            href={`/repos/${repository.owner.login}/${repository.name}/settings`}
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {isReposMode ? (
+                          <Button
+                            asChild
+                            variant="outline"
+                            className="h-10 w-full rounded-2xl justify-center"
                           >
-                            <Settings2 className="size-4" />
-                            Settings
-                          </Link>
+                            <Link
+                              href={`/repos/${repository.owner.login}/${repository.name}/settings`}
+                            >
+                              <Settings2 className="size-4" />
+                              Settings
+                            </Link>
+                          </Button>
+                        ) : null}
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-10 w-full rounded-2xl justify-center"
+                          onClick={() =>
+                            handleSetDefaultRepository(repository.full_name)
+                          }
+                          disabled={isDefault || updatePreferences.isPending}
+                        >
+                          {updatePreferences.isPending &&
+                          pendingRepositoryAction ===
+                            `default:${repository.full_name}` ? (
+                            <>
+                              <Spinner />
+                              Saving...
+                            </>
+                          ) : isDefault ? (
+                            'Default repo'
+                          ) : (
+                            'Set default'
+                          )}
                         </Button>
-                      ) : null}
+                      </div>
 
                       <Button
                         type="button"
                         variant="outline"
-                        className="rounded-full"
-                        onClick={() =>
-                          handleSetDefaultRepository(repository.full_name)
-                        }
-                        disabled={isDefault || updatePreferences.isPending}
-                      >
-                        {updatePreferences.isPending &&
-                        pendingRepositoryAction ===
-                          `default:${repository.full_name}` ? (
-                          <>
-                            <Spinner />
-                            Saving...
-                          </>
-                        ) : isDefault ? (
-                          'Default repo'
-                        ) : (
-                          'Set default'
-                        )}
-                      </Button>
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="rounded-full"
+                        className="h-10 w-full rounded-2xl justify-center border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-900/50 dark:text-red-300 dark:hover:bg-red-950/30 dark:hover:text-red-200"
                         onClick={() =>
                           handleRemoveTrackedRepository(repository.full_name)
                         }
@@ -588,7 +590,7 @@ export function IssuesWorkspace({
                         ) : (
                           <>
                             <Trash2 className="size-4" />
-                            Remove
+                            Remove repository
                           </>
                         )}
                       </Button>
