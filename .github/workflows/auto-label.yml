@@ -20,58 +20,100 @@ jobs:
             const title = issue.title.toLowerCase();
             const body = (issue.body || '').toLowerCase();
             const text = title + ' ' + body;
+            const existingLabels = issue.labels.map(label => label.name.toLowerCase());
+            const primaryTypeLabels = ['bug', 'enhancement', 'question'];
 
-            const labelMap = {
-              // Bug-related
-              'bug': ['bug', 'error', 'crash', 'broken', 'issue', 'problem', 'fail'],
-              'critical': ['critical', 'urgent', 'blocking', 'blocker'],
-              
-              // Feature-related
-              'enhancement': ['feature', 'enhancement', 'improvement', 'request'],
-              
-              // Area-specific
-              'auth': ['auth', 'authentication', 'login', 'signup', 'session', 'jwt', 'oauth'],
-              'database': ['database', 'prisma', 'sql', 'query', 'migration', 'schema'],
-              'ui': ['ui', 'ux', 'design', 'style', 'css', 'component', 'layout'],
-              'api': ['api', 'endpoint', 'route', 'request', 'response'],
-              'documentation': ['docs', 'documentation', 'readme', 'guide', 'tutorial'],
-              
-              // Priority
-              'high-priority': ['urgent', 'critical', 'asap', 'important'],
-              'low-priority': ['nice-to-have', 'minor', 'cosmetic'],
-              
-              // Type
-              'question': ['question', 'how to', 'how do i', 'help'],
-              'performance': ['performance', 'slow', 'optimization', 'speed'],
-              'security': ['security', 'vulnerability', 'exploit', 'xss', 'injection'],
-              'testing': ['test', 'testing', 'jest', 'e2e', 'unit test'],
-              'deployment': ['deploy', 'deployment', 'production', 'build'],
-              'dependencies': ['dependency', 'dependencies', 'npm', 'package', 'upgrade']
-            };
+            const hasLabel = (name) => existingLabels.includes(name);
+            const containsAny = (patterns) => patterns.some((pattern) => pattern.test(text));
+
+            const secondaryLabelRules = [
+              {
+                label: 'critical',
+                matches: [/\bcritical\b/, /\burgent\b/, /\bblocking\b/, /\bblocker\b/],
+              },
+              {
+                label: 'auth',
+                matches: [/\bauth\b/, /\bauthentication\b/, /\blogin\b/, /\bsign[\s-]?up\b/, /\bsession\b/, /\bjwt\b/, /\boauth\b/],
+              },
+              {
+                label: 'database',
+                matches: [/\bdatabase\b/, /\bprisma\b/, /\bsql\b/, /\bquery\b/, /\bmigration\b/, /\bschema\b/],
+              },
+              {
+                label: 'ui',
+                matches: [/\bui\b/, /\bux\b/, /\bdesign\b/, /\bcss\b/, /\bcomponent(s)?\b/, /\blayout\b/, /\bfrontend\b/],
+              },
+              {
+                label: 'api',
+                matches: [/\bapi\b/, /\bendpoint(s)?\b/, /\broute(s)?\b/, /\brequest\b/, /\bresponse\b/, /\bbackend\b/],
+              },
+              {
+                label: 'documentation',
+                matches: [/\bdocs?\b/, /\bdocumentation\b/, /\breadme\b/, /\bguide\b/, /\btutorial\b/],
+              },
+              {
+                label: 'high-priority',
+                matches: [/\burgent\b/, /\bcritical\b/, /\basap\b/, /\bimportant\b/],
+              },
+              {
+                label: 'low-priority',
+                matches: [/\bnice-to-have\b/, /\bminor\b/, /\bcosmetic\b/],
+              },
+              {
+                label: 'performance',
+                matches: [/\bperformance\b/, /\bslow\b/, /\boptimization\b/, /\bspeed\b/, /\blatency\b/],
+              },
+              {
+                label: 'security',
+                matches: [/\bsecurity\b/, /\bvulnerability\b/, /\bexploit\b/, /\bxss\b/, /\binjection\b/, /\bauth bypass\b/],
+              },
+              {
+                label: 'testing',
+                matches: [/\btest suite\b/, /\btests are failing\b/, /\bfailing tests?\b/, /\bjest\b/, /\bplaywright\b/, /\bcypress\b/, /\be2e\b/, /\bunit tests?\b/, /\bintegration tests?\b/],
+              },
+              {
+                label: 'deployment',
+                matches: [/\bdeploy(ment)?\b/, /\bproduction\b/, /\bbuild failure\b/, /\bbuild is failing\b/, /\bvercel\b/, /\bci\/cd\b/],
+              },
+              {
+                label: 'dependencies',
+                matches: [/\bdependency\b/, /\bdependencies\b/, /\bpackage.json\b/, /\bnpm\b/, /\bpnpm\b/, /\byarn\b/, /\bupgrade\b/],
+              },
+            ];
 
             const labelsToAdd = [];
 
-            for (const [label, keywords] of Object.entries(labelMap)) {
-              if (keywords.some(keyword => text.includes(keyword))) {
-                labelsToAdd.push(label);
+            // Only infer a primary type if the issue does not already have one from a template.
+            if (!existingLabels.some(label => primaryTypeLabels.includes(label))) {
+              if (containsAny([/\[bug\]/, /\bbug\b/, /\berror\b/, /\bcrash(es|ed)?\b/, /\bbroken\b/, /\bincorrect\b/, /\bregression\b/])) {
+                labelsToAdd.push('bug');
+              } else if (containsAny([/\[feature\]/, /\bfeature request\b/, /\bfeature\b/, /\benhancement\b/, /\bimprovement\b/, /\bproposal\b/])) {
+                labelsToAdd.push('enhancement');
+              } else if (containsAny([/\[question\]/, /\bquestion\b/, /\bhow do i\b/, /\bhow to\b/, /\bhelp\b/])) {
+                labelsToAdd.push('question');
               }
             }
 
-            if (labelsToAdd.length > 0) {
-              // Get existing labels
-              const existingLabels = issue.labels.map(l => l.name);
-              
-              // Only add labels that don't already exist
-              const newLabels = labelsToAdd.filter(l => !existingLabels.includes(l));
-              
-              if (newLabels.length > 0) {
-                await github.rest.issues.addLabels({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issue.number,
-                  labels: newLabels
-                });
-                
-                console.log(`Added labels: ${newLabels.join(', ')}`);
+            for (const rule of secondaryLabelRules) {
+              if (containsAny(rule.matches)) {
+                labelsToAdd.push(rule.label);
               }
             }
+
+            const newLabels = [...new Set(labelsToAdd)].filter(
+              label => !existingLabels.includes(label)
+            );
+
+            if (newLabels.length === 0) {
+              console.log('No new labels to add');
+              return;
+            }
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              labels: newLabels
+            });
+
+            console.log(`Added labels: ${newLabels.join(', ')}`);

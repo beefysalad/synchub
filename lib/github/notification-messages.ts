@@ -41,6 +41,13 @@ export function buildGithubNotificationMessage({
         user?: { login?: string; avatar_url?: string }
       }
     | undefined
+  const issueComment = payload.comment as
+    | {
+        body?: string
+        html_url?: string
+        user?: { login?: string; avatar_url?: string }
+      }
+    | undefined
   const pullRequest = payload.pull_request as
     | {
         number?: number
@@ -62,23 +69,31 @@ export function buildGithubNotificationMessage({
     typeof payload.compare === 'string' ? payload.compare : undefined
   const ref = typeof payload.ref === 'string' ? payload.ref : undefined
   const branchName = ref?.split('/').pop()
+  const action =
+    typeof payload.action === 'string' ? payload.action : undefined
 
-  if (eventName === 'issues' && payload.action === 'opened') {
+  if (eventName === 'issues' && action && ['opened', 'edited', 'closed', 'reopened'].includes(action)) {
     const title = issue?.title ?? 'Untitled issue'
     const author = issue?.user?.login ?? 'Unknown user'
     const issueUrl = issue?.html_url ?? `https://github.com/${repositoryFullName}/issues`
     const issueNumber = issue?.number ? `#${issue.number}` : 'Issue'
+    const actionLabel =
+      action === 'reopened'
+        ? 'reopened'
+        : action === 'edited'
+          ? 'updated'
+          : action
 
     return {
       telegramText: [
-        `<b>New issue opened</b>`,
+        `<b>Issue ${escapeTelegramHtml(actionLabel)}</b>`,
         `<b>Repository:</b> ${escapeTelegramHtml(repositoryFullName)}`,
         `<b>Issue:</b> ${escapeTelegramHtml(issueNumber)} — ${escapeTelegramHtml(title)}`,
-        `<b>Opened by:</b> ${escapeTelegramHtml(author)}`,
+        `<b>Author:</b> ${escapeTelegramHtml(author)}`,
         `<a href="${issueUrl}">Open issue on GitHub</a>`,
       ].join('\n'),
       discordContent: [
-        `**New issue opened** in \`${repositoryFullName}\``,
+        `**Issue ${actionLabel}** in \`${repositoryFullName}\``,
         `${issue?.number ? `Issue #${issue.number}` : 'Issue'} by **${author}**`,
       ].join('\n'),
       discordEmbeds: [
@@ -93,30 +108,40 @@ export function buildGithubNotificationMessage({
           fields: [
             { name: 'Repository', value: repositoryFullName, inline: true },
             { name: 'Number', value: issue?.number ? `#${issue.number}` : '—', inline: true },
-            { name: 'Action', value: 'Opened', inline: true },
+            { name: 'Action', value: actionLabel[0].toUpperCase() + actionLabel.slice(1), inline: true },
           ],
         },
       ],
     }
   }
 
-  if (eventName === 'pull_request' && payload.action === 'opened') {
+  if (
+    eventName === 'pull_request' &&
+    action &&
+    ['opened', 'edited', 'closed', 'reopened', 'synchronize'].includes(action)
+  ) {
     const title = pullRequest?.title ?? 'Untitled pull request'
     const author = pullRequest?.user?.login ?? 'Unknown user'
     const pullUrl =
       pullRequest?.html_url ?? `https://github.com/${repositoryFullName}/pulls`
     const pullNumber = pullRequest?.number ? `#${pullRequest.number}` : 'Pull request'
+    const actionLabel =
+      action === 'synchronize'
+        ? 'updated'
+        : action === 'reopened'
+          ? 'reopened'
+          : action
 
     return {
       telegramText: [
-        `<b>New pull request opened</b>`,
+        `<b>Pull request ${escapeTelegramHtml(actionLabel)}</b>`,
         `<b>Repository:</b> ${escapeTelegramHtml(repositoryFullName)}`,
         `<b>Pull request:</b> ${escapeTelegramHtml(pullNumber)} — ${escapeTelegramHtml(title)}`,
-        `<b>Opened by:</b> ${escapeTelegramHtml(author)}`,
+        `<b>Author:</b> ${escapeTelegramHtml(author)}`,
         `<a href="${pullUrl}">Review pull request on GitHub</a>`,
       ].join('\n'),
       discordContent: [
-        `**New pull request opened** in \`${repositoryFullName}\``,
+        `**Pull request ${actionLabel}** in \`${repositoryFullName}\``,
         `${pullRequest?.number ? `PR #${pullRequest.number}` : 'Pull request'} by **${author}**`,
       ].join('\n'),
       discordEmbeds: [
@@ -137,7 +162,62 @@ export function buildGithubNotificationMessage({
               value: pullRequest?.number ? `#${pullRequest.number}` : '—',
               inline: true,
             },
-            { name: 'Action', value: 'Opened', inline: true },
+            { name: 'Action', value: actionLabel[0].toUpperCase() + actionLabel.slice(1), inline: true },
+          ],
+        },
+      ],
+    }
+  }
+
+  if (eventName === 'issue_comment' && action === 'created') {
+    const targetTitle = issue?.title ?? pullRequest?.title ?? 'Conversation'
+    const targetNumber = issue?.number ?? pullRequest?.number
+    const author = issueComment?.user?.login ?? 'Unknown user'
+    const commentUrl =
+      issueComment?.html_url ??
+      issue?.html_url ??
+      pullRequest?.html_url ??
+      `https://github.com/${repositoryFullName}/issues`
+    const preview = issueComment?.body
+      ? summarizeCommitMessage(issueComment.body).slice(0, 160)
+      : 'New comment posted.'
+    const targetLabel = pullRequest ? 'Pull request' : 'Issue'
+
+    return {
+      telegramText: [
+        `<b>New comment posted</b>`,
+        `<b>Repository:</b> ${escapeTelegramHtml(repositoryFullName)}`,
+        `<b>${targetLabel}:</b> ${escapeTelegramHtml(
+          `${targetNumber ? `#${targetNumber}` : ''} ${targetTitle}`.trim()
+        )}`,
+        `<b>Author:</b> ${escapeTelegramHtml(author)}`,
+        `<b>Preview:</b> ${escapeTelegramHtml(preview)}`,
+        `<a href="${commentUrl}">Open discussion on GitHub</a>`,
+      ].join('\n'),
+      discordContent: [
+        `**New comment posted** in \`${repositoryFullName}\``,
+        `${targetLabel} ${targetNumber ? `#${targetNumber}` : ''} by **${author}**`,
+      ].join('\n'),
+      discordEmbeds: [
+        {
+          title: targetTitle,
+          url: commentUrl,
+          color: 0x0f766e,
+          author: {
+            name: author,
+            ...(issueComment?.user?.avatar_url
+              ? { icon_url: issueComment.user.avatar_url }
+              : {}),
+          },
+          description: preview,
+          fields: [
+            { name: 'Repository', value: repositoryFullName, inline: true },
+            { name: 'Target', value: targetLabel, inline: true },
+            {
+              name: 'Number',
+              value: targetNumber ? `#${targetNumber}` : '—',
+              inline: true,
+            },
           ],
         },
       ],

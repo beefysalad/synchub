@@ -4,14 +4,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { githubRepositoryService } from '@/lib/github/repositories'
-import { githubWebhookService } from '@/lib/github/webhooks'
+import {
+  githubWebhookService,
+  SUPPORTED_GITHUB_WEBHOOK_EVENTS,
+} from '@/lib/github/webhooks'
 import prisma from '@/lib/prisma'
 
 const WebhookSchema = z.object({
   owner: z.string(),
   repo: z.string(),
   provider: z.nativeEnum(AccountProvider),
-  events: z.array(z.enum(['push', 'pull_request', 'issues', 'issue_comment'])),
+  events: z.array(z.enum(SUPPORTED_GITHUB_WEBHOOK_EVENTS)),
 })
 
 export async function POST(request: NextRequest) {
@@ -96,7 +99,10 @@ export async function POST(request: NextRequest) {
     // We bind a unified hook for SyncHub overall. SyncHub parses payload routing safely.
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
     if (appUrl) {
-      const webhookSecret = process.env.GITHUB_CLIENT_SECRET || 'synchub-secret-local'
+      const webhookSecret =
+        process.env.GITHUB_WEBHOOK_SECRET ||
+        process.env.GITHUB_CLIENT_SECRET ||
+        'synchub-secret-local'
       const webhookUrl = `${appUrl}/api/webhooks/github`
 
       try {
@@ -174,7 +180,25 @@ export async function GET(request: NextRequest) {
       (rule) => !providerParam || rule.provider === providerParam
     )
 
-    return NextResponse.json({ rules })
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL
+    const webhookUrl = appUrl ? `${appUrl}/api/webhooks/github` : null
+    const webhookStatus =
+      webhookUrl
+        ? await githubWebhookService
+            .getRepositoryWebhookStatus({
+              userId: user.id,
+              owner: validatedRepository.owner,
+              repo: validatedRepository.repo,
+              webhookUrl,
+            })
+            .catch(() => null)
+        : null
+
+    return NextResponse.json({
+      rules,
+      webhookStatus,
+      supportedEvents: [...SUPPORTED_GITHUB_WEBHOOK_EVENTS],
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to list rules'
     return NextResponse.json({ error: message }, { status: 400 })

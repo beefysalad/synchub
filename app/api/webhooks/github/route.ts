@@ -4,6 +4,14 @@ import prisma from '@/lib/prisma'
 import { sendTelegramMessage } from '@/lib/telegram/api'
 import { buildGithubNotificationMessage } from '@/lib/github/notification-messages'
 
+function getGitHubWebhookSecret() {
+  return (
+    process.env.GITHUB_WEBHOOK_SECRET ||
+    process.env.GITHUB_CLIENT_SECRET ||
+    'synchub-secret-local'
+  )
+}
+
 export async function POST(request: NextRequest) {
   const eventName = request.headers.get('x-github-event')
   const signature = request.headers.get('x-hub-signature-256')
@@ -14,16 +22,20 @@ export async function POST(request: NextRequest) {
 
   try {
     const rawBody = await request.text()
-    
-    // Validate Signature
-    const webhookSecret = process.env.GITHUB_CLIENT_SECRET || 'synchub-secret-local'
-    if (signature) {
-      const hmac = crypto.createHmac('sha256', webhookSecret)
-      const digest = 'sha256=' + hmac.update(rawBody).digest('hex')
-      if (signature !== digest) {
-        console.warn('Webhook signature mismatch!')
-        // Not failing strictly right now to ease transition, but warning heavily.
-      }
+
+    const webhookSecret = getGitHubWebhookSecret()
+    if (!signature) {
+      return NextResponse.json({ error: 'Missing webhook signature' }, { status: 401 })
+    }
+
+    const hmac = crypto.createHmac('sha256', webhookSecret)
+    const digest = `sha256=${hmac.update(rawBody).digest('hex')}`
+    const isValidSignature =
+      signature.length === digest.length &&
+      crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))
+
+    if (!isValidSignature) {
+      return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 })
     }
 
     const payload = JSON.parse(rawBody)

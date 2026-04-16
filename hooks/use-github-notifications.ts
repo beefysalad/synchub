@@ -11,12 +11,29 @@ export type NotificationRule = {
   events: string[]
 }
 
+export type GitHubWebhookStatus = {
+  exists: boolean
+  active: boolean
+  events: string[]
+  isSyncHubManaged: boolean
+  lastResponse: {
+    code: number | null
+    status: string
+    message: string | null
+  } | null
+  updatedAt: string | null
+}
+
 export function useGithubNotifications(owner: string, repo: string, provider?: AccountProvider) {
   return useQuery({
     queryKey: ['github', 'notifications', owner, repo, provider],
     queryFn: async () => {
       try {
-        const response = await api.get<{ rules: NotificationRule[] }>('/github/notifications', {
+        const response = await api.get<{
+          rules: NotificationRule[]
+          webhookStatus: GitHubWebhookStatus | null
+          supportedEvents: string[]
+        }>('/github/notifications', {
           params: { owner, repo, provider },
         })
         return response.data

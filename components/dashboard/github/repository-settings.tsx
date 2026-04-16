@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   BellRing,
   ExternalLink,
+  Github,
   MessageCircle,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -44,6 +45,13 @@ export function RepositorySettingsPage({
     useGithubNotifications(owner, repo)
 
   const updateRule = useUpdateNotificationRule(owner, repo)
+
+  const webhookStatus = notificationsData?.webhookStatus
+  const supportedEvents =
+    notificationsData?.supportedEvents ?? ['issues', 'pull_request', 'push', 'issue_comment']
+  const notificationEvents = supportedEvents.filter((eventType) =>
+    ['issues', 'pull_request', 'push', 'issue_comment'].includes(eventType)
+  )
 
   return (
     <div className="space-y-8">
@@ -91,7 +99,70 @@ export function RepositorySettingsPage({
                 <Spinner className="mr-2 inline size-4" /> Loading your notification rules...
               </div>
             ) : (
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-6">
+                <div className="rounded-3xl border border-slate-200/70 bg-slate-50/60 px-6 py-6 dark:border-slate-800 dark:bg-slate-900/50">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Github className="size-5 text-slate-900 dark:text-slate-100" />
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                          GitHub webhook health
+                        </h3>
+                      </div>
+                      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                        SyncHub provisions a single repository webhook and routes live GitHub events to your connected channels from there.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="rounded-full border border-slate-300/80 bg-white px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                        {webhookStatus?.exists ? 'Webhook found' : 'Webhook not found'}
+                      </span>
+                      <span className="rounded-full border border-slate-300/80 bg-white px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                        {webhookStatus?.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 md:grid-cols-3">
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-950/70">
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                        Delivery URL
+                      </p>
+                      <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
+                        {process.env.NEXT_PUBLIC_APP_URL
+                          ? `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/github`
+                          : 'Set NEXT_PUBLIC_APP_URL first'}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-950/70">
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                        Events installed
+                      </p>
+                      <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
+                        {webhookStatus?.events.length
+                          ? webhookStatus.events.join(', ')
+                          : 'No webhook events reported yet'}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-950/70">
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                        Last GitHub response
+                      </p>
+                      <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
+                        {webhookStatus?.lastResponse
+                          ? `${webhookStatus.lastResponse.status}${webhookStatus.lastResponse.code ? ` (${webhookStatus.lastResponse.code})` : ''}`
+                          : 'No delivery response reported yet'}
+                      </p>
+                      {webhookStatus?.lastResponse?.message ? (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {webhookStatus.lastResponse.message}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
                 {/* Telegram Setup */}
                 <div className="rounded-3xl border border-blue-200/50 bg-blue-50/30 px-6 py-8 dark:border-blue-900/40 dark:bg-blue-900/10">
                   <div className="mb-6 flex items-center gap-3">
@@ -107,7 +178,7 @@ export function RepositorySettingsPage({
                   </div>
                   
                   <div className="space-y-4">
-                    {(['issues', 'pull_request', 'push'] as const).map((eventType) => {
+                    {notificationEvents.map((eventType) => {
                       const rule = notificationsData?.rules.find((r) => r.provider === 'TELEGRAM')
                       const isEnabled = rule?.events.includes(eventType) ?? false
 
@@ -148,6 +219,7 @@ export function RepositorySettingsPage({
                               {eventType === 'issues' && 'Alert when new issues are opened.'}
                               {eventType === 'pull_request' && 'Alert when code is submitted for review.'}
                               {eventType === 'push' && 'Alert when new code is pushed to this repo.'}
+                              {eventType === 'issue_comment' && 'Alert when someone adds a new issue or PR comment.'}
                             </span>
                           </div>
                         </label>
@@ -171,7 +243,7 @@ export function RepositorySettingsPage({
                   </div>
                   
                   <div className="space-y-4">
-                    {(['issues', 'pull_request', 'push'] as const).map((eventType) => {
+                    {notificationEvents.map((eventType) => {
                       const rule = notificationsData?.rules.find((r) => r.provider === 'DISCORD')
                       const isEnabled = rule?.events.includes(eventType) ?? false
 
@@ -212,6 +284,7 @@ export function RepositorySettingsPage({
                               {eventType === 'issues' && 'Alert when new issues are opened.'}
                               {eventType === 'pull_request' && 'Alert when code is submitted for review.'}
                               {eventType === 'push' && 'Alert when new code is pushed to this repo.'}
+                              {eventType === 'issue_comment' && 'Alert when someone adds a new issue or PR comment.'}
                             </span>
                           </div>
                         </label>
@@ -219,6 +292,7 @@ export function RepositorySettingsPage({
                     })}
                   </div>
                 </div>
+              </div>
               </div>
             )}
           </div>
