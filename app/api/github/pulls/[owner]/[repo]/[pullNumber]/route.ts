@@ -106,6 +106,34 @@ export async function PATCH(
       body: payload.body,
     })
 
+    const detectedIssueReferences =
+      githubPullIssueLinkService.extractIssueReferencesFromPullRequest({
+        owner: validatedRepository.owner,
+        repo: validatedRepository.repo,
+        title: pull.title,
+        body: pull.body,
+        pullNumber: pull.number,
+      })
+
+    if (detectedIssueReferences.length) {
+      await githubPullIssueLinkService.linkPullRequestToIssues({
+        userId: user.id,
+        pullOwner: validatedRepository.owner,
+        pullRepo: validatedRepository.repo,
+        pull,
+        issues: detectedIssueReferences,
+      })
+
+      const refreshedPull = await githubPullsService.getPullRequest(
+        user.id,
+        validatedRepository.owner,
+        validatedRepository.repo,
+        parseInt(pullNumber, 10)
+      )
+
+      return NextResponse.json({ pull: refreshedPull })
+    }
+
     return NextResponse.json({ pull })
   } catch (error) {
     const message =

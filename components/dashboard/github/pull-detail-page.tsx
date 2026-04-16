@@ -232,7 +232,7 @@ export function PullDetailPage({
                 Link to issue
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
-                Pick an open issue from this repo if you want to create the cross-link manually.
+                Pick an open issue from this repo to add a native GitHub closing reference to the PR description.
               </p>
               <div className="mt-4 flex flex-col gap-3">
                 <select
@@ -259,7 +259,7 @@ export function PullDetailPage({
                   ) : (
                     <Link2 className="size-4" />
                   )}
-                  Link issue
+                  Link issue natively
                 </Button>
               </div>
             </div>
