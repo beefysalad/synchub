@@ -28,6 +28,7 @@ export type GitHubIssue = {
   assignees: Array<{
     id: number
     login: string
+    avatar_url: string
   }>
   user: {
     login: string
@@ -82,6 +83,7 @@ export type UpdateGitHubIssuePayload = {
   title?: string
   body?: string
   state?: 'open' | 'closed'
+  assignees?: string[]
 }
 
 export type CreateGitHubIssueResponse = {
@@ -91,6 +93,16 @@ export type CreateGitHubIssueResponse = {
 export type GitHubIssueDetailResponse = {
   issue: GitHubIssue
   comments: GitHubIssueComment[]
+}
+
+export type GitHubAssignableUser = {
+  id: number
+  login: string
+  avatar_url: string
+}
+
+export type GitHubAssignableUsersResponse = {
+  users: GitHubAssignableUser[]
 }
 
 export type GitHubPullRequest = {

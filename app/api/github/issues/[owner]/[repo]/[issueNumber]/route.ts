@@ -1,10 +1,10 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 import { githubRepositoryService } from '@/lib/github/repositories'
 import prisma from '@/lib/prisma'
 import { githubIssueService } from '@/lib/github/issues'
+import { githubIssueAssigneesSchema } from '@/lib/validators/github-issue'
 import { githubThreadEditSchema } from '@/lib/validators/github-thread'
 
 export async function GET(
@@ -81,6 +81,7 @@ export async function PATCH(
     const body = await request.json()
     const hasEditFields =
       typeof body.title === 'string' || typeof body.body === 'string'
+    const hasAssigneeFields = Array.isArray(body.assignees)
 
     const validatedRepository =
       await githubRepositoryService.resolveRepositoryContext(user.id, {
@@ -88,16 +89,23 @@ export async function PATCH(
         repo,
       })
 
-    const issue = hasEditFields
+    const issue = hasEditFields || hasAssigneeFields
       ? await githubIssueService.updateIssue({
           userId: user.id,
           owner: validatedRepository.owner,
           repo: validatedRepository.repo,
           issueNumber: parseInt(issueNumber, 10),
-          ...githubThreadEditSchema.parse({
-            title: body.title,
-            body: body.body,
-          }),
+          ...(hasEditFields
+            ? githubThreadEditSchema.parse({
+                title: body.title,
+                body: body.body,
+              })
+            : {}),
+          ...(hasAssigneeFields
+            ? githubIssueAssigneesSchema.parse({
+                assignees: body.assignees,
+              })
+            : {}),
         })
       : await githubIssueService.updateIssueState(
           user.id,

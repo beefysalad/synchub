@@ -25,6 +25,7 @@ type UpdateIssueParams = {
   title?: string
   body?: string
   state?: 'open' | 'closed'
+  assignees?: string[]
 }
 
 export const githubIssueService = {
@@ -79,6 +80,20 @@ export const githubIssueService = {
 
     return githubRequest<Array<{ id: number; name: string; color: string }>>(
       `/repos/${owner}/${repo}/labels`,
+      { method: 'GET' },
+      accessToken
+    )
+  },
+
+  async listAssignableUsers(userId: string, owner: string, repo: string) {
+    const accessToken = await getGitHubAccessTokenForUser(userId)
+
+    if (!accessToken) {
+      throw new Error('No GitHub access token is linked to this user yet.')
+    }
+
+    return githubRequest<Array<{ id: number; login: string; avatar_url: string }>>(
+      `/repos/${owner}/${repo}/assignees?per_page=100`,
       { method: 'GET' },
       accessToken
     )
@@ -153,6 +168,7 @@ export const githubIssueService = {
     title,
     body,
     state,
+    assignees,
   }: UpdateIssueParams) {
     const accessToken = await getGitHubAccessTokenForUser(userId)
 
@@ -168,6 +184,7 @@ export const githubIssueService = {
           ...(typeof title === 'string' ? { title } : {}),
           ...(typeof body === 'string' ? { body } : {}),
           ...(state ? { state } : {}),
+          ...(Array.isArray(assignees) ? { assignees } : {}),
         }),
       },
       accessToken

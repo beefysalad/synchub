@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import api from '@/lib/axios'
 import {
+  type GitHubAssignableUsersResponse,
   type CreateGitHubIssuePayload,
   type CreateGitHubIssueResponse,
   type GitHubIssueState,
@@ -58,6 +59,28 @@ export function useGithubIssueDetail(owner: string, repo: string, issueNumber: n
       }
     },
     enabled: Boolean(owner && repo && issueNumber),
+  })
+}
+
+export function useGithubAssignableUsers(owner: string, repo: string) {
+  return useQuery({
+    queryKey: ['github', 'issues', owner, repo, 'assignees'],
+    queryFn: async () => {
+      try {
+        const response = await api.get<GitHubAssignableUsersResponse>(
+          '/github/issues/assignees',
+          {
+            params: { owner, repo },
+          }
+        )
+
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    enabled: Boolean(owner && repo),
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -127,6 +150,9 @@ export function useEditGithubIssue(owner: string, repo: string, issueNumber: num
       })
       queryClient.invalidateQueries({
         queryKey: ['github', 'issues', owner, repo],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'issues', owner, repo, 'assignees'],
       })
     },
   })
