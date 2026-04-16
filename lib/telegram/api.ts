@@ -1,3 +1,5 @@
+import { createExternalApi, getAxiosErrorMessage } from '@/lib/axios'
+
 const TELEGRAM_API_BASE_URL = 'https://api.telegram.org'
 
 function getTelegramBotToken() {
@@ -8,6 +10,12 @@ function getTelegramBotToken() {
   }
 
   return botToken
+}
+
+function createTelegramApi() {
+  return createExternalApi({
+    baseURL: `${TELEGRAM_API_BASE_URL}/bot${getTelegramBotToken()}`,
+  })
 }
 
 type SendTelegramMessageInput = {
@@ -23,53 +31,31 @@ export async function sendTelegramMessage({
   disableWebPagePreview = true,
   parseMode,
 }: SendTelegramMessageInput) {
-  const response = await fetch(
-    `${TELEGRAM_API_BASE_URL}/bot${getTelegramBotToken()}/sendMessage`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        disable_web_page_preview: disableWebPagePreview,
-        ...(parseMode ? { parse_mode: parseMode } : {}),
-      }),
-      cache: 'no-store',
-    }
-  )
+  try {
+    const response = await createTelegramApi().post('/sendMessage', {
+      chat_id: chatId,
+      text,
+      disable_web_page_preview: disableWebPagePreview,
+      ...(parseMode ? { parse_mode: parseMode } : {}),
+    })
 
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`Telegram sendMessage failed: ${errorBody}`)
+    return response.data
+  } catch (error) {
+    throw new Error(getAxiosErrorMessage(error, 'Telegram sendMessage failed'))
   }
-
-  return response.json()
 }
 
 export async function setTelegramWebhook(webhookUrl: string, secretToken?: string) {
-  const response = await fetch(
-    `${TELEGRAM_API_BASE_URL}/bot${getTelegramBotToken()}/setWebhook`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: webhookUrl,
-        secret_token: secretToken,
-      }),
-      cache: 'no-store',
-    }
-  )
+  try {
+    const response = await createTelegramApi().post('/setWebhook', {
+      url: webhookUrl,
+      secret_token: secretToken,
+    })
 
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`Telegram setWebhook failed: ${errorBody}`)
+    return response.data
+  } catch (error) {
+    throw new Error(getAxiosErrorMessage(error, 'Telegram setWebhook failed'))
   }
-
-  return response.json()
 }
 
 type TelegramWebhookInfo = {
@@ -86,17 +72,15 @@ type TelegramWebhookInfo = {
 }
 
 export async function getTelegramWebhookInfo() {
-  const response = await fetch(
-    `${TELEGRAM_API_BASE_URL}/bot${getTelegramBotToken()}/getWebhookInfo`,
-    {
-      cache: 'no-store',
-    }
-  )
+  try {
+    const response = await createTelegramApi().get<TelegramWebhookInfo>(
+      '/getWebhookInfo'
+    )
 
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`Telegram getWebhookInfo failed: ${errorBody}`)
+    return response.data
+  } catch (error) {
+    throw new Error(
+      getAxiosErrorMessage(error, 'Telegram getWebhookInfo failed')
+    )
   }
-
-  return (await response.json()) as TelegramWebhookInfo
 }

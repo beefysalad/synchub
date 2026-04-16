@@ -25,6 +25,8 @@ export async function getCurrentClerkUserProfile() {
 
   return {
     id: user.id,
+    firstName: user.firstName ?? null,
+    lastName: user.lastName ?? null,
     primaryEmail:
       user.emailAddresses.find(
         (emailAddress) => emailAddress.id === user.primaryEmailAddressId

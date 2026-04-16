@@ -30,11 +30,13 @@ export const githubIssueService = {
       throw new Error('No GitHub access token is linked to this user yet.')
     }
 
-    return githubRequest<GitHubIssue[]>(
-      `/repos/${owner}/${repo}/issues?state=${state}`,
+    const issues = await githubRequest<GitHubIssue[]>(
+      `/repos/${owner}/${repo}/issues?state=${state}&per_page=100`,
       { method: 'GET' },
       accessToken
     )
+
+    return issues.filter((issue) => !issue.pull_request)
   },
 
   async createIssue({ userId, owner, repo, title, body, labels }: CreateIssueParams) {
@@ -134,18 +136,15 @@ export const githubIssueService = {
       throw new Error('Could not resolve issue node_id for deletion.')
     }
 
-    return fetch('https://api.github.com/graphql', {
-      method: 'POST',
-      headers: {
-        Authorization: `bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+    return githubRequest<{ data?: unknown }>(
+      '/graphql',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          query: `mutation { deleteIssue(input: { issueId: "${nodeId}" }) { clientMutationId } }`,
+        }),
       },
-      body: JSON.stringify({
-        query: `mutation { deleteIssue(input: { issueId: "${nodeId}" }) { clientMutationId } }`,
-      }),
-    }).then((res) => {
-      if (!res.ok) throw new Error('Failed to delete issue via GraphQL.')
-      return res.json()
-    })
+      accessToken
+    )
   },
 }

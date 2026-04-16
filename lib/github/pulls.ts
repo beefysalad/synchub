@@ -22,7 +22,7 @@ export const githubPullsService = {
     }
 
     return githubRequest<GitHubPullRequest[]>(
-      `/repos/${owner}/${repo}/pulls?state=${state}`,
+      `/repos/${owner}/${repo}/pulls?state=${state}&per_page=100`,
       { method: 'GET' },
       accessToken
     )

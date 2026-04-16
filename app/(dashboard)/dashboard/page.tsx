@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { SectionHeader } from '@/components/dashboard/section-header'
+import { DailySummaryCard } from '@/components/dashboard/github/daily-summary-card'
 import { StatusCard } from '@/components/dashboard/status-card'
 import { Button } from '@/components/ui/button'
 import {
@@ -132,6 +133,8 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-6">
+        <DailySummaryCard />
+
         <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
           <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>

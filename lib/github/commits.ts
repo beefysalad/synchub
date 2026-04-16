@@ -5,6 +5,7 @@ type CommitListParams = {
   userId: string
   owner: string
   repo: string
+  since?: string
 }
 
 export const githubCommitsService = {
@@ -12,6 +13,7 @@ export const githubCommitsService = {
     userId,
     owner,
     repo,
+    since,
   }: CommitListParams) {
     const accessToken = await getGitHubAccessTokenForUser(userId)
 
@@ -19,10 +21,13 @@ export const githubCommitsService = {
       throw new Error('No GitHub access token is linked to this user yet.')
     }
 
-    // By default, GitHub returns commits from the default branch.
-    // We'll just fetch the top 20.
+    const query = new URLSearchParams({
+      per_page: '100',
+      ...(since ? { since } : {}),
+    })
+
     return githubRequest<GitHubCommit[]>(
-      `/repos/${owner}/${repo}/commits?per_page=20`,
+      `/repos/${owner}/${repo}/commits?${query.toString()}`,
       { method: 'GET' },
       accessToken
     )

@@ -1,3 +1,5 @@
+import { createExternalApi, getAxiosErrorMessage } from '@/lib/axios'
+
 const GITHUB_AUTHORIZE_URL = 'https://github.com/login/oauth/authorize'
 const GITHUB_ACCESS_TOKEN_URL = 'https://github.com/login/oauth/access_token'
 const DEFAULT_GITHUB_SCOPES = ['repo', 'read:user']
@@ -62,55 +64,49 @@ export function createGitHubOAuthAuthorizeUrl(state: string) {
 }
 
 export async function exchangeGitHubCodeForToken(code: string) {
-  const response = await fetch(GITHUB_ACCESS_TOKEN_URL, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
+  try {
+    const response = await createExternalApi({
+      headers: {
+        Accept: 'application/json',
+      },
+    }).post<
+      GithubOAuthTokenResponse | { error?: string; error_description?: string }
+    >(GITHUB_ACCESS_TOKEN_URL, {
       client_id: getGitHubClientId(),
       client_secret: getGitHubClientSecret(),
       code,
       redirect_uri: getGitHubOAuthCallbackUrl(),
-    }),
-    cache: 'no-store',
-  })
+    })
 
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`Unable to exchange GitHub code: ${errorBody}`)
+    const body = response.data
+
+    if ('error' in body && body.error) {
+      throw new Error(body.error_description ?? body.error)
+    }
+
+    if (!('access_token' in body) || !body.access_token) {
+      throw new Error('GitHub did not return an access token.')
+    }
+
+    return body as GithubOAuthTokenResponse
+  } catch (error) {
+    throw new Error(getAxiosErrorMessage(error, 'Unable to exchange GitHub code'))
   }
-
-  const body = (await response.json()) as
-    | GithubOAuthTokenResponse
-    | { error?: string; error_description?: string }
-
-  if ('error' in body && body.error) {
-    throw new Error(body.error_description ?? body.error)
-  }
-
-  if (!('access_token' in body) || !body.access_token) {
-    throw new Error('GitHub did not return an access token.')
-  }
-
-  return body as GithubOAuthTokenResponse
 }
 
 export async function fetchGitHubOAuthUser(accessToken: string) {
-  const response = await fetch('https://api.github.com/user', {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${accessToken}`,
-      'User-Agent': 'SyncHub',
-    },
-    cache: 'no-store',
-  })
+  try {
+    const response = await createExternalApi({
+      baseURL: 'https://api.github.com',
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${accessToken}`,
+        'User-Agent': 'SyncHub',
+      },
+    }).get<GithubUserResponse>('/user')
 
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`Unable to fetch GitHub user: ${errorBody}`)
+    return response.data
+  } catch (error) {
+    throw new Error(getAxiosErrorMessage(error, 'Unable to fetch GitHub user'))
   }
-
-  return (await response.json()) as GithubUserResponse
 }

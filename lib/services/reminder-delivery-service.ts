@@ -1,48 +1,9 @@
 import { AccountProvider, ReminderStatus } from '@/app/generated/prisma/client'
 
+import { sendDiscordMessage } from '@/lib/discord/api'
 import { buildReminderDeliveryMessage } from '@/lib/github/notification-messages'
 import prisma from '@/lib/prisma'
 import { sendTelegramMessage } from '@/lib/telegram/api'
-
-async function sendDiscordMessage({
-  channelId,
-  content,
-  embeds,
-}: {
-  channelId: string
-  content: string
-  embeds?: Array<Record<string, unknown>>
-}) {
-  const botToken = process.env.DISCORD_BOT_TOKEN
-
-  if (!botToken) {
-    throw new Error('DISCORD_BOT_TOKEN is not configured.')
-  }
-
-  const response = await fetch(
-    `https://discord.com/api/v10/channels/${channelId}/messages`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bot ${botToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        content,
-        embeds: embeds ?? [],
-        allowed_mentions: {
-          parse: [],
-        },
-      }),
-      cache: 'no-store',
-    }
-  )
-
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`Discord reminder delivery failed: ${errorBody}`)
-  }
-}
 
 export const reminderDeliveryService = {
   async dispatchDueReminders() {

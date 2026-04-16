@@ -1,3 +1,4 @@
+import { createExternalApi, getAxiosErrorMessage } from '@/lib/axios'
 import prisma from '@/lib/prisma'
 
 const GITHUB_API_URL = 'https://api.github.com'
@@ -18,22 +19,29 @@ export async function githubRequest<T>(
   init: RequestInit,
   accessToken: string
 ) {
-  const response = await fetch(`${GITHUB_API_URL}${path}`, {
-    ...init,
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      'User-Agent': 'SyncHub',
-      ...init.headers,
-    },
-    cache: 'no-store',
-  })
+  try {
+    const response = await createExternalApi({
+      baseURL: GITHUB_API_URL,
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${accessToken}`,
+        'User-Agent': 'SyncHub',
+        ...(init.headers as Record<string, string> | undefined),
+      },
+    }).request<T>({
+      url: path,
+      method: init.method as
+        | 'GET'
+        | 'POST'
+        | 'PUT'
+        | 'PATCH'
+        | 'DELETE'
+        | undefined,
+      data: init.body,
+    })
 
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`GitHub API error (${response.status}): ${errorBody}`)
+    return response.data
+  } catch (error) {
+    throw new Error(getAxiosErrorMessage(error, 'GitHub API error'))
   }
-
-  return (await response.json()) as T
 }
