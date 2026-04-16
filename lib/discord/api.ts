@@ -28,6 +28,12 @@ export type DiscordApplicationCommand = {
   type: number
 }
 
+export type DiscordGuildChannel = {
+  id: string
+  name: string
+  type: number
+}
+
 const syncHubCommands = [
   {
     name: 'link',
@@ -93,4 +99,27 @@ export async function getDiscordCommands() {
   }
 
   return (await response.json()) as DiscordApplicationCommand[]
+}
+
+export async function listDiscordGuildTextChannels(guildId: string) {
+  const response = await fetch(
+    `${DISCORD_API_BASE_URL}/guilds/${guildId}/channels`,
+    {
+      headers: {
+        Authorization: `Bot ${getDiscordBotToken()}`,
+      },
+      cache: 'no-store',
+    }
+  )
+
+  if (!response.ok) {
+    const errorBody = await response.text()
+    throw new Error(`Discord get guild channels failed: ${errorBody}`)
+  }
+
+  const channels = (await response.json()) as DiscordGuildChannel[]
+
+  return channels
+    .filter((channel) => channel.type === 0 || channel.type === 5)
+    .sort((left, right) => left.name.localeCompare(right.name))
 }

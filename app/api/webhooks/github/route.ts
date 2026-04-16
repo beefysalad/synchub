@@ -83,9 +83,13 @@ export async function POST(request: NextRequest) {
           (acc) => acc.provider === rule.provider
         )
 
-        if (linkedAccount && linkedAccount.chatId) {
+        if (linkedAccount) {
           try {
             if (rule.provider === 'TELEGRAM') {
+              if (!linkedAccount.chatId) {
+                continue
+              }
+
               await sendTelegramMessage({
                 chatId: linkedAccount.chatId,
                 text: message.telegramText,
@@ -95,8 +99,18 @@ export async function POST(request: NextRequest) {
               })
             } else if (rule.provider === 'DISCORD') {
               const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN
-              if (DISCORD_BOT_TOKEN) {
-                await fetch(`https://discord.com/api/v10/channels/${linkedAccount.chatId}/messages`, {
+              const channelOverrides =
+                rule.channelOverrides && typeof rule.channelOverrides === 'object'
+                  ? (rule.channelOverrides as Record<string, unknown>)
+                  : null
+              const overrideChannelId =
+                channelOverrides && typeof channelOverrides[eventName] === 'string'
+                  ? channelOverrides[eventName]
+                  : null
+              const targetChannelId = overrideChannelId ?? linkedAccount.chatId
+
+              if (DISCORD_BOT_TOKEN && targetChannelId) {
+                await fetch(`https://discord.com/api/v10/channels/${targetChannelId}/messages`, {
                   method: 'POST',
                   headers: {
                     'Authorization': `Bot ${DISCORD_BOT_TOKEN}`,

@@ -9,6 +9,7 @@ export type NotificationRule = {
   repoId: string
   provider: AccountProvider
   events: string[]
+  channelOverrides?: Record<string, string> | null
 }
 
 export type GitHubWebhookStatus = {
@@ -24,6 +25,12 @@ export type GitHubWebhookStatus = {
   updatedAt: string | null
 }
 
+export type DiscordChannelOption = {
+  id: string
+  name: string
+  type: number
+}
+
 export function useGithubNotifications(owner: string, repo: string, provider?: AccountProvider) {
   return useQuery({
     queryKey: ['github', 'notifications', owner, repo, provider],
@@ -33,6 +40,7 @@ export function useGithubNotifications(owner: string, repo: string, provider?: A
           rules: NotificationRule[]
           webhookStatus: GitHubWebhookStatus | null
           supportedEvents: string[]
+          discordChannels: DiscordChannelOption[]
         }>('/github/notifications', {
           params: { owner, repo, provider },
         })
@@ -52,9 +60,11 @@ export function useUpdateNotificationRule(owner: string, repo: string) {
     mutationFn: async ({
       provider,
       events,
+      channelOverrides,
     }: {
       provider: AccountProvider
       events: string[]
+      channelOverrides?: Record<string, string>
     }) => {
       try {
         const response = await api.post<{ success: boolean; message: string }>('/github/notifications', {
@@ -62,6 +72,7 @@ export function useUpdateNotificationRule(owner: string, repo: string) {
           repo,
           provider,
           events,
+          channelOverrides,
         })
         return response.data
       } catch (error) {

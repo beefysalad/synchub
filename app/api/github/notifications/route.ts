@@ -1,8 +1,9 @@
 import { auth } from '@clerk/nextjs/server'
-import { AccountProvider } from '@/app/generated/prisma/client'
+import { AccountProvider, Prisma } from '@/app/generated/prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+import { listDiscordGuildTextChannels } from '@/lib/discord/api'
 import { githubRepositoryService } from '@/lib/github/repositories'
 import {
   githubWebhookService,
@@ -15,6 +16,12 @@ const WebhookSchema = z.object({
   repo: z.string(),
   provider: z.nativeEnum(AccountProvider),
   events: z.array(z.enum(SUPPORTED_GITHUB_WEBHOOK_EVENTS)),
+  channelOverrides: z
+    .partialRecord(
+      z.enum(SUPPORTED_GITHUB_WEBHOOK_EVENTS),
+      z.string().trim().min(1)
+    )
+    .optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -34,7 +41,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { owner, repo, provider, events } = WebhookSchema.parse(body)
+    const { owner, repo, provider, events, channelOverrides } =
+      WebhookSchema.parse(body)
 
     const validatedRepository =
       await githubRepositoryService.resolveRepositoryContext(user.id, {
@@ -86,12 +94,21 @@ export async function POST(request: NextRequest) {
           provider,
         },
       },
-      update: { events },
+      update: {
+        events,
+        channelOverrides:
+          provider === AccountProvider.DISCORD
+            ? channelOverrides ?? Prisma.JsonNull
+            : Prisma.JsonNull,
+      },
       create: {
         userId: user.id,
         repoId: trackedRepo.id,
         provider,
         events,
+        ...(provider === AccountProvider.DISCORD
+          ? { channelOverrides: channelOverrides ?? undefined }
+          : {}),
       },
     })
 
@@ -180,6 +197,24 @@ export async function GET(request: NextRequest) {
       (rule) => !providerParam || rule.provider === providerParam
     )
 
+    const discordLinkedAccount = await prisma.linkedAccount.findFirst({
+      where: {
+        userId: user.id,
+        provider: AccountProvider.DISCORD,
+      },
+    })
+    const discordMetadata =
+      discordLinkedAccount?.metadata &&
+      typeof discordLinkedAccount.metadata === 'object'
+        ? (discordLinkedAccount.metadata as Record<string, unknown>)
+        : null
+    const discordGuildId =
+      typeof discordMetadata?.guildId === 'string' ? discordMetadata.guildId : null
+    const discordChannels =
+      discordGuildId && process.env.DISCORD_BOT_TOKEN
+        ? await listDiscordGuildTextChannels(discordGuildId).catch(() => [])
+        : []
+
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
     const webhookUrl = appUrl ? `${appUrl}/api/webhooks/github` : null
     const webhookStatus =
@@ -198,6 +233,7 @@ export async function GET(request: NextRequest) {
       rules,
       webhookStatus,
       supportedEvents: [...SUPPORTED_GITHUB_WEBHOOK_EVENTS],
+      discordChannels,
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to list rules'

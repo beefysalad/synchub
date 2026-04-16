@@ -52,6 +52,9 @@ export function RepositorySettingsPage({
   const notificationEvents = supportedEvents.filter((eventType) =>
     ['issues', 'pull_request', 'push', 'issue_comment'].includes(eventType)
   )
+  const discordRule =
+    notificationsData?.rules.find((rule) => rule.provider === 'DISCORD') ?? null
+  const discordChannels = notificationsData?.discordChannels ?? []
 
   return (
     <div className="space-y-8">
@@ -244,50 +247,113 @@ export function RepositorySettingsPage({
                   
                   <div className="space-y-4">
                     {notificationEvents.map((eventType) => {
-                      const rule = notificationsData?.rules.find((r) => r.provider === 'DISCORD')
-                      const isEnabled = rule?.events.includes(eventType) ?? false
+                      const isEnabled = discordRule?.events.includes(eventType) ?? false
+                      const currentOverrides =
+                        discordRule?.channelOverrides &&
+                        typeof discordRule.channelOverrides === 'object'
+                          ? discordRule.channelOverrides
+                          : {}
+                      const selectedChannelId = currentOverrides?.[eventType] ?? ''
 
                       return (
-                        <label
+                        <div
                           key={`dc-${eventType}`}
-                          className="flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800"
+                          className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800"
                         >
-                          <input
-                            type="checkbox"
-                            checked={isEnabled}
-                            className="mt-1 size-5 rounded border-slate-300 transition-all focus:ring-2 focus:ring-indigo-500"
-                            disabled={updateRule.isPending}
-                            onChange={(e) => {
-                              const currentEvents = rule?.events ?? []
-                              const newEvents = e.target.checked
-                                ? [...currentEvents, eventType]
-                                : currentEvents.filter((ev) => ev !== eventType)
+                          <label className="flex cursor-pointer items-start gap-4">
+                            <input
+                              type="checkbox"
+                              checked={isEnabled}
+                              className="mt-1 size-5 rounded border-slate-300 transition-all focus:ring-2 focus:ring-indigo-500"
+                              disabled={updateRule.isPending}
+                              onChange={(e) => {
+                                const currentEvents = discordRule?.events ?? []
+                                const newEvents = e.target.checked
+                                  ? [...currentEvents, eventType]
+                                  : currentEvents.filter((ev) => ev !== eventType)
 
-                              updateRule.mutate(
-                                {
-                                  provider: 'DISCORD',
-                                  events: newEvents,
-                                },
-                                {
-                                  onError: (err) => {
-                                    toast.error(err.message || 'Failed to update rule')
-                                  },
+                                const nextOverrides = { ...currentOverrides }
+                                if (!e.target.checked) {
+                                  delete nextOverrides[eventType]
                                 }
-                              )
-                            }}
-                          />
-                          <div>
-                            <span className="block text-sm font-medium capitalize text-slate-800 dark:text-slate-200">
-                              {eventType === 'push' ? 'Commits (Pushes)' : eventType.replace('_', ' ')}
-                            </span>
-                            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
-                              {eventType === 'issues' && 'Alert when new issues are opened.'}
-                              {eventType === 'pull_request' && 'Alert when code is submitted for review.'}
-                              {eventType === 'push' && 'Alert when new code is pushed to this repo.'}
-                              {eventType === 'issue_comment' && 'Alert when someone adds a new issue or PR comment.'}
-                            </span>
+
+                                updateRule.mutate(
+                                  {
+                                    provider: 'DISCORD',
+                                    events: newEvents,
+                                    channelOverrides: nextOverrides,
+                                  },
+                                  {
+                                    onError: (err) => {
+                                      toast.error(err.message || 'Failed to update rule')
+                                    },
+                                  }
+                                )
+                              }}
+                            />
+                            <div>
+                              <span className="block text-sm font-medium capitalize text-slate-800 dark:text-slate-200">
+                                {eventType === 'push' ? 'Commits (Pushes)' : eventType.replace('_', ' ')}
+                              </span>
+                              <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+                                {eventType === 'issues' && 'Alert when new issues are opened.'}
+                                {eventType === 'pull_request' && 'Alert when code is submitted for review.'}
+                                {eventType === 'push' && 'Alert when new code is pushed to this repo.'}
+                                {eventType === 'issue_comment' && 'Alert when someone adds a new issue or PR comment.'}
+                              </span>
+                            </div>
+                          </label>
+
+                          <div className="space-y-2">
+                            <label className="block text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                              Discord channel
+                            </label>
+                            <select
+                              value={selectedChannelId}
+                              disabled={
+                                updateRule.isPending ||
+                                !discordChannels.length ||
+                                !isEnabled
+                              }
+                              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-200 dark:border-slate-800 dark:bg-slate-950 dark:focus:border-indigo-500/40 dark:focus:ring-indigo-500/20"
+                              onChange={(e) => {
+                                const nextOverrides = { ...currentOverrides }
+                                const nextValue = e.target.value
+
+                                if (nextValue) {
+                                  nextOverrides[eventType] = nextValue
+                                } else {
+                                  delete nextOverrides[eventType]
+                                }
+
+                                updateRule.mutate(
+                                  {
+                                    provider: 'DISCORD',
+                                    events: discordRule?.events ?? [],
+                                    channelOverrides: nextOverrides,
+                                  },
+                                  {
+                                    onError: (err) => {
+                                      toast.error(err.message || 'Failed to update rule')
+                                    },
+                                  }
+                                )
+                              }}
+                            >
+                              <option value="">
+                                Use linked default channel
+                              </option>
+                              {discordChannels.map((channel) => (
+                                <option key={channel.id} value={channel.id}>
+                                  #{channel.name}
+                                </option>
+                              ))}
+                            </select>
+                            <p className="text-xs text-muted-foreground">
+                              Choose a dedicated text channel for this event, or leave it on the linked default.
+                            </p>
                           </div>
-                        </label>
+                        </div>
                       )
                     })}
                   </div>

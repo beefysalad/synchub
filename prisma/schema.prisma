@@ -107,6 +107,7 @@ model NotificationRule {
   repoId    String
   provider  AccountProvider
   events    String[]
+  channelOverrides Json?
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
