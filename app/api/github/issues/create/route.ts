@@ -34,6 +34,10 @@ export async function POST(request: NextRequest) {
   const repo = String(formData.get('repo') ?? '')
   const title = String(formData.get('title') ?? '')
   const body = String(formData.get('body') ?? '')
+  const labels = formData
+    .getAll('labels')
+    .map((value) => String(value).trim())
+    .filter(Boolean)
   const redirectUrl = getRedirectUrl(request)
 
   redirectUrl.searchParams.set('owner', owner)
@@ -50,6 +54,7 @@ export async function POST(request: NextRequest) {
       repo,
       title: title.trim(),
       body: body.trim() || undefined,
+      labels,
     })
 
     redirectUrl.searchParams.set('created', String(issue.number))

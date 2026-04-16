@@ -14,6 +14,7 @@ type CreateIssueParams = {
   repo: string
   title: string
   body?: string
+  labels?: string[]
 }
 
 export const githubIssueService = {
@@ -36,7 +37,7 @@ export const githubIssueService = {
     )
   },
 
-  async createIssue({ userId, owner, repo, title, body }: CreateIssueParams) {
+  async createIssue({ userId, owner, repo, title, body, labels }: CreateIssueParams) {
     const accessToken = await getGitHubAccessTokenForUser(userId)
 
     if (!accessToken) {
@@ -50,8 +51,23 @@ export const githubIssueService = {
         body: JSON.stringify({
           title,
           body,
+          ...(labels?.length ? { labels } : {}),
         }),
       },
+      accessToken
+    )
+  },
+
+  async listRepositoryLabels(userId: string, owner: string, repo: string) {
+    const accessToken = await getGitHubAccessTokenForUser(userId)
+
+    if (!accessToken) {
+      throw new Error('No GitHub access token is linked to this user yet.')
+    }
+
+    return githubRequest<Array<{ id: number; name: string; color: string }>>(
+      `/repos/${owner}/${repo}/labels`,
+      { method: 'GET' },
       accessToken
     )
   },
