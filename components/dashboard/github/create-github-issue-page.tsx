@@ -106,7 +106,7 @@ export function CreateGithubIssuePage({
       })
 
       toast.success(`Issue #${response.issue.number} created successfully.`)
-      router.push(`/issues/${owner}/${repo}`)
+      router.push(`/repos/${owner}/${repo}`)
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Unable to create issue'
@@ -125,7 +125,7 @@ export function CreateGithubIssuePage({
         }
         actions={
           <Button asChild variant="outline" className="rounded-full">
-            <Link href={`/issues/${owner}/${repo}`}>
+            <Link href={`/repos/${owner}/${repo}`}>
               <ArrowLeft className="size-4" />
               Back to issues
             </Link>
@@ -241,7 +241,7 @@ export function CreateGithubIssuePage({
                   )}
                 </Button>
                 <Button asChild variant="outline" className="rounded-full">
-                  <Link href={`/issues/${owner}/${repo}`}>Cancel</Link>
+                  <Link href={`/repos/${owner}/${repo}`}>Cancel</Link>
                 </Button>
               </div>
             </form>

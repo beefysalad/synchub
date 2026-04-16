@@ -39,7 +39,7 @@ export function IssueDetailPage({
     updateState.mutate('closed', {
       onSuccess: () => {
         toast.success(`Issue #${issueNumber} closed successfully.`)
-        router.push(`/issues/${owner}/${repo}`)
+        router.push(`/repos/${owner}/${repo}`)
       },
       onError: (err) => {
         toast.error(err.message)
@@ -70,7 +70,7 @@ export function IssueDetailPage({
     deleteIssue.mutate(undefined, {
       onSuccess: () => {
         toast.success(`Issue #${issueNumber} deleted successfully.`)
-        router.push(`/issues/${owner}/${repo}`)
+        router.push(`/repos/${owner}/${repo}`)
       },
       onError: (err) => {
         toast.error(err.message)
@@ -107,7 +107,7 @@ export function IssueDetailPage({
         actions={
           <>
             <Button asChild variant="outline" className="rounded-full">
-              <Link href={`/issues/${owner}/${repo}`}>
+              <Link href={`/repos/${owner}/${repo}`}>
                 <ArrowLeft className="size-4" />
                 Back
               </Link>

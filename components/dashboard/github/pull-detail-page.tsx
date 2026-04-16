@@ -54,7 +54,7 @@ export function PullDetailPage({
         actions={
           <>
             <Button asChild variant="outline" className="rounded-full">
-              <Link href={`/issues/${owner}/${repo}?tab=pulls`}>
+              <Link href={`/repos/${owner}/${repo}?tab=pulls`}>
                 <ArrowLeft className="size-4" />
                 Back
               </Link>
