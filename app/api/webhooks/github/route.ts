@@ -2,9 +2,66 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import prisma from '@/lib/prisma'
 import { sendTelegramMessage } from '@/lib/telegram/api'
-// Note: We need a discord equivalent, which I will stub/create shortly.
-// For now, let's just assume `sendDiscordMessage` is built.
-// Actually I'll build `lib/discord/api.ts` next to make sure it runs!
+
+function formatGithubNotificationMessage({
+  eventName,
+  payload,
+  repositoryFullName,
+}: {
+  eventName: string
+  payload: Record<string, unknown>
+  repositoryFullName: string
+}) {
+  const issue = payload.issue as
+    | {
+        title?: string
+        html_url?: string
+        user?: { login?: string }
+      }
+    | undefined
+  const pullRequest = payload.pull_request as
+    | {
+        title?: string
+        html_url?: string
+        user?: { login?: string }
+      }
+    | undefined
+  const commits = Array.isArray(payload.commits) ? payload.commits : []
+  const pusher = payload.pusher as { name?: string } | undefined
+  const compareUrl =
+    typeof payload.compare === 'string' ? payload.compare : undefined
+
+  if (eventName === 'issues' && payload.action === 'opened') {
+    return [
+      `New issue in ${repositoryFullName}`,
+      issue?.title ?? 'Untitled issue',
+      `Opened by ${issue?.user?.login ?? 'Unknown user'}`,
+      issue?.html_url ?? '',
+    ].join('\n')
+  }
+
+  if (eventName === 'pull_request' && payload.action === 'opened') {
+    return [
+      `New pull request in ${repositoryFullName}`,
+      pullRequest?.title ?? 'Untitled pull request',
+      `Opened by ${pullRequest?.user?.login ?? 'Unknown user'}`,
+      pullRequest?.html_url ?? '',
+    ].join('\n')
+  }
+
+  if (eventName === 'push') {
+    const commitCount = commits.length
+    const pusherName = pusher?.name || 'Someone'
+
+    return [
+      `New push in ${repositoryFullName}`,
+      `${commitCount} commit${commitCount === 1 ? '' : 's'} by ${pusherName}`,
+      compareUrl ?? '',
+    ].join('\n')
+  }
+
+  return null
+}
 
 export async function POST(request: NextRequest) {
   const eventName = request.headers.get('x-github-event')
@@ -52,18 +109,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Ignored: Repo not tracked by any user' })
     }
 
-    // Format the message based on the event
-    let messageText = ''
-    if (eventName === 'issues' && payload.action === 'opened') {
-      messageText = `🚨 **New Issue Opened in ${repositoryFullName}**\n\n**${payload.issue.title}** by ${payload.issue.user.login}\n${payload.issue.html_url}`
-    } else if (eventName === 'pull_request' && payload.action === 'opened') {
-      messageText = `🔀 **New Pull Request in ${repositoryFullName}**\n\n**${payload.pull_request.title}** by ${payload.pull_request.user.login}\n${payload.pull_request.html_url}`
-    } else if (eventName === 'push') {
-      const commitCount = payload.commits?.length || 0
-      const pusher = payload.pusher?.name || 'Someone'
-      messageText = `📦 **${commitCount} new commit(s) pushed to ${repositoryFullName}** by ${pusher}.\n${payload.compare}`
-    } else {
-      // Ignored event or action
+    const messageText = formatGithubNotificationMessage({
+      eventName,
+      payload,
+      repositoryFullName,
+    })
+
+    if (!messageText) {
       return NextResponse.json({ success: true, message: `Ignored action ${payload.action} for event ${eventName}` })
     }
 
@@ -83,13 +135,9 @@ export async function POST(request: NextRequest) {
             if (rule.provider === 'TELEGRAM') {
               await sendTelegramMessage({
                 chatId: linkedAccount.chatId,
-                // Replace discord bolding with HTML/Markdown standard for TG if needed, but standard is fine.
                 text: messageText,
               })
             } else if (rule.provider === 'DISCORD') {
-              // Stub: await sendDiscordMessage({ channelId: linkedAccount.chatId, content: messageText })
-              // Since the discord message function might not be written yet, I'll add a fetch here or skip.
-              // I will implement sendDiscordMessage directly.
               const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN
               if (DISCORD_BOT_TOKEN) {
                 await fetch(`https://discord.com/api/v10/channels/${linkedAccount.chatId}/messages`, {
@@ -98,7 +146,10 @@ export async function POST(request: NextRequest) {
                     'Authorization': `Bot ${DISCORD_BOT_TOKEN}`,
                     'Content-Type': 'application/json',
                   },
-                  body: JSON.stringify({ content: messageText }),
+                  body: JSON.stringify({
+                    content: messageText,
+                    flags: 4,
+                  }),
                 })
               }
             }

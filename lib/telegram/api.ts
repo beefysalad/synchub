@@ -13,11 +13,13 @@ function getTelegramBotToken() {
 type SendTelegramMessageInput = {
   chatId: string | number
   text: string
+  disableWebPagePreview?: boolean
 }
 
 export async function sendTelegramMessage({
   chatId,
   text,
+  disableWebPagePreview = true,
 }: SendTelegramMessageInput) {
   const response = await fetch(
     `${TELEGRAM_API_BASE_URL}/bot${getTelegramBotToken()}/sendMessage`,
@@ -29,6 +31,7 @@ export async function sendTelegramMessage({
       body: JSON.stringify({
         chat_id: chatId,
         text,
+        disable_web_page_preview: disableWebPagePreview,
       }),
       cache: 'no-store',
     }

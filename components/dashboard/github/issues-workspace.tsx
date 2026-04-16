@@ -522,8 +522,8 @@ export function IssuesWorkspace({
                       </span>
                     </div>
 
-                    <div className="space-y-3">
-                      <Button asChild className="h-11 w-full rounded-2xl">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button asChild className="rounded-full px-4">
                         <Link
                           href={`/repos/${repository.owner.login}/${repository.name}`}
                         >
@@ -531,30 +531,34 @@ export function IssuesWorkspace({
                         </Link>
                       </Button>
 
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {isReposMode ? (
-                          <Button
-                            asChild
-                            variant="outline"
-                            className="h-10 w-full rounded-2xl justify-center"
+                      {isReposMode ? (
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="rounded-full px-4"
+                        >
+                          <Link
+                            href={`/repos/${repository.owner.login}/${repository.name}/settings`}
                           >
-                            <Link
-                              href={`/repos/${repository.owner.login}/${repository.name}/settings`}
-                            >
-                              <Settings2 className="size-4" />
-                              Settings
-                            </Link>
-                          </Button>
-                        ) : null}
+                            <Settings2 className="size-4" />
+                            Settings
+                          </Link>
+                        </Button>
+                      ) : null}
 
+                      {isDefault ? (
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100">
+                          Default repository
+                        </span>
+                      ) : (
                         <Button
                           type="button"
                           variant="outline"
-                          className="h-10 w-full rounded-2xl justify-center"
+                          className="rounded-full px-4"
                           onClick={() =>
                             handleSetDefaultRepository(repository.full_name)
                           }
-                          disabled={isDefault || updatePreferences.isPending}
+                          disabled={updatePreferences.isPending}
                         >
                           {updatePreferences.isPending &&
                           pendingRepositoryAction ===
@@ -563,18 +567,16 @@ export function IssuesWorkspace({
                               <Spinner />
                               Saving...
                             </>
-                          ) : isDefault ? (
-                            'Default repo'
                           ) : (
                             'Set default'
                           )}
                         </Button>
-                      </div>
+                      )}
 
                       <Button
                         type="button"
-                        variant="outline"
-                        className="h-10 w-full rounded-2xl justify-center border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-900/50 dark:text-red-300 dark:hover:bg-red-950/30 dark:hover:text-red-200"
+                        variant="ghost"
+                        className="rounded-full px-3 text-red-700 hover:bg-red-50 hover:text-red-800 dark:text-red-300 dark:hover:bg-red-950/30 dark:hover:text-red-200"
                         onClick={() =>
                           handleRemoveTrackedRepository(repository.full_name)
                         }
@@ -590,7 +592,7 @@ export function IssuesWorkspace({
                         ) : (
                           <>
                             <Trash2 className="size-4" />
-                            Remove repository
+                            Remove
                           </>
                         )}
                       </Button>
