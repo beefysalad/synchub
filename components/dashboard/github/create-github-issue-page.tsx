@@ -1,13 +1,14 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, CheckSquare2 } from 'lucide-react'
+import { ArrowLeft, CheckSquare2, FilePenLine, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 
+import { useDraftGithubIssue, useSuggestGithubLabels } from '@/hooks/use-github-ai'
 import { SectionHeader } from '@/components/dashboard/section-header'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,8 +40,14 @@ export function CreateGithubIssuePage({
 }) {
   const router = useRouter()
   const createIssue = useCreateGithubIssue()
+  const draftIssue = useDraftGithubIssue()
+  const suggestLabels = useSuggestGithubLabels()
   const { data: repositoryData } = useGithubRepositories()
   const previousTemplateRef = useRef(defaultGitHubIssueTemplate)
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([])
+  const [labelSuggestions, setLabelSuggestions] = useState<
+    Array<{ label: string; reason: string }>
+  >([])
 
   const form = useForm<GitHubIssueFormValues>({
     resolver: zodResolver(githubIssueFormSchema),
@@ -105,6 +112,7 @@ export function CreateGithubIssuePage({
         repo,
         title: values.title,
         body: values.body,
+        labels: selectedLabels,
       })
 
       toast.success(`Issue #${response.issue.number} created successfully.`)
@@ -114,6 +122,69 @@ export function CreateGithubIssuePage({
         error instanceof Error ? error.message : 'Unable to create issue'
       )
     }
+  }
+
+  async function handleSuggestLabels() {
+    const values = form.getValues()
+
+    try {
+      const response = await suggestLabels.mutateAsync({
+        owner,
+        repo,
+        template: values.template,
+        title: values.title,
+        body: values.body,
+      })
+
+      setLabelSuggestions(response.suggestions)
+      setSelectedLabels(response.suggestions.map((suggestion) => suggestion.label))
+
+      if (response.suggestions.length) {
+        toast.success('AI label suggestions are ready.')
+      } else {
+        toast.message('No strong label suggestions found for this issue.')
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to suggest labels'
+      )
+    }
+  }
+
+  async function handleGenerateDraft() {
+    const values = form.getValues()
+
+    try {
+      const response = await draftIssue.mutateAsync({
+        repository: `${owner}/${repo}`,
+        template: values.template,
+        title: values.title,
+        currentBody: values.body,
+      })
+
+      form.setValue('body', response.body, {
+        shouldDirty: true,
+        shouldTouch: true,
+      })
+
+      toast.success(
+        values.body.trim()
+          ? 'Issue draft improved with Gemini.'
+          : 'Issue draft generated with Gemini.'
+      )
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to generate issue draft'
+      )
+    }
+  }
+
+  function toggleLabel(label: string) {
+    setSelectedLabels((current) =>
+      current.includes(label)
+        ? current.filter((item) => item !== label)
+        : [...current, label]
+    )
   }
 
   return (
@@ -210,9 +281,32 @@ export function CreateGithubIssuePage({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="body">
-                  Description
-                </label>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <label className="text-sm font-medium" htmlFor="body">
+                    Description
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full"
+                    disabled={draftIssue.isPending}
+                    onClick={handleGenerateDraft}
+                  >
+                    {draftIssue.isPending ? (
+                      <>
+                        <Spinner />
+                        Writing...
+                      </>
+                    ) : (
+                      <>
+                        <FilePenLine className="size-4" />
+                        {form.getValues('body').trim()
+                          ? 'Improve draft'
+                          : 'Generate draft'}
+                      </>
+                    )}
+                  </Button>
+                </div>
                 <textarea
                   id="body"
                   rows={16}
@@ -225,6 +319,79 @@ export function CreateGithubIssuePage({
                     {form.formState.errors.body.message}
                   </p>
                 ) : null}
+              </div>
+
+              <div className="space-y-3 rounded-3xl border border-slate-200/80 bg-slate-50/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/50">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium">AI label suggestions</p>
+                    <p className="text-sm text-muted-foreground">
+                      Let Gemini review this issue draft and recommend the most relevant GitHub labels.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full"
+                    disabled={suggestLabels.isPending}
+                    onClick={handleSuggestLabels}
+                  >
+                    {suggestLabels.isPending ? (
+                      <>
+                        <Spinner />
+                        Thinking...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="size-4" />
+                        Suggest labels
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {labelSuggestions.length ? (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      {labelSuggestions.map((suggestion) => {
+                        const isSelected = selectedLabels.includes(suggestion.label)
+
+                        return (
+                          <button
+                            key={suggestion.label}
+                            type="button"
+                            onClick={() => toggleLabel(suggestion.label)}
+                            className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                              isSelected
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
+                                : 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300'
+                            }`}
+                          >
+                            {suggestion.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <div className="space-y-2">
+                      {labelSuggestions.map((suggestion) => (
+                        <div
+                          key={`${suggestion.label}-reason`}
+                          className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-950"
+                        >
+                          <span className="font-medium">{suggestion.label}</span>
+                          <span className="text-muted-foreground">
+                            {' '}
+                            — {suggestion.reason}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No suggestions yet. Generate them after you’ve written a meaningful draft.
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-3">

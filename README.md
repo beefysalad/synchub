@@ -20,6 +20,7 @@ This repository now contains the production-oriented foundation for the project:
 - Discord account linking via one-time slash-command codes
 - Discord slash commands for `/link`, `/whoami`, and `/status`
 - GitHub repository listing, default repo selection, and issue creation/listing
+- Gemini-powered issue draft generation, label suggestions, and issue thread summaries
 - Dashboard pages for integrations, issues, reminders, and settings
 - Professional project documentation in `README.md` and `docs/architecture.md`
 
@@ -138,6 +139,8 @@ DISCORD_CLIENT_SECRET="discord-client-secret"
 DISCORD_PUBLIC_KEY="discord-public-key"
 DISCORD_BOT_TOKEN="discord-bot-token"
 DISCORD_APPLICATION_ID="discord-application-id"
+GEMINI_API_KEY="gemini-api-key"
+GEMINI_MODEL="gemini-2.0-flash"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 

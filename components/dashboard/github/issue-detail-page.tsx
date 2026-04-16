@@ -7,6 +7,7 @@ import {
   ExternalLink,
   Lock,
   MessageSquareMore,
+  Sparkles,
   Trash2,
 } from 'lucide-react'
 import Image from 'next/image'
@@ -26,6 +27,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
+import { useSummarizeGithubIssue } from '@/hooks/use-github-ai'
 import {
   useDeleteGithubIssue,
   useGithubIssueDetail,
@@ -80,6 +82,7 @@ export function IssueDetailPage({
   const { data, isLoading, error } = useGithubIssueDetail(owner, repo, issueNumber)
   const updateState = useUpdateGithubIssueState(owner, repo, issueNumber)
   const deleteIssue = useDeleteGithubIssue(owner, repo, issueNumber)
+  const summarizeIssue = useSummarizeGithubIssue()
 
   const issue = data?.issue
   const comments = data?.comments ?? []
@@ -125,6 +128,28 @@ export function IssueDetailPage({
         toast.error(err.message)
       },
     })
+  }
+
+  async function handleGenerateSummary() {
+    if (!issue) {
+      return
+    }
+
+    try {
+      await summarizeIssue.mutateAsync({
+        repository: `${owner}/${repo}`,
+        issueNumber,
+        title: issue.title,
+        body: issue.body ?? '',
+        comments: comments.map((comment) => ({
+          author: comment.user.login,
+          body: comment.body,
+          createdAt: comment.created_at,
+        })),
+      })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Unable to summarize issue')
+    }
   }
 
   if (isLoading) {
@@ -246,6 +271,75 @@ export function IssueDetailPage({
                   </Link>
                 </Button>
               </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  AI summary
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full"
+                  disabled={summarizeIssue.isPending}
+                  onClick={handleGenerateSummary}
+                >
+                  {summarizeIssue.isPending ? (
+                    <>
+                      <Spinner />
+                      Summarizing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="size-4" />
+                      Generate
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {summarizeIssue.data ? (
+                <div className="mt-4 space-y-4 text-sm">
+                  <div>
+                    <p className="font-semibold text-foreground">
+                      {summarizeIssue.data.headline}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Summary</p>
+                    <ul className="mt-2 space-y-2 text-muted-foreground">
+                      {summarizeIssue.data.summary.map((item) => (
+                        <li key={item}>• {item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  {summarizeIssue.data.risks.length ? (
+                    <div>
+                      <p className="font-medium text-foreground">Risks</p>
+                      <ul className="mt-2 space-y-2 text-muted-foreground">
+                        {summarizeIssue.data.risks.map((item) => (
+                          <li key={item}>• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {summarizeIssue.data.nextSteps.length ? (
+                    <div>
+                      <p className="font-medium text-foreground">Next steps</p>
+                      <ul className="mt-2 space-y-2 text-muted-foreground">
+                        {summarizeIssue.data.nextSteps.map((item) => (
+                          <li key={item}>• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Generate a quick Gemini summary of the issue description and discussion so far.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -71,6 +71,7 @@ export type CreateGitHubIssuePayload = {
   repo: string
   title: string
   body?: string
+  labels?: string[]
 }
 
 export type CreateGitHubIssueResponse = {
@@ -118,4 +119,24 @@ export type GitHubPullRequestsResponse = {
 
 export type GitHubCommitsResponse = {
   commits: GitHubCommit[]
+}
+
+export type GithubLabelSuggestion = {
+  label: string
+  reason: string
+}
+
+export type GithubLabelSuggestionsResponse = {
+  suggestions: GithubLabelSuggestion[]
+}
+
+export type GithubIssueSummaryResponse = {
+  headline: string
+  summary: string[]
+  risks: string[]
+  nextSteps: string[]
+}
+
+export type GithubIssueDraftResponse = {
+  body: string
 }

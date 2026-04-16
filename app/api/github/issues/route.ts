@@ -23,6 +23,7 @@ const createGithubIssueRequestSchema = githubIssueFormSchema
   .extend({
   owner: z.string().trim().min(1, 'Owner is required.'),
   repo: z.string().trim().min(1, 'Repository is required.'),
+  labels: z.array(z.string().trim().min(1)).max(5).optional(),
   })
 
 export async function GET(request: NextRequest) {
@@ -99,6 +100,7 @@ export async function POST(request: NextRequest) {
       repo: validatedRepository.repo,
       title: body.title,
       body: body.body,
+      labels: body.labels,
     })
 
     return NextResponse.json({ issue }, { status: 201 })
