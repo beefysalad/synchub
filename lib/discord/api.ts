@@ -1,3 +1,5 @@
+import { createExternalApi, getAxiosErrorMessage } from '@/lib/axios'
+
 const DISCORD_API_BASE_URL = 'https://discord.com/api/v10'
 
 function getDiscordBotToken() {
@@ -34,6 +36,15 @@ export type DiscordGuildChannel = {
   type: number
 }
 
+function createDiscordApi() {
+  return createExternalApi({
+    baseURL: DISCORD_API_BASE_URL,
+    headers: {
+      Authorization: `Bot ${getDiscordBotToken()}`,
+    },
+  })
+}
+
 const syncHubCommands = [
   {
     name: 'link',
@@ -61,65 +72,71 @@ const syncHubCommands = [
 ] as const
 
 export async function registerDiscordCommands() {
-  const response = await fetch(
-    `${DISCORD_API_BASE_URL}/applications/${getDiscordApplicationId()}/commands`,
-    {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bot ${getDiscordBotToken()}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(syncHubCommands),
-      cache: 'no-store',
-    }
-  )
+  try {
+    const response = await createDiscordApi().put<DiscordApplicationCommand[]>(
+      `/applications/${getDiscordApplicationId()}/commands`,
+      syncHubCommands
+    )
 
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`Discord command registration failed: ${errorBody}`)
+    return response.data
+  } catch (error) {
+    throw new Error(
+      getAxiosErrorMessage(error, 'Discord command registration failed')
+    )
   }
-
-  return response.json()
 }
 
 export async function getDiscordCommands() {
-  const response = await fetch(
-    `${DISCORD_API_BASE_URL}/applications/${getDiscordApplicationId()}/commands`,
-    {
-      headers: {
-        Authorization: `Bot ${getDiscordBotToken()}`,
-      },
-      cache: 'no-store',
-    }
-  )
+  try {
+    const response = await createDiscordApi().get<DiscordApplicationCommand[]>(
+      `/applications/${getDiscordApplicationId()}/commands`
+    )
 
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`Discord get commands failed: ${errorBody}`)
+    return response.data
+  } catch (error) {
+    throw new Error(getAxiosErrorMessage(error, 'Discord get commands failed'))
   }
-
-  return (await response.json()) as DiscordApplicationCommand[]
 }
 
 export async function listDiscordGuildTextChannels(guildId: string) {
-  const response = await fetch(
-    `${DISCORD_API_BASE_URL}/guilds/${guildId}/channels`,
-    {
-      headers: {
-        Authorization: `Bot ${getDiscordBotToken()}`,
-      },
-      cache: 'no-store',
-    }
-  )
+  try {
+    const response = await createDiscordApi().get<DiscordGuildChannel[]>(
+      `/guilds/${guildId}/channels`
+    )
 
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`Discord get guild channels failed: ${errorBody}`)
+    return response.data
+      .filter((channel) => channel.type === 0 || channel.type === 5)
+      .sort((left, right) => left.name.localeCompare(right.name))
+  } catch (error) {
+    throw new Error(
+      getAxiosErrorMessage(error, 'Discord get guild channels failed')
+    )
   }
+}
 
-  const channels = (await response.json()) as DiscordGuildChannel[]
+export async function sendDiscordMessage({
+  channelId,
+  content,
+  embeds,
+}: {
+  channelId: string
+  content: string
+  embeds?: Array<Record<string, unknown>>
+}) {
+  try {
+    const response = await createDiscordApi().post(
+      `/channels/${channelId}/messages`,
+      {
+        content,
+        embeds: embeds ?? [],
+        allowed_mentions: {
+          parse: [],
+        },
+      }
+    )
 
-  return channels
-    .filter((channel) => channel.type === 0 || channel.type === 5)
-    .sort((left, right) => left.name.localeCompare(right.name))
+    return response.data
+  } catch (error) {
+    throw new Error(getAxiosErrorMessage(error, 'Discord send message failed'))
+  }
 }

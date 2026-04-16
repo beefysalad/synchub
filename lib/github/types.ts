@@ -19,6 +19,7 @@ export type GitHubIssue = {
   body: string | null
   comments: number
   created_at: string
+  updated_at: string
   labels: Array<{
     id: number
     name: string
@@ -31,6 +32,9 @@ export type GitHubIssue = {
   user: {
     login: string
     avatar_url: string
+  }
+  pull_request?: {
+    html_url: string
   }
 }
 
@@ -90,6 +94,7 @@ export type GitHubPullRequest = {
   title: string
   body: string | null
   created_at: string
+  updated_at: string
   html_url: string
   user: {
     login: string
@@ -139,4 +144,23 @@ export type GithubIssueSummaryResponse = {
 
 export type GithubIssueDraftResponse = {
   body: string
+}
+
+export type GithubDailySummaryResponse = {
+  headline: string
+  overview: string
+  insights: string[]
+  repositories: Array<{
+    repository: string
+    highlights: string[]
+  }>
+}
+
+export type GithubDailySummaryQueryResponse = {
+  summary: GithubDailySummaryResponse | null
+}
+
+export type GithubDailySummarySendResponse = {
+  summary: GithubDailySummaryResponse
+  deliveredProviders: Array<'TELEGRAM' | 'DISCORD'>
 }

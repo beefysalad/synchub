@@ -17,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { DailySummarySettingsForm } from '@/components/dashboard/settings/daily-summary-settings-form'
 
 const notificationEventLabels: Record<string, string> = {
   issues: 'New issues',
@@ -315,6 +316,38 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-indigo-200/50 bg-indigo-50/20 shadow-lg shadow-indigo-100/20 backdrop-blur dark:border-indigo-900/30 dark:bg-indigo-950/20 dark:shadow-none">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings2 className="size-5 text-indigo-500" />
+            Daily Summary Preferences
+          </CardTitle>
+          <CardDescription>
+            Configure where daily recaps are delivered, then use the manual controls here for testing while cron-job.org handles scheduled generation.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {discordLinked ? (
+            <div className="max-w-2xl">
+              <DailySummarySettingsForm 
+                initialChannelId={
+                  (
+                    accountsByProvider.get('DISCORD')?.metadata as Record<
+                      string,
+                      unknown
+                    >
+                  )?.dailySummaryChannelId as string
+                } 
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Link a Discord account to configure specific delivery channels for your daily summaries.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
         <CardHeader>

@@ -320,7 +320,7 @@ Users need one extra linking step, but the security model is much stronger.
 ### Phase 8: AI Enhancements
 
 - Goals: improve triage and summarization
-- Tasks: add Gemini-powered issue draft generation, issue summaries, suggested labels during issue creation, and digest generation
+- Tasks: add Gemini-powered issue draft generation, issue summaries, suggested labels during issue creation, daily work summaries, and digest generation
 - Deliverables: optional AI-assisted workflows embedded directly into the dashboard
 - Out of scope: autonomous issue handling
 

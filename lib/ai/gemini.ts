@@ -1,3 +1,5 @@
+import { createExternalApi, getAxiosErrorMessage } from '@/lib/axios'
+
 type GeminiPart = {
   text: string
 }
@@ -35,53 +37,43 @@ export async function generateGeminiJson<T>({
   const apiKey = getGeminiApiKey()
   const model = getGeminiModel()
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+  try {
+    const response = await createExternalApi({
+      baseURL: 'https://generativelanguage.googleapis.com',
+    }).post<{
+      candidates?: Array<{
+        content?: {
+          parts?: Array<{
+            text?: string
+          }>
+        }
+      }>
+    }>(`/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: `${prompt}\n\nReturn strictly valid JSON that matches this shape:\n${schemaDescription}`,
+            },
+          ],
+        } satisfies GeminiContent,
+      ],
+      generationConfig: {
+        temperature,
+        responseMimeType: 'application/json',
       },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                text: `${prompt}\n\nReturn strictly valid JSON that matches this shape:\n${schemaDescription}`,
-              },
-            ],
-          } satisfies GeminiContent,
-        ],
-        generationConfig: {
-          temperature,
-          responseMimeType: 'application/json',
-        },
-      }),
-      cache: 'no-store',
+    })
+
+    const data = response.data
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+
+    if (!text) {
+      throw new Error('Gemini returned an empty response.')
     }
-  )
 
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`Gemini request failed: ${errorBody}`)
+    return JSON.parse(text) as T
+  } catch (error) {
+    throw new Error(getAxiosErrorMessage(error, 'Gemini request failed'))
   }
-
-  const data = (await response.json()) as {
-    candidates?: Array<{
-      content?: {
-        parts?: Array<{
-          text?: string
-        }>
-      }
-    }>
-  }
-
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text
-
-  if (!text) {
-    throw new Error('Gemini returned an empty response.')
-  }
-
-  return JSON.parse(text) as T
 }
