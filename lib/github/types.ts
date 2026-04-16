@@ -78,6 +78,12 @@ export type CreateGitHubIssuePayload = {
   labels?: string[]
 }
 
+export type UpdateGitHubIssuePayload = {
+  title?: string
+  body?: string
+  state?: 'open' | 'closed'
+}
+
 export type CreateGitHubIssueResponse = {
   issue: GitHubIssue
 }
@@ -133,6 +139,11 @@ export type GitHubPullDetailResponse = {
   pull: GitHubPullRequest
   comments: GitHubIssueComment[]
   detectedIssueReferences: GitHubIssueReference[]
+}
+
+export type UpdateGitHubPullPayload = {
+  title?: string
+  body?: string
 }
 
 export type GitHubCommitsResponse = {

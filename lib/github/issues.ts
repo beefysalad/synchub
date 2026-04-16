@@ -17,6 +17,16 @@ type CreateIssueParams = {
   labels?: string[]
 }
 
+type UpdateIssueParams = {
+  userId: string
+  owner: string
+  repo: string
+  issueNumber: number
+  title?: string
+  body?: string
+  state?: 'open' | 'closed'
+}
+
 export const githubIssueService = {
   async listRepositoryIssues({
     userId,
@@ -126,6 +136,24 @@ export const githubIssueService = {
   },
 
   async updateIssueState(userId: string, owner: string, repo: string, issueNumber: number, state: 'open' | 'closed') {
+    return this.updateIssue({
+      userId,
+      owner,
+      repo,
+      issueNumber,
+      state,
+    })
+  },
+
+  async updateIssue({
+    userId,
+    owner,
+    repo,
+    issueNumber,
+    title,
+    body,
+    state,
+  }: UpdateIssueParams) {
     const accessToken = await getGitHubAccessTokenForUser(userId)
 
     if (!accessToken) {
@@ -136,7 +164,11 @@ export const githubIssueService = {
       `/repos/${owner}/${repo}/issues/${issueNumber}`,
       {
         method: 'PATCH',
-        body: JSON.stringify({ state }),
+        body: JSON.stringify({
+          ...(typeof title === 'string' ? { title } : {}),
+          ...(typeof body === 'string' ? { body } : {}),
+          ...(state ? { state } : {}),
+        }),
       },
       accessToken
     )

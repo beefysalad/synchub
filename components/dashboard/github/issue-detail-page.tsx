@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   BellRing,
   ExternalLink,
+  FilePenLine,
   Lock,
   MessageSquareMore,
   Sparkles,
@@ -13,10 +14,12 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
+import { EditGitHubThreadForm } from '@/components/dashboard/github/edit-github-thread-form'
 import { SectionHeader } from '@/components/dashboard/section-header'
 import { Button } from '@/components/ui/button'
 import {
@@ -30,6 +33,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { useSummarizeGithubIssue } from '@/hooks/use-github-ai'
 import {
   useDeleteGithubIssue,
+  useEditGithubIssue,
   useGithubIssueDetail,
   useUpdateGithubIssueState,
 } from '@/hooks/use-github-issues'
@@ -79,8 +83,10 @@ export function IssueDetailPage({
   issueNumber: number
 }) {
   const router = useRouter()
+  const [isEditing, setIsEditing] = useState(false)
   const { data, isLoading, error } = useGithubIssueDetail(owner, repo, issueNumber)
   const updateState = useUpdateGithubIssueState(owner, repo, issueNumber)
+  const editIssue = useEditGithubIssue(owner, repo, issueNumber)
   const deleteIssue = useDeleteGithubIssue(owner, repo, issueNumber)
   const summarizeIssue = useSummarizeGithubIssue()
 
@@ -149,6 +155,18 @@ export function IssueDetailPage({
       })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Unable to summarize issue')
+    }
+  }
+
+  async function handleEditSubmit(values: { title: string; body: string }) {
+    try {
+      await editIssue.mutateAsync(values)
+      toast.success(`Issue #${issueNumber} updated successfully.`)
+      setIsEditing(false)
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to update issue'
+      )
     }
   }
 
@@ -221,6 +239,15 @@ export function IssueDetailPage({
                 <ExternalLink className="size-4" />
                 View on GitHub
               </Link>
+            </Button>
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() => setIsEditing((current) => !current)}
+              disabled={editIssue.isPending}
+            >
+              {editIssue.isPending ? <Spinner /> : <FilePenLine className="size-4" />}
+              {isEditing ? 'Stop editing' : 'Edit details'}
             </Button>
           </>
         }
@@ -348,19 +375,29 @@ export function IssueDetailPage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageSquareMore className="size-5 text-emerald-600 dark:text-emerald-300" />
-              Timeline
+              Issue details
             </CardTitle>
             <CardDescription>
-              Original issue description and all follow-up comments in one conversation stream.
+              Update the issue content here, then review the full discussion below.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <ConversationEntry
-              avatarUrl={issue.user.avatar_url}
-              body={issue.body ?? '*No description provided.*'}
-              createdAt={issue.created_at}
-              username={issue.user.login}
-            />
+            {isEditing ? (
+              <EditGitHubThreadForm
+                initialTitle={issue.title}
+                initialBody={issue.body ?? ''}
+                isPending={editIssue.isPending}
+                onCancel={() => setIsEditing(false)}
+                onSubmit={handleEditSubmit}
+              />
+            ) : (
+              <ConversationEntry
+                avatarUrl={issue.user.avatar_url}
+                body={issue.body ?? '*No description provided.*'}
+                createdAt={issue.created_at}
+                username={issue.user.login}
+              />
+            )}
 
             {comments.map((comment) => (
               <ConversationEntry
