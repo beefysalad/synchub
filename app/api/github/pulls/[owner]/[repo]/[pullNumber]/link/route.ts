@@ -1,13 +1,18 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 
-import { githubRepositoryService } from '@/lib/github/repositories'
-import prisma from '@/lib/prisma'
-import { githubPullsService } from '@/lib/github/pulls'
 import { githubIssueService } from '@/lib/github/issues'
 import { githubPullIssueLinkService } from '@/lib/github/pull-issue-links'
+import { githubPullsService } from '@/lib/github/pulls'
+import { githubRepositoryService } from '@/lib/github/repositories'
+import prisma from '@/lib/prisma'
 
-export async function GET(
+const linkPullIssueSchema = z.object({
+  issueNumber: z.number().int().positive(),
+})
+
+export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ owner: string; repo: string; pullNumber: string }> }
 ) {
@@ -25,9 +30,10 @@ export async function GET(
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
-  const { owner, repo, pullNumber } = await params
-
   try {
+    const { owner, repo, pullNumber } = await params
+    const { issueNumber } = linkPullIssueSchema.parse(await request.json())
+
     const validatedRepository =
       await githubRepositoryService.resolveRepositoryContext(user.id, {
         owner,
@@ -41,27 +47,32 @@ export async function GET(
       parseInt(pullNumber, 10)
     )
 
-    // Pull Requests use the Issues API for standard thread comments
-    const comments = await githubIssueService.getIssueComments(
+    await githubIssueService.getIssue(
       user.id,
       validatedRepository.owner,
       validatedRepository.repo,
-      parseInt(pullNumber, 10)
+      issueNumber
     )
 
-    const detectedIssueReferences =
-      githubPullIssueLinkService.extractIssueReferencesFromPullRequest({
-        owner: validatedRepository.owner,
-        repo: validatedRepository.repo,
-        title: pull.title,
-        body: pull.body,
-        pullNumber: pull.number,
-      })
+    const linkedIssues = await githubPullIssueLinkService.linkPullRequestToIssues({
+      userId: user.id,
+      pullOwner: validatedRepository.owner,
+      pullRepo: validatedRepository.repo,
+      pull,
+      issues: [
+        {
+          owner: validatedRepository.owner,
+          repo: validatedRepository.repo,
+          number: issueNumber,
+          fullName: `${validatedRepository.owner}/${validatedRepository.repo}`,
+        },
+      ],
+    })
 
-    return NextResponse.json({ pull, comments, detectedIssueReferences })
+    return NextResponse.json({ linkedIssues })
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : 'Unable to fetch GitHub PR'
+      error instanceof Error ? error.message : 'Unable to link pull request to issue'
 
     return NextResponse.json({ error: message }, { status: 400 })
   }

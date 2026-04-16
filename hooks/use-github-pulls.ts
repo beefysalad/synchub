@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import api from '@/lib/axios'
 import type {
-  GitHubIssueComment,
-  GitHubPullRequest,
+  GitHubIssueReference,
+  GitHubPullDetailResponse,
   GitHubPullRequestsResponse,
 } from '@/lib/github/types'
 import { handleApiError } from '@/lib/error-handler'
@@ -39,7 +39,7 @@ export function useGithubPullDetail(owner: string, repo: string, pullNumber: num
     queryKey: ['github', 'pulls', owner, repo, pullNumber],
     queryFn: async () => {
       try {
-        const response = await api.get<{ pull: GitHubPullRequest; comments: GitHubIssueComment[] }>(
+        const response = await api.get<GitHubPullDetailResponse>(
           `/github/pulls/${owner}/${repo}/${pullNumber}`
         )
         return response.data
@@ -48,5 +48,33 @@ export function useGithubPullDetail(owner: string, repo: string, pullNumber: num
       }
     },
     enabled: Boolean(owner && repo && pullNumber),
+  })
+}
+
+export function useLinkGithubPullIssue(
+  owner: string,
+  repo: string,
+  pullNumber: number
+) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (issueNumber: number) => {
+      try {
+        const response = await api.post<{ linkedIssues: GitHubIssueReference[] }>(
+          `/github/pulls/${owner}/${repo}/${pullNumber}/link`,
+          { issueNumber }
+        )
+
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'pulls', owner, repo, pullNumber],
+      })
+    },
   })
 }

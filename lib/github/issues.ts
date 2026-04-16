@@ -1,5 +1,5 @@
 import { getGitHubAccessTokenForUser, githubRequest } from '@/lib/github/client'
-import type { GitHubIssue } from '@/lib/github/types'
+import type { GitHubIssue, GitHubIssueComment } from '@/lib/github/types'
 
 type IssueListParams = {
   userId: string
@@ -95,10 +95,32 @@ export const githubIssueService = {
       throw new Error('No GitHub access token is linked to this user yet.')
     }
 
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return githubRequest<any[]>(
+    return githubRequest<GitHubIssueComment[]>(
       `/repos/${owner}/${repo}/issues/${issueNumber}/comments`,
       { method: 'GET' },
+      accessToken
+    )
+  },
+
+  async createIssueComment(
+    userId: string,
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    body: string
+  ) {
+    const accessToken = await getGitHubAccessTokenForUser(userId)
+
+    if (!accessToken) {
+      throw new Error('No GitHub access token is linked to this user yet.')
+    }
+
+    return githubRequest<GitHubIssueComment>(
+      `/repos/${owner}/${repo}/issues/${issueNumber}/comments`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ body }),
+      },
       accessToken
     )
   },
