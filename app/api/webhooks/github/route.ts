@@ -2,66 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import prisma from '@/lib/prisma'
 import { sendTelegramMessage } from '@/lib/telegram/api'
-
-function formatGithubNotificationMessage({
-  eventName,
-  payload,
-  repositoryFullName,
-}: {
-  eventName: string
-  payload: Record<string, unknown>
-  repositoryFullName: string
-}) {
-  const issue = payload.issue as
-    | {
-        title?: string
-        html_url?: string
-        user?: { login?: string }
-      }
-    | undefined
-  const pullRequest = payload.pull_request as
-    | {
-        title?: string
-        html_url?: string
-        user?: { login?: string }
-      }
-    | undefined
-  const commits = Array.isArray(payload.commits) ? payload.commits : []
-  const pusher = payload.pusher as { name?: string } | undefined
-  const compareUrl =
-    typeof payload.compare === 'string' ? payload.compare : undefined
-
-  if (eventName === 'issues' && payload.action === 'opened') {
-    return [
-      `New issue in ${repositoryFullName}`,
-      issue?.title ?? 'Untitled issue',
-      `Opened by ${issue?.user?.login ?? 'Unknown user'}`,
-      issue?.html_url ?? '',
-    ].join('\n')
-  }
-
-  if (eventName === 'pull_request' && payload.action === 'opened') {
-    return [
-      `New pull request in ${repositoryFullName}`,
-      pullRequest?.title ?? 'Untitled pull request',
-      `Opened by ${pullRequest?.user?.login ?? 'Unknown user'}`,
-      pullRequest?.html_url ?? '',
-    ].join('\n')
-  }
-
-  if (eventName === 'push') {
-    const commitCount = commits.length
-    const pusherName = pusher?.name || 'Someone'
-
-    return [
-      `New push in ${repositoryFullName}`,
-      `${commitCount} commit${commitCount === 1 ? '' : 's'} by ${pusherName}`,
-      compareUrl ?? '',
-    ].join('\n')
-  }
-
-  return null
-}
+import { buildGithubNotificationMessage } from '@/lib/github/notification-messages'
 
 export async function POST(request: NextRequest) {
   const eventName = request.headers.get('x-github-event')
@@ -109,13 +50,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Ignored: Repo not tracked by any user' })
     }
 
-    const messageText = formatGithubNotificationMessage({
+    const message = buildGithubNotificationMessage({
       eventName,
       payload,
       repositoryFullName,
     })
 
-    if (!messageText) {
+    if (!message) {
       return NextResponse.json({ success: true, message: `Ignored action ${payload.action} for event ${eventName}` })
     }
 
@@ -135,7 +76,10 @@ export async function POST(request: NextRequest) {
             if (rule.provider === 'TELEGRAM') {
               await sendTelegramMessage({
                 chatId: linkedAccount.chatId,
-                text: messageText,
+                text: message.telegramText,
+                parseMode: 'HTML',
+                disableWebPagePreview:
+                  message.telegramDisablePreview ?? true,
               })
             } else if (rule.provider === 'DISCORD') {
               const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN
@@ -147,8 +91,11 @@ export async function POST(request: NextRequest) {
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    content: messageText,
-                    flags: 4,
+                    content: message.discordContent,
+                    embeds: message.discordEmbeds ?? [],
+                    allowed_mentions: {
+                      parse: [],
+                    },
                   }),
                 })
               }

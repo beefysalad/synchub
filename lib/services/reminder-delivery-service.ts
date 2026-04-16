@@ -1,33 +1,17 @@
 import { AccountProvider, ReminderStatus } from '@/app/generated/prisma/client'
 
+import { buildReminderDeliveryMessage } from '@/lib/github/notification-messages'
 import prisma from '@/lib/prisma'
 import { sendTelegramMessage } from '@/lib/telegram/api'
-
-function buildReminderMessage({
-  repository,
-  issueNumber,
-  note,
-}: {
-  repository: string
-  issueNumber: number
-  note: string | null
-}) {
-  return [
-    `Reminder for ${repository}`,
-    `Issue #${issueNumber}`,
-    note ? `Note: ${note}` : null,
-    `https://github.com/${repository}/issues/${issueNumber}`,
-  ]
-    .filter(Boolean)
-    .join('\n')
-}
 
 async function sendDiscordMessage({
   channelId,
   content,
+  embeds,
 }: {
   channelId: string
   content: string
+  embeds?: Array<Record<string, unknown>>
 }) {
   const botToken = process.env.DISCORD_BOT_TOKEN
 
@@ -45,7 +29,10 @@ async function sendDiscordMessage({
       },
       body: JSON.stringify({
         content,
-        flags: 4,
+        embeds: embeds ?? [],
+        allowed_mentions: {
+          parse: [],
+        },
       }),
       cache: 'no-store',
     }
@@ -98,7 +85,7 @@ export const reminderDeliveryService = {
         continue
       }
 
-      const message = buildReminderMessage(reminder)
+      const message = buildReminderDeliveryMessage(reminder)
 
       try {
         await Promise.all(
@@ -110,13 +97,15 @@ export const reminderDeliveryService = {
             if (account.provider === AccountProvider.TELEGRAM) {
               return sendTelegramMessage({
                 chatId: account.chatId,
-                text: message,
+                text: message.telegramText,
+                parseMode: 'HTML',
               })
             }
 
             return sendDiscordMessage({
               channelId: account.chatId,
-              content: message,
+              content: message.discordContent,
+              embeds: message.discordEmbeds,
             })
           })
         )

@@ -14,12 +14,14 @@ type SendTelegramMessageInput = {
   chatId: string | number
   text: string
   disableWebPagePreview?: boolean
+  parseMode?: 'HTML' | 'MarkdownV2'
 }
 
 export async function sendTelegramMessage({
   chatId,
   text,
   disableWebPagePreview = true,
+  parseMode,
 }: SendTelegramMessageInput) {
   const response = await fetch(
     `${TELEGRAM_API_BASE_URL}/bot${getTelegramBotToken()}/sendMessage`,
@@ -32,6 +34,7 @@ export async function sendTelegramMessage({
         chat_id: chatId,
         text,
         disable_web_page_preview: disableWebPagePreview,
+        ...(parseMode ? { parse_mode: parseMode } : {}),
       }),
       cache: 'no-store',
     }
