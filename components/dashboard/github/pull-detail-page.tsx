@@ -4,6 +4,7 @@ import { formatDistanceToNow } from 'date-fns'
 import {
   ArrowLeft,
   ExternalLink,
+  FilePenLine,
   GitPullRequest,
   Link2,
 } from 'lucide-react'
@@ -14,6 +15,7 @@ import { toast } from 'sonner'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
+import { EditGitHubThreadForm } from '@/components/dashboard/github/edit-github-thread-form'
 import { SectionHeader } from '@/components/dashboard/section-header'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,6 +28,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { useGithubIssues } from '@/hooks/use-github-issues'
 import {
+  useEditGithubPull,
   useGithubPullDetail,
   useLinkGithubPullIssue,
 } from '@/hooks/use-github-pulls'
@@ -74,6 +77,7 @@ export function PullDetailPage({
   repo: string
   pullNumber: number
 }) {
+  const [isEditing, setIsEditing] = useState(false)
   const { data, isLoading, error } = useGithubPullDetail(owner, repo, pullNumber)
   const { data: issuesData } = useGithubIssues({
     owner,
@@ -81,6 +85,7 @@ export function PullDetailPage({
     state: 'open',
   })
   const linkPullIssue = useLinkGithubPullIssue(owner, repo, pullNumber)
+  const editPull = useEditGithubPull(owner, repo, pullNumber)
   const [selectedIssueNumber, setSelectedIssueNumber] = useState('')
 
   const pull = data?.pull
@@ -105,6 +110,18 @@ export function PullDetailPage({
         toast.error(mutationError.message)
       },
     })
+  }
+
+  async function handleEditSubmit(values: { title: string; body: string }) {
+    try {
+      await editPull.mutateAsync(values)
+      toast.success(`Pull request #${pullNumber} updated successfully.`)
+      setIsEditing(false)
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to update pull request'
+      )
+    }
   }
 
   if (isLoading) {
@@ -146,6 +163,15 @@ export function PullDetailPage({
                 <ExternalLink className="size-4" />
                 View on GitHub
               </Link>
+            </Button>
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() => setIsEditing((current) => !current)}
+              disabled={editPull.isPending}
+            >
+              {editPull.isPending ? <Spinner /> : <FilePenLine className="size-4" />}
+              {isEditing ? 'Stop editing' : 'Edit details'}
             </Button>
           </>
         }
@@ -244,19 +270,29 @@ export function PullDetailPage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <GitPullRequest className="size-5 text-sky-600 dark:text-sky-300" />
-              Review timeline
+              Pull request details
             </CardTitle>
             <CardDescription>
-              Original PR description plus the discussion thread around it.
+              Update the PR title and description here, then review the discussion below.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <ConversationEntry
-              avatarUrl={pull.user.avatar_url}
-              body={pull.body ?? '*No description provided.*'}
-              createdAt={pull.created_at}
-              username={pull.user.login}
-            />
+            {isEditing ? (
+              <EditGitHubThreadForm
+                initialTitle={pull.title}
+                initialBody={pull.body ?? ''}
+                isPending={editPull.isPending}
+                onCancel={() => setIsEditing(false)}
+                onSubmit={handleEditSubmit}
+              />
+            ) : (
+              <ConversationEntry
+                avatarUrl={pull.user.avatar_url}
+                body={pull.body ?? '*No description provided.*'}
+                createdAt={pull.created_at}
+                username={pull.user.login}
+              />
+            )}
 
             {comments.map((comment) => (
               <ConversationEntry

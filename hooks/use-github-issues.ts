@@ -9,6 +9,7 @@ import {
   type GitHubIssueState,
   type GitHubIssuesResponse,
   type GitHubIssueDetailResponse,
+  type UpdateGitHubIssuePayload,
 } from '@/lib/github/types'
 import { handleApiError } from '@/lib/error-handler'
 
@@ -98,6 +99,32 @@ export function useDeleteGithubIssue(owner: string, repo: string, issueNumber: n
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'issues', owner, repo],
+      })
+    },
+  })
+}
+
+export function useEditGithubIssue(owner: string, repo: string, issueNumber: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payload: UpdateGitHubIssuePayload) => {
+      try {
+        const response = await api.patch(
+          `/github/issues/${owner}/${repo}/${issueNumber}`,
+          payload
+        )
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'issues', owner, repo, issueNumber],
+      })
       queryClient.invalidateQueries({
         queryKey: ['github', 'issues', owner, repo],
       })

@@ -5,6 +5,7 @@ import type {
   GitHubIssueReference,
   GitHubPullDetailResponse,
   GitHubPullRequestsResponse,
+  UpdateGitHubPullPayload,
 } from '@/lib/github/types'
 import { handleApiError } from '@/lib/error-handler'
 
@@ -74,6 +75,36 @@ export function useLinkGithubPullIssue(
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['github', 'pulls', owner, repo, pullNumber],
+      })
+    },
+  })
+}
+
+export function useEditGithubPull(
+  owner: string,
+  repo: string,
+  pullNumber: number
+) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payload: UpdateGitHubPullPayload) => {
+      try {
+        const response = await api.patch(
+          `/github/pulls/${owner}/${repo}/${pullNumber}`,
+          payload
+        )
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'pulls', owner, repo, pullNumber],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'pulls', owner, repo],
       })
     },
   })

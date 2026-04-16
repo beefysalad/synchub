@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { githubRepositoryService } from '@/lib/github/repositories'
 import prisma from '@/lib/prisma'
 import { githubIssueService } from '@/lib/github/issues'
+import { githubThreadEditSchema } from '@/lib/validators/github-thread'
 
 export async function GET(
   request: NextRequest,
@@ -78,7 +79,8 @@ export async function PATCH(
 
   try {
     const body = await request.json()
-    const state = body.state === 'closed' ? 'closed' : 'open'
+    const hasEditFields =
+      typeof body.title === 'string' || typeof body.body === 'string'
 
     const validatedRepository =
       await githubRepositoryService.resolveRepositoryContext(user.id, {
@@ -86,13 +88,24 @@ export async function PATCH(
         repo,
       })
 
-    const issue = await githubIssueService.updateIssueState(
-      user.id,
-      validatedRepository.owner,
-      validatedRepository.repo,
-      parseInt(issueNumber, 10),
-      state
-    )
+    const issue = hasEditFields
+      ? await githubIssueService.updateIssue({
+          userId: user.id,
+          owner: validatedRepository.owner,
+          repo: validatedRepository.repo,
+          issueNumber: parseInt(issueNumber, 10),
+          ...githubThreadEditSchema.parse({
+            title: body.title,
+            body: body.body,
+          }),
+        })
+      : await githubIssueService.updateIssueState(
+          user.id,
+          validatedRepository.owner,
+          validatedRepository.repo,
+          parseInt(issueNumber, 10),
+          body.state === 'closed' ? 'closed' : 'open'
+        )
 
     return NextResponse.json({ issue })
   } catch (error) {
