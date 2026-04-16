@@ -1,0 +1,229 @@
+'use client'
+
+import {
+  ArrowLeft,
+  BellRing,
+  ExternalLink,
+  MessageCircle,
+} from 'lucide-react'
+import Link from 'next/link'
+import { toast } from 'sonner'
+
+import { SectionHeader } from '@/components/dashboard/section-header'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Spinner } from '@/components/ui/spinner'
+import {
+  useGithubNotifications,
+  useUpdateNotificationRule,
+} from '@/hooks/use-github-notifications'
+import { useGithubRepositories } from '@/hooks/use-github-repositories'
+
+export function RepositorySettingsPage({
+  owner,
+  repo,
+}: {
+  owner: string
+  repo: string
+}) {
+  const repositoryFullName = `${owner}/${repo}`
+
+  const { data: repositoryData } = useGithubRepositories()
+  const repository =
+    repositoryData?.repositories.find(
+      (candidate) => candidate.full_name === repositoryFullName
+    ) ?? null
+
+  const { data: notificationsData, isLoading: isLoadingNotifications } =
+    useGithubNotifications(owner, repo)
+
+  const updateRule = useUpdateNotificationRule(owner, repo)
+
+  return (
+    <div className="space-y-8">
+      <SectionHeader
+        eyebrow="Repository Workspace"
+        title={`${repositoryFullName} Settings`}
+        description="Configure automations and notification rules for this specific repository."
+        actions={
+          <>
+            <Button asChild variant="outline" className="rounded-full">
+              <Link href={`/repos/${owner}/${repo}`}>
+                <ArrowLeft className="size-4" />
+                Back to repo
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-full">
+              <Link
+                href={repository?.html_url ?? `https://github.com/${owner}/${repo}`}
+                target="_blank"
+              >
+                <ExternalLink className="size-4" />
+                Open in GitHub
+              </Link>
+            </Button>
+          </>
+        }
+      />
+
+      <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+        <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <BellRing className="size-5 text-indigo-500" />
+              Broadcast Notification Rules
+            </CardTitle>
+            <CardDescription>
+              Route real-time GitHub events from this repository directly to your integrated bots. SyncHub will automatically provision webhooks on your behalf to forward live events.
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {isLoadingNotifications ? (
+              <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
+                <Spinner className="mr-2 inline size-4" /> Loading your notification rules...
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Telegram Setup */}
+                <div className="rounded-3xl border border-blue-200/50 bg-blue-50/30 px-6 py-8 dark:border-blue-900/40 dark:bg-blue-900/10">
+                  <div className="mb-6 flex items-center gap-3">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
+                      <MessageCircle className="size-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        Telegram Bot
+                      </h3>
+                      <p className="text-xs text-muted-foreground">Deliver alerts to Telegram</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {(['issues', 'pull_request', 'push'] as const).map((eventType) => {
+                      const rule = notificationsData?.rules.find((r) => r.provider === 'TELEGRAM')
+                      const isEnabled = rule?.events.includes(eventType) ?? false
+
+                      return (
+                        <label
+                          key={`tg-${eventType}`}
+                          className="flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isEnabled}
+                            className="mt-1 size-5 rounded border-slate-300 transition-all focus:ring-2 focus:ring-blue-500"
+                            disabled={updateRule.isPending}
+                            onChange={(e) => {
+                              const currentEvents = rule?.events ?? []
+                              const newEvents = e.target.checked
+                                ? [...currentEvents, eventType]
+                                : currentEvents.filter((ev) => ev !== eventType)
+
+                              updateRule.mutate(
+                                {
+                                  provider: 'TELEGRAM',
+                                  events: newEvents,
+                                },
+                                {
+                                  onError: (err) => {
+                                    toast.error(err.message || 'Failed to update rule')
+                                  },
+                                }
+                              )
+                            }}
+                          />
+                          <div>
+                            <span className="block text-sm font-medium capitalize text-slate-800 dark:text-slate-200">
+                              {eventType === 'push' ? 'Commits (Pushes)' : eventType.replace('_', ' ')}
+                            </span>
+                            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+                              {eventType === 'issues' && 'Alert when new issues are opened.'}
+                              {eventType === 'pull_request' && 'Alert when code is submitted for review.'}
+                              {eventType === 'push' && 'Alert when new code is pushed to this repo.'}
+                            </span>
+                          </div>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Discord Setup */}
+                <div className="rounded-3xl border border-indigo-200/50 bg-indigo-50/30 px-6 py-8 dark:border-indigo-900/40 dark:bg-indigo-900/10">
+                  <div className="mb-6 flex items-center gap-3">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-indigo-500 text-white shadow-sm">
+                      <MessageCircle className="size-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        Discord Bot
+                      </h3>
+                      <p className="text-xs text-muted-foreground">Deliver alerts to Discord</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {(['issues', 'pull_request', 'push'] as const).map((eventType) => {
+                      const rule = notificationsData?.rules.find((r) => r.provider === 'DISCORD')
+                      const isEnabled = rule?.events.includes(eventType) ?? false
+
+                      return (
+                        <label
+                          key={`dc-${eventType}`}
+                          className="flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isEnabled}
+                            className="mt-1 size-5 rounded border-slate-300 transition-all focus:ring-2 focus:ring-indigo-500"
+                            disabled={updateRule.isPending}
+                            onChange={(e) => {
+                              const currentEvents = rule?.events ?? []
+                              const newEvents = e.target.checked
+                                ? [...currentEvents, eventType]
+                                : currentEvents.filter((ev) => ev !== eventType)
+
+                              updateRule.mutate(
+                                {
+                                  provider: 'DISCORD',
+                                  events: newEvents,
+                                },
+                                {
+                                  onError: (err) => {
+                                    toast.error(err.message || 'Failed to update rule')
+                                  },
+                                }
+                              )
+                            }}
+                          />
+                          <div>
+                            <span className="block text-sm font-medium capitalize text-slate-800 dark:text-slate-200">
+                              {eventType === 'push' ? 'Commits (Pushes)' : eventType.replace('_', ' ')}
+                            </span>
+                            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+                              {eventType === 'issues' && 'Alert when new issues are opened.'}
+                              {eventType === 'pull_request' && 'Alert when code is submitted for review.'}
+                              {eventType === 'push' && 'Alert when new code is pushed to this repo.'}
+                            </span>
+                          </div>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Link2,
   Settings,
+  FolderGit2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -16,7 +17,7 @@ import { cn } from '@/lib/utils'
 const navigation = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/integrations', label: 'Integrations', icon: Link2 },
-  { href: '/issues', label: 'Issues', icon: Github },
+  { href: '/repos', label: 'Repos', icon: FolderGit2 },
   { href: '/reminders', label: 'Reminders', icon: BellRing },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]

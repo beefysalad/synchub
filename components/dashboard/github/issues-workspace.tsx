@@ -242,7 +242,7 @@ export function IssuesWorkspace() {
                         Loading repositories...
                       </div>
                     ) : availableRepositories.length ? (
-                      availableRepositories.slice(0, 12).map((repository) => (
+                      availableRepositories.map((repository) => (
                         <button
                           key={repository.id}
                           type="button"
@@ -367,9 +367,9 @@ export function IssuesWorkspace() {
                     <div className="flex flex-wrap gap-2">
                       <Button asChild className="rounded-full">
                         <Link
-                          href={`/issues/${repository.owner.login}/${repository.name}`}
+                          href={`/repos/${repository.owner.login}/${repository.name}`}
                         >
-                          View issues
+                          Open repo
                         </Link>
                       </Button>
 

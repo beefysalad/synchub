@@ -10,8 +10,7 @@ import {
   Star,
   GitPullRequest,
   GitCommit,
-  Bell,
-  MessageCircle,
+  Settings,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -35,10 +34,6 @@ import {
   useGithubRepositories,
   useUpdateGithubPreferences,
 } from '@/hooks/use-github-repositories'
-import {
-  useGithubNotifications,
-  useUpdateNotificationRule,
-} from '@/hooks/use-github-notifications'
 import type { GitHubIssueState } from '@/lib/github/types'
 
 const issueStates: GitHubIssueState[] = ['open', 'all', 'closed']
@@ -50,7 +45,7 @@ export function RepositoryIssuesPage({
   owner: string
   repo: string
 }) {
-  const [activeTab, setActiveTab] = useState<'issues' | 'pulls' | 'commits' | 'notifications'>('issues')
+  const [activeTab, setActiveTab] = useState<'issues' | 'pulls' | 'commits'>('issues')
   const [issueState, setIssueState] = useState<GitHubIssueState>('open')
 
   const { data: repositoryData } = useGithubRepositories()
@@ -80,11 +75,6 @@ export function RepositoryIssuesPage({
     data: commitsData,
     isLoading: isLoadingCommits,
   } = useGithubCommits({ owner, repo })
-
-  const { data: notificationsData, isLoading: isLoadingNotifications } =
-    useGithubNotifications(owner, repo)
-
-  const updateRule = useUpdateNotificationRule(owner, repo)
 
   const repositoryFullName = `${owner}/${repo}`
   const repository =
@@ -154,7 +144,7 @@ export function RepositoryIssuesPage({
         actions={
           <>
             <Button asChild variant="outline" className="rounded-full">
-              <Link href="/issues">
+              <Link href="/repos">
                 <ArrowLeft className="size-4" />
                 Back
               </Link>
@@ -172,6 +162,12 @@ export function RepositoryIssuesPage({
               >
                 <ExternalLink className="size-4" />
                 Open in GitHub
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" className="rounded-full bg-slate-100/50 dark:bg-slate-800/50 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">
+              <Link href={`/repos/${owner}/${repo}/settings`}>
+                <Settings className="size-4" />
+                Settings
               </Link>
             </Button>
           </>
@@ -236,14 +232,6 @@ export function RepositoryIssuesPage({
           <GitCommit className="mr-2 size-4" />
           Commits
         </Button>
-        <Button
-          variant={activeTab === 'notifications' ? 'default' : 'ghost'}
-          onClick={() => setActiveTab('notifications')}
-          className="rounded-full font-medium ml-auto"
-        >
-          <Bell className="mr-2 size-4" />
-          Notifications
-        </Button>
       </div>
 
       <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
@@ -253,13 +241,11 @@ export function RepositoryIssuesPage({
               {activeTab === 'issues' && 'Current issues'}
               {activeTab === 'pulls' && 'Active Pull Requests'}
               {activeTab === 'commits' && 'Recent Branch Commits'}
-              {activeTab === 'notifications' && 'Broadcast Rules'}
             </CardTitle>
             <CardDescription>
               {activeTab === 'issues' && 'Filter and inspect standard issues natively.'}
               {activeTab === 'pulls' && 'Review code submissions before merging.'}
               {activeTab === 'commits' && 'Monitor direct branch pushes in real-time.'}
-              {activeTab === 'notifications' && 'Route real-time GitHub events directly to your bots.'}
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -453,102 +439,6 @@ export function RepositoryIssuesPage({
                 </div>
               )}
             </>
-          )}
-
-          {activeTab === 'notifications' && (
-            <div className="space-y-6">
-              {isLoadingNotifications ? (
-                <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
-                  <Spinner className="mr-2 inline size-4" /> Loading your notification rules...
-                </div>
-              ) : (
-                <div className="grid gap-6 md:grid-cols-2">
-                  {/* Telegram Setup */}
-                  <div className="rounded-3xl border border-blue-200/50 bg-blue-50/30 px-5 py-6 dark:border-blue-900/40 dark:bg-blue-900/10">
-                    <div className="mb-4 flex items-center gap-2">
-                      <MessageCircle className="size-6 text-blue-500" />
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                        Telegram Bot
-                      </h3>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {(['issues', 'pull_request', 'push'] as const).map((eventType) => {
-                        const rule = notificationsData?.rules.find((r) => r.provider === 'TELEGRAM')
-                        const isEnabled = rule?.events.includes(eventType) ?? false
-
-                        return (
-                          <label key={`tg-${eventType}`} className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={isEnabled}
-                              className="size-4 rounded border-slate-300"
-                              disabled={updateRule.isPending}
-                              onChange={(e) => {
-                                const currentEvents = rule?.events ?? []
-                                const newEvents = e.target.checked
-                                  ? [...currentEvents, eventType]
-                                  : currentEvents.filter((ev) => ev !== eventType)
-
-                                updateRule.mutate({
-                                  provider: 'TELEGRAM',
-                                  events: newEvents,
-                                })
-                              }}
-                            />
-                            <span className="text-sm font-medium capitalize text-slate-700 dark:text-slate-300">
-                              {eventType.replace('_', ' ')}
-                            </span>
-                          </label>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Discord Setup */}
-                  <div className="rounded-3xl border border-indigo-200/50 bg-indigo-50/30 px-5 py-6 dark:border-indigo-900/40 dark:bg-indigo-900/10">
-                    <div className="mb-4 flex items-center gap-2">
-                      <MessageCircle className="size-6 text-indigo-500" />
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                        Discord Bot
-                      </h3>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {(['issues', 'pull_request', 'push'] as const).map((eventType) => {
-                        const rule = notificationsData?.rules.find((r) => r.provider === 'DISCORD')
-                        const isEnabled = rule?.events.includes(eventType) ?? false
-
-                        return (
-                          <label key={`dc-${eventType}`} className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={isEnabled}
-                              className="size-4 rounded border-slate-300"
-                              disabled={updateRule.isPending}
-                              onChange={(e) => {
-                                const currentEvents = rule?.events ?? []
-                                const newEvents = e.target.checked
-                                  ? [...currentEvents, eventType]
-                                  : currentEvents.filter((ev) => ev !== eventType)
-
-                                updateRule.mutate({
-                                  provider: 'DISCORD',
-                                  events: newEvents,
-                                })
-                              }}
-                            />
-                            <span className="text-sm font-medium capitalize text-slate-700 dark:text-slate-300">
-                              {eventType.replace('_', ' ')}
-                            </span>
-                          </label>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
           )}
         </CardContent>
       </Card>
