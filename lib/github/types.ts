@@ -102,6 +102,13 @@ export type GitHubPullRequest = {
   }
 }
 
+export type GitHubIssueReference = {
+  owner: string
+  repo: string
+  number: number
+  fullName: string
+}
+
 export type GitHubCommit = {
   sha: string
   html_url: string
@@ -120,6 +127,12 @@ export type GitHubCommit = {
 
 export type GitHubPullRequestsResponse = {
   pulls: GitHubPullRequest[]
+}
+
+export type GitHubPullDetailResponse = {
+  pull: GitHubPullRequest
+  comments: GitHubIssueComment[]
+  detectedIssueReferences: GitHubIssueReference[]
 }
 
 export type GitHubCommitsResponse = {

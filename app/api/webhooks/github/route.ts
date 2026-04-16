@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { sendDiscordMessage } from '@/lib/discord/api'
+import { githubPullIssueLinkService } from '@/lib/github/pull-issue-links'
 import prisma from '@/lib/prisma'
 import { sendTelegramMessage } from '@/lib/telegram/api'
 import { buildGithubNotificationMessage } from '@/lib/github/notification-messages'
@@ -61,6 +62,48 @@ export async function POST(request: NextRequest) {
 
     if (!trackedRepos.length) {
       return NextResponse.json({ success: true, message: 'Ignored: Repo not tracked by any user' })
+    }
+
+    if (
+      eventName === 'pull_request' &&
+      payload.action === 'opened' &&
+      payload.pull_request
+    ) {
+      const githubLinkedTracker = trackedRepos.find((tracker) =>
+        tracker.user.linkedAccounts.some(
+          (account) => account.provider === 'GITHUB' && Boolean(account.accessToken)
+        )
+      )
+
+      if (githubLinkedTracker) {
+        try {
+          const references =
+            githubPullIssueLinkService.extractIssueReferencesFromPullRequest({
+              owner: payload.repository.owner.login,
+              repo: payload.repository.name,
+              title: payload.pull_request.title,
+              body: payload.pull_request.body,
+              pullNumber: payload.pull_request.number,
+            })
+
+          if (references.length) {
+            await githubPullIssueLinkService.linkPullRequestToIssues({
+              userId: githubLinkedTracker.userId,
+              pullOwner: payload.repository.owner.login,
+              pullRepo: payload.repository.name,
+              pull: {
+                number: payload.pull_request.number,
+                title: payload.pull_request.title,
+                body: payload.pull_request.body,
+                html_url: payload.pull_request.html_url,
+              },
+              issues: references,
+            })
+          }
+        } catch (error) {
+          console.error('Failed auto-linking pull request to issues:', error)
+        }
+      }
     }
 
     const message = buildGithubNotificationMessage({

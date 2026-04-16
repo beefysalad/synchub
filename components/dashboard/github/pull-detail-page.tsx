@@ -1,9 +1,16 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { ArrowLeft, ExternalLink, GitPullRequest } from 'lucide-react'
+import {
+  ArrowLeft,
+  ExternalLink,
+  GitPullRequest,
+  Link2,
+} from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useState } from 'react'
+import { toast } from 'sonner'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -17,7 +24,11 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
-import { useGithubPullDetail } from '@/hooks/use-github-pulls'
+import { useGithubIssues } from '@/hooks/use-github-issues'
+import {
+  useGithubPullDetail,
+  useLinkGithubPullIssue,
+} from '@/hooks/use-github-pulls'
 
 function ConversationEntry({
   avatarUrl,
@@ -64,9 +75,37 @@ export function PullDetailPage({
   pullNumber: number
 }) {
   const { data, isLoading, error } = useGithubPullDetail(owner, repo, pullNumber)
+  const { data: issuesData } = useGithubIssues({
+    owner,
+    repo,
+    state: 'open',
+  })
+  const linkPullIssue = useLinkGithubPullIssue(owner, repo, pullNumber)
+  const [selectedIssueNumber, setSelectedIssueNumber] = useState('')
 
   const pull = data?.pull
   const comments = data?.comments ?? []
+  const detectedIssueReferences = data?.detectedIssueReferences ?? []
+  const availableIssues =
+    issuesData?.issues.filter((issue) => issue.number !== pullNumber) ?? []
+
+  function handleManualLink() {
+    const issueNumber = Number(selectedIssueNumber)
+
+    if (!issueNumber) {
+      toast.error('Select an issue to link first.')
+      return
+    }
+
+    linkPullIssue.mutate(issueNumber, {
+      onSuccess: () => {
+        toast.success(`Pull request #${pullNumber} linked to issue #${issueNumber}.`)
+      },
+      onError: (mutationError) => {
+        toast.error(mutationError.message)
+      },
+    })
+  }
 
   if (isLoading) {
     return (
@@ -140,6 +179,63 @@ export function PullDetailPage({
               <p className="mt-2 text-lg font-semibold">
                 {comments.length + 1} entries
               </p>
+            </div>
+            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Detected references
+              </p>
+              {detectedIssueReferences.length ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {detectedIssueReferences.map((reference) => (
+                    <span
+                      key={`${reference.fullName}#${reference.number}`}
+                      className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100"
+                    >
+                      {reference.repo.toUpperCase()} #{reference.number}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  No issue references detected in the PR title or description yet.
+                </p>
+              )}
+            </div>
+            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Link to issue
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Pick an open issue from this repo if you want to create the cross-link manually.
+              </p>
+              <div className="mt-4 flex flex-col gap-3">
+                <select
+                  value={selectedIssueNumber}
+                  onChange={(event) => setSelectedIssueNumber(event.target.value)}
+                  className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-emerald-400 dark:border-slate-800 dark:bg-slate-950"
+                >
+                  <option value="">Select an issue</option>
+                  {availableIssues.map((issue) => (
+                    <option key={issue.number} value={issue.number}>
+                      #{issue.number} · {issue.title}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={handleManualLink}
+                  disabled={linkPullIssue.isPending || !availableIssues.length}
+                >
+                  {linkPullIssue.isPending ? (
+                    <Spinner />
+                  ) : (
+                    <Link2 className="size-4" />
+                  )}
+                  Link issue
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
