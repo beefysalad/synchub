@@ -144,6 +144,7 @@ export const githubAssistantService = {
         `Create a professional recap for ${dateLabel}.`,
         'Use only the supplied activity. Do not invent work or generalize beyond what is present.',
         'Write complete, concrete sentences. Do not use ellipses.',
+        'Write smart insights in the second person when appropriate, such as "You demonstrated..." or "You maintained...". Avoid phrases like "The developer".',
         'If a repository was created or first tracked today, explicitly mention that as a project kickoff or new project setup.',
         'For repository highlights, prefer exact actions such as merged PRs, opened issues, implemented features, bug fixes, and new project setup.',
         'For smart insights, synthesize 2-3 short observations about focus, momentum, or work patterns. Keep them specific and fully written, not cut off.',
