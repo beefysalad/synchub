@@ -1,7 +1,14 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { ArrowLeft, ExternalLink, Lock, MessageSquareMore, Trash2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  BellRing,
+  ExternalLink,
+  Lock,
+  MessageSquareMore,
+  Trash2,
+} from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -222,6 +229,23 @@ export function IssueDetailPage({
               <p className="mt-2 text-lg font-semibold">
                 {comments.length + 1} entries
               </p>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Reminder
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Schedule or adjust a follow-up reminder from a dedicated page instead of managing it inline here.
+              </p>
+              <div className="mt-4">
+                <Button asChild className="w-full rounded-full sm:w-auto">
+                  <Link href={`/issues/${owner}/${repo}/${issueNumber}/reminder`}>
+                    <BellRing className="size-4" />
+                    Manage reminder
+                  </Link>
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

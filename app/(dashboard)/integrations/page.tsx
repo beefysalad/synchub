@@ -1,4 +1,5 @@
-import { Bot, CheckCircle2, Github, MessageSquareCode } from 'lucide-react'
+import Image from 'next/image'
+import { CheckCircle2 } from 'lucide-react'
 
 import { getOrCreateCurrentUserRecord } from '@/lib/clerk'
 import { getDiscordCommands } from '@/lib/discord/api'
@@ -25,7 +26,7 @@ const integrationCards = [
       'Manage issues, comments, and assignments without leaving SyncHub.',
     defaultCtaLabel: 'Authorize GitHub access',
     href: '/api/integrations/github/start',
-    icon: Github,
+    icon: '/Github Icon.svg',
   },
   {
     key: 'TELEGRAM',
@@ -34,7 +35,7 @@ const integrationCards = [
       'Get alerts, reminders, and quick commands right inside Telegram.',
     defaultCtaLabel: 'Connect Telegram',
     href: '/api/integrations/telegram/start',
-    icon: Bot,
+    icon: '/Telegram SVG Icon.svg',
   },
   {
     key: 'DISCORD',
@@ -43,7 +44,7 @@ const integrationCards = [
       'Let your team run SyncHub commands from the Discord server you already use.',
     defaultCtaLabel: 'Start Discord link',
     href: '/api/integrations/discord/start',
-    icon: MessageSquareCode,
+    icon: '/Discord SVG Icon.svg',
   },
 ] as const
 
@@ -146,7 +147,7 @@ export default async function IntegrationsPage({
             description,
             defaultCtaLabel,
             href,
-            icon: Icon,
+            icon,
           }) => {
             const account = accountsByProvider.get(key)
             const isGitHubAuthorized =
@@ -171,8 +172,14 @@ export default async function IntegrationsPage({
               >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                      <Icon className="size-5" />
+                    <div className="flex size-12 items-center justify-center rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                      <Image
+                        src={icon}
+                        alt={`${title} logo`}
+                        width={24}
+                        height={24}
+                        className="size-6"
+                      />
                     </div>
                     {isConnected ? (
                       <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
