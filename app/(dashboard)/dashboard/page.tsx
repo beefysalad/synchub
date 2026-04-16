@@ -1,13 +1,6 @@
 import { auth } from '@clerk/nextjs/server'
 import { formatDistanceToNow } from 'date-fns'
-import {
-  BellRing,
-  ExternalLink,
-  FolderGit2,
-  Link2,
-  Plus,
-  Star,
-} from 'lucide-react'
+import { BellRing, FolderGit2, Link2, Plus, Star } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
@@ -160,8 +153,10 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {!defaultRepo ? (
-              <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-center text-sm text-muted-foreground dark:border-slate-700">
-                You haven&apos;t designated a default repository yet. Head over to your tracked repositories and set one to display its recent activity here.
+              <div className="text-muted-foreground rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-center text-sm dark:border-slate-700">
+                You haven&apos;t designated a default repository yet. Head over
+                to your tracked repositories and set one to display its recent
+                activity here.
               </div>
             ) : recentIssues.length ? (
               recentIssues.map((issue) => (
@@ -177,13 +172,22 @@ export default async function DashboardPage() {
                         </span>
                         <p className="font-semibold">{issue.title}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        Opened by {issue.user.login} {formatDistanceToNow(new Date(issue.created_at), { addSuffix: true })}
+                      <p className="text-muted-foreground text-sm">
+                        Opened by {issue.user.login}{' '}
+                        {formatDistanceToNow(new Date(issue.created_at), {
+                          addSuffix: true,
+                        })}
                       </p>
                     </div>
 
-                    <Button asChild variant="outline" className="rounded-full shrink-0">
-                      <Link href={`/issues/${defaultOwner}/${defaultRepoName}/${issue.number}`}>
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="shrink-0 rounded-full"
+                    >
+                      <Link
+                        href={`/issues/${defaultOwner}/${defaultRepoName}/${issue.number}`}
+                      >
                         Open issue
                       </Link>
                     </Button>
@@ -191,7 +195,7 @@ export default async function DashboardPage() {
                 </div>
               ))
             ) : (
-              <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
+              <div className="text-muted-foreground rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm dark:border-slate-700">
                 No recent open issues found in this repository.
               </div>
             )}
