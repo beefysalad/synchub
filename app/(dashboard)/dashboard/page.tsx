@@ -1,11 +1,10 @@
 import { auth } from '@clerk/nextjs/server'
 import { formatDistanceToNow } from 'date-fns'
-import { BellRing, FolderGit2, Link2, Plus, Star } from 'lucide-react'
+import { BellRing, FileText, FolderGit2, Link2, Plus, Star } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { SectionHeader } from '@/components/dashboard/section-header'
-import { DailySummaryCard } from '@/components/dashboard/github/daily-summary-card'
 import { StatusCard } from '@/components/dashboard/status-card'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,6 +17,7 @@ import {
 import { githubIssueService } from '@/lib/github/issues'
 import type { GitHubIssue } from '@/lib/github/types'
 import prisma from '@/lib/prisma'
+import { dailySummaryService } from '@/lib/services/daily-summary-service'
 
 export default async function DashboardPage() {
   const { userId: clerkUserId } = await auth()
@@ -49,6 +49,19 @@ export default async function DashboardPage() {
         select: { provider: true },
       }),
     ])
+
+  const todaySummary = await prisma.dailySummary.findUnique({
+    where: {
+      userId_date: {
+        userId: user.id,
+        date: dailySummaryService.getDateKey(),
+      },
+    },
+    select: {
+      summary: true,
+      updatedAt: true,
+    },
+  })
 
   const defaultRepo = user.trackedRepos[0]
   let recentIssues: GitHubIssue[] = []
@@ -133,7 +146,48 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-6">
-        <DailySummaryCard />
+        <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+          <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <CardTitle>Daily Summary</CardTitle>
+              <CardDescription>
+                Today&apos;s AI recap is generated separately from the dashboard
+                and can be reviewed on its own page.
+              </CardDescription>
+            </div>
+            <Button asChild className="rounded-full">
+              <Link href="/summary">
+                <FileText className="size-4" />
+                View daily summary
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {todaySummary ? (
+              <div className="flex flex-col gap-4 rounded-3xl border border-emerald-200/60 bg-emerald-50/60 px-5 py-5 lg:flex-row lg:items-center lg:justify-between dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-foreground font-semibold">
+                      Your daily summary is ready
+                    </p>
+                  </div>
+                  <p className="text-muted-foreground text-sm">
+                    Updated{' '}
+                    {formatDistanceToNow(new Date(todaySummary.updatedAt), {
+                      addSuffix: true,
+                    })}
+                    . Open the dedicated summary page to review the full recap.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-muted-foreground rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm dark:border-slate-700">
+                No daily summary has been generated for today yet. When
+                it&apos;s ready, you&apos;ll be able to open it from here.
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
           <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
