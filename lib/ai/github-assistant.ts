@@ -85,30 +85,6 @@ function normalizeTextList(
   return fallback.slice(0, max)
 }
 
-function normalizeList(
-  values: string[] | undefined,
-  {
-    min = 0,
-    max,
-    fallback = [],
-  }: {
-    min?: number
-    max: number
-    fallback?: string[]
-  }
-) {
-  const normalized = (values ?? [])
-    .map((value) => truncateText(value.trim(), 220))
-    .filter(Boolean)
-    .slice(0, max)
-
-  if (normalized.length >= min) {
-    return normalized
-  }
-
-  return fallback.slice(0, max)
-}
-
 export const githubAssistantService = {
   async summarizeDailyActivity({
     dateLabel,
@@ -350,7 +326,7 @@ export const githubAssistantService = {
         result.headline?.trim() || `Issue #${issueNumber} summary`,
         140
       ),
-      summary: normalizeList(result.summary, {
+      summary: normalizeTextList(result.summary, {
         min: 2,
         max: 4,
         fallback: [
@@ -358,10 +334,10 @@ export const githubAssistantService = {
           'Generate the summary again after adding more issue context.',
         ],
       }),
-      risks: normalizeList(result.risks, {
+      risks: normalizeTextList(result.risks, {
         max: 3,
       }),
-      nextSteps: normalizeList(result.nextSteps, {
+      nextSteps: normalizeTextList(result.nextSteps, {
         max: 3,
       }),
     }
