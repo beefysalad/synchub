@@ -1,7 +1,7 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, CheckSquare2, Sparkles } from 'lucide-react'
+import { ArrowLeft, CheckSquare2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef } from 'react'
@@ -81,7 +81,9 @@ export function CreateGithubIssuePage({
       const titleWithoutPrefix = currentTitle.startsWith(
         previousTemplateContent.titlePrefix
       )
-        ? currentTitle.slice(previousTemplateContent.titlePrefix.length).trimStart()
+        ? currentTitle
+            .slice(previousTemplateContent.titlePrefix.length)
+            .trimStart()
         : ''
 
       form.setValue(
@@ -165,14 +167,14 @@ export function CreateGithubIssuePage({
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="font-medium">{template.label}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
+                      <p className="text-muted-foreground mt-1 text-sm">
                         {template.description}
                       </p>
                     </div>
                     {isSelected ? (
                       <CheckSquare2 className="size-5 text-emerald-600 dark:text-emerald-300" />
                     ) : (
-                      <Sparkles className="size-5 text-muted-foreground" />
+                      <CheckSquare2 className="text-muted-foreground size-5" />
                     )}
                   </div>
                 </button>
@@ -214,7 +216,7 @@ export function CreateGithubIssuePage({
                 <textarea
                   id="body"
                   rows={16}
-                  className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-emerald-300 focus:ring-2 focus:ring-emerald-200 dark:border-slate-800 dark:bg-slate-950 dark:focus:border-emerald-500/40 dark:focus:ring-emerald-500/20"
+                  className="placeholder:text-muted-foreground w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm transition outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-200 dark:border-slate-800 dark:bg-slate-950 dark:focus:border-emerald-500/40 dark:focus:ring-emerald-500/20"
                   placeholder="Describe the issue"
                   {...form.register('body')}
                 />

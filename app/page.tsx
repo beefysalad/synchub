@@ -42,20 +42,28 @@ export default async function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-100/50 via-slate-50 to-white dark:from-emerald-950/30 dark:via-slate-950 dark:to-slate-950 text-slate-950 dark:text-slate-50 selection:bg-emerald-200 dark:selection:bg-emerald-900">
+    <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-100/50 via-slate-50 to-white text-slate-950 selection:bg-emerald-200 dark:from-emerald-950/30 dark:via-slate-950 dark:to-slate-950 dark:text-slate-50 dark:selection:bg-emerald-900">
       <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-8">
         <header className="flex items-center justify-between rounded-full border border-slate-200/50 bg-white/50 px-6 py-4 shadow-sm backdrop-blur-md dark:border-slate-800/50 dark:bg-slate-900/50">
-          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
+          <Link
+            href="/"
+            className="flex items-center gap-3 transition-opacity hover:opacity-80"
+          >
             <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-emerald-600/30">
               <MessageSquare className="size-5" />
             </span>
-            <span className="font-semibold tracking-tight text-lg">SyncHub</span>
+            <span className="text-lg font-semibold tracking-tight">
+              SyncHub
+            </span>
           </Link>
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <SignInButton mode="modal" forceRedirectUrl="/repos">
-              <Button variant="ghost" className="hidden sm:flex rounded-full text-muted-foreground hover:text-foreground">
+              <Button
+                variant="ghost"
+                className="text-muted-foreground hover:text-foreground hidden rounded-full sm:flex"
+              >
                 Sign in
               </Button>
             </SignInButton>
@@ -68,30 +76,34 @@ export default async function Home() {
         </header>
 
         <div className="flex flex-1 flex-col items-center justify-center py-24 text-center">
-          <div className="inline-flex items-center rounded-full border border-emerald-200/50 bg-emerald-50/50 px-4 py-1.5 text-sm font-medium text-emerald-800 dark:border-emerald-800/30 dark:bg-emerald-900/20 dark:text-emerald-300">
-            <span className="relative mr-2 flex size-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex size-2 rounded-full bg-emerald-500"></span>
-            </span>
-            Available strictly for power users
-          </div>
-
           <h1 className="mt-8 max-w-4xl text-5xl font-extrabold tracking-tight sm:text-7xl">
-            The command center for your <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-400">GitHub</span> workflow.
+            The command center for your{' '}
+            <span className="bg-gradient-to-r from-emerald-600 to-teal-400 bg-clip-text text-transparent">
+              GitHub
+            </span>{' '}
+            workflow.
           </h1>
 
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600 dark:text-slate-400 sm:text-xl">
-            Stop losing track of issues across chat apps. SyncHub maps your Telegram and Discord directly into a premium GitHub workspace.
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600 sm:text-xl dark:text-slate-400">
+            Stop losing track of issues across chat apps. SyncHub maps your
+            Telegram and Discord directly into a premium GitHub workspace.
           </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
+          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
             <SignUpButton mode="modal" forceRedirectUrl="/repos">
-              <Button size="lg" className="rounded-full h-14 px-8 text-base bg-emerald-600 hover:bg-emerald-700 text-white border-0 shadow-lg shadow-emerald-600/20">
+              <Button
+                size="lg"
+                className="h-14 rounded-full border-0 bg-emerald-600 px-8 text-base text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+              >
                 Start syncing now <ArrowRight className="ml-2 size-5" />
               </Button>
             </SignUpButton>
             <SignInButton mode="modal" forceRedirectUrl="/repos">
-              <Button size="lg" variant="outline" className="rounded-full h-14 px-8 text-base border-slate-200 dark:border-slate-800 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-900">
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 rounded-full border-slate-200 bg-transparent px-8 text-base hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
+              >
                 Sign back in
               </Button>
             </SignInButton>
@@ -102,13 +114,15 @@ export default async function Home() {
           {featureCards.map(({ icon: Icon, title, description }) => (
             <div
               key={title}
-              className="flex flex-col items-center text-center rounded-3xl p-8 transition-colors hover:bg-white/60 dark:hover:bg-slate-900/40 border border-transparent hover:border-slate-200/60 dark:hover:border-slate-800/60"
+              className="flex flex-col items-center rounded-3xl border border-transparent p-8 text-center transition-colors hover:border-slate-200/60 hover:bg-white/60 dark:hover:border-slate-800/60 dark:hover:bg-slate-900/40"
             >
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-900 dark:bg-slate-900 dark:text-emerald-400 mb-6">
+              <div className="mb-6 flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-900 dark:bg-slate-900 dark:text-emerald-400">
                 <Icon className="size-6" />
               </div>
-              <h3 className="text-lg font-bold tracking-tight mb-3">{title}</h3>
-              <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-sm">{description}</p>
+              <h3 className="mb-3 text-lg font-bold tracking-tight">{title}</h3>
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                {description}
+              </p>
             </div>
           ))}
         </div>

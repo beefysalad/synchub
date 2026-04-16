@@ -1,7 +1,8 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { ArrowLeft, Trash2, Lock, ExternalLink } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Lock, MessageSquareMore, Trash2 } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -10,13 +11,54 @@ import remarkGfm from 'remark-gfm'
 
 import { SectionHeader } from '@/components/dashboard/section-header'
 import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
 import {
+  useDeleteGithubIssue,
   useGithubIssueDetail,
   useUpdateGithubIssueState,
-  useDeleteGithubIssue,
 } from '@/hooks/use-github-issues'
-import Image from 'next/image'
+
+function ConversationEntry({
+  avatarUrl,
+  body,
+  createdAt,
+  username,
+}: {
+  avatarUrl?: string
+  body: string
+  createdAt: string
+  username: string
+}) {
+  return (
+    <div className="flex gap-4">
+      <Image
+        src={avatarUrl ?? `https://github.com/${username}.png`}
+        alt={username}
+        width={40}
+        height={40}
+        className="size-10 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800"
+      />
+      <div className="min-w-0 flex-1 rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+        <div className="rounded-t-3xl border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm dark:border-slate-800/50 dark:bg-slate-900/50">
+          <span className="font-semibold">{username}</span> commented{' '}
+          {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+        </div>
+        <div className="prose prose-slate prose-sm max-w-none px-5 py-5 dark:prose-invert">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {body || '*No description provided.*'}
+          </ReactMarkdown>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function IssueDetailPage({
   owner,
@@ -152,44 +194,67 @@ export function IssueDetailPage({
         }
       />
 
-      <div className="mx-auto max-w-4xl space-y-6">
-        {/* Original Issue */}
-        <div className="flex gap-4">
-          <img
-            src={issue.user.avatar_url ?? `https://github.com/${issue.user.login}.png`}
-            alt={issue.user.login}
-            className="size-10 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800"
-          />
-          <div className="min-w-0 flex-1 rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <div className="border-b border-slate-100 bg-slate-50/50 px-5 py-3 dark:border-slate-800/50 dark:bg-slate-900/50 rounded-t-3xl text-sm">
-              <span className="font-semibold">{issue.user.login}</span> commented{' '}
-              {formatDistanceToNow(new Date(issue.created_at), { addSuffix: true })}
+      <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+        <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+          <CardHeader>
+            <CardTitle>Issue overview</CardTitle>
+            <CardDescription>
+              A quick summary of the current issue state before you dive into the conversation.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Status
+              </p>
+              <p className="mt-2 text-2xl font-semibold capitalize">{issue.state}</p>
             </div>
-            <div className="prose prose-slate prose-sm max-w-none px-5 py-5 dark:prose-invert">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{issue.body || '*No description provided.*'}</ReactMarkdown>
+            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Author
+              </p>
+              <p className="mt-2 text-lg font-semibold">{issue.user.login}</p>
             </div>
-          </div>
-        </div>
+            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Conversation
+              </p>
+              <p className="mt-2 text-lg font-semibold">
+                {comments.length + 1} entries
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Comments */}
-        {comments.map((comment) => (
-          <div key={comment.id} className="flex gap-4">
-            <img
-              src={comment.user.avatar_url ?? `https://github.com/${comment.user.login}.png`}
-              alt={comment.user.login}
-              className="size-10 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800"
+        <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquareMore className="size-5 text-emerald-600 dark:text-emerald-300" />
+              Timeline
+            </CardTitle>
+            <CardDescription>
+              Original issue description and all follow-up comments in one conversation stream.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <ConversationEntry
+              avatarUrl={issue.user.avatar_url}
+              body={issue.body ?? '*No description provided.*'}
+              createdAt={issue.created_at}
+              username={issue.user.login}
             />
-            <div className="min-w-0 flex-1 rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-              <div className="border-b border-slate-100 bg-slate-50/50 px-5 py-3 dark:border-slate-800/50 dark:bg-slate-900/50 rounded-t-3xl text-sm">
-                <span className="font-semibold">{comment.user.login}</span> commented{' '}
-                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-              </div>
-              <div className="prose prose-slate prose-sm max-w-none px-5 py-5 dark:prose-invert">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.body}</ReactMarkdown>
-              </div>
-            </div>
-          </div>
-        ))}
+
+            {comments.map((comment) => (
+              <ConversationEntry
+                key={comment.id}
+                avatarUrl={comment.user.avatar_url}
+                body={comment.body}
+                createdAt={comment.created_at}
+                username={comment.user.login}
+              />
+            ))}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
