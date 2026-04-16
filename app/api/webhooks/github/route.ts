@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     if (
       eventName === 'pull_request' &&
-      payload.action === 'opened' &&
+      ['opened', 'edited', 'reopened', 'synchronize'].includes(payload.action) &&
       payload.pull_request
     ) {
       const githubLinkedTracker = trackedRepos.find((tracker) =>

@@ -1,10 +1,13 @@
-import { githubIssueService } from '@/lib/github/issues'
+import { githubPullsService } from '@/lib/github/pulls'
 import type {
   GitHubIssueReference,
   GitHubPullRequest,
 } from '@/lib/github/types'
 
-const SYNC_HUB_LINK_MARKER_PREFIX = '<!-- synchub-pr-issue-link:'
+const MANAGED_LINK_BLOCK_START = '<!-- synchub-linked-issues:start -->'
+const MANAGED_LINK_BLOCK_END = '<!-- synchub-linked-issues:end -->'
+const CLOSING_KEYWORD_PATTERN =
+  '(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)'
 
 function buildIssueReference(owner: string, repo: string, number: number): GitHubIssueReference {
   return {
@@ -17,6 +20,86 @@ function buildIssueReference(owner: string, repo: string, number: number): GitHu
 
 function normalizeRepositoryNameSegment(value: string) {
   return value.trim().replace(/[^A-Za-z0-9_.-]/g, '')
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function buildClosingReference(
+  pullOwner: string,
+  pullRepo: string,
+  issue: GitHubIssueReference
+) {
+  const issueReference =
+    issue.owner === pullOwner && issue.repo === pullRepo
+      ? `#${issue.number}`
+      : `${issue.owner}/${issue.repo}#${issue.number}`
+
+  return `Closes ${issueReference}`
+}
+
+function hasClosingReference({
+  body,
+  pullOwner,
+  pullRepo,
+  issue,
+}: {
+  body: string
+  pullOwner: string
+  pullRepo: string
+  issue: GitHubIssueReference
+}) {
+  const sameRepoReference = `#${issue.number}`
+  const crossRepoReference = `${issue.owner}/${issue.repo}#${issue.number}`
+  const references =
+    issue.owner === pullOwner && issue.repo === pullRepo
+      ? [sameRepoReference, crossRepoReference]
+      : [crossRepoReference]
+
+  return references.some((reference) => {
+    const pattern = new RegExp(
+      `\\b${CLOSING_KEYWORD_PATTERN}\\b[\\s:]+${escapeRegExp(reference)}\\b`,
+      'i'
+    )
+
+    return pattern.test(body)
+  })
+}
+
+function stripManagedLinkBlock(body: string) {
+  if (!body.includes(MANAGED_LINK_BLOCK_START)) {
+    return body.trimEnd()
+  }
+
+  const pattern = new RegExp(
+    `\\n*${escapeRegExp(MANAGED_LINK_BLOCK_START)}[\\s\\S]*?${escapeRegExp(
+      MANAGED_LINK_BLOCK_END
+    )}\\n*`,
+    'g'
+  )
+
+  return body.replace(pattern, '\n\n').trimEnd()
+}
+
+function buildManagedLinkBlock(references: string[]) {
+  return [
+    MANAGED_LINK_BLOCK_START,
+    ...references,
+    MANAGED_LINK_BLOCK_END,
+  ].join('\n')
+}
+
+function withManagedLinkBlock(body: string | null | undefined, references: string[]) {
+  const baseBody = stripManagedLinkBlock(body ?? '')
+
+  if (!references.length) {
+    return baseBody
+  }
+
+  const managedBlock = buildManagedLinkBlock(references)
+
+  return baseBody ? `${baseBody}\n\n${managedBlock}` : managedBlock
 }
 
 export function extractIssueReferencesFromPullRequest({
@@ -72,64 +155,6 @@ export function extractIssueReferencesFromPullRequest({
   return Array.from(references.values())
 }
 
-function buildLinkMarker({
-  pullOwner,
-  pullRepo,
-  pullNumber,
-  issueOwner,
-  issueRepo,
-  issueNumber,
-}: {
-  pullOwner: string
-  pullRepo: string
-  pullNumber: number
-  issueOwner: string
-  issueRepo: string
-  issueNumber: number
-}) {
-  return `${SYNC_HUB_LINK_MARKER_PREFIX}${pullOwner}/${pullRepo}#${pullNumber}|${issueOwner}/${issueRepo}#${issueNumber} -->`
-}
-
-function buildPullCommentBody({
-  marker,
-  issueOwner,
-  issueRepo,
-  issueNumber,
-  issueUrl,
-}: {
-  marker: string
-  issueOwner: string
-  issueRepo: string
-  issueNumber: number
-  issueUrl: string
-}) {
-  return [
-    `Linked issue: [${issueOwner}/${issueRepo}#${issueNumber}](${issueUrl})`,
-    '',
-    marker,
-  ].join('\n')
-}
-
-function buildIssueCommentBody({
-  marker,
-  pullOwner,
-  pullRepo,
-  pullNumber,
-  pullUrl,
-}: {
-  marker: string
-  pullOwner: string
-  pullRepo: string
-  pullNumber: number
-  pullUrl: string
-}) {
-  return [
-    `Linked pull request: [${pullOwner}/${pullRepo}#${pullNumber}](${pullUrl})`,
-    '',
-    marker,
-  ].join('\n')
-}
-
 type LinkPullRequestToIssuesInput = {
   userId: string
   pullOwner: string
@@ -158,79 +183,33 @@ export const githubPullIssueLinkService = {
       ).values()
     )
 
-    const pullComments = await githubIssueService.getIssueComments(
-      userId,
-      pullOwner,
-      pullRepo,
-      pull.number
-    )
-
-    const linkedIssues: GitHubIssueReference[] = []
-
-    for (const issue of uniqueIssues) {
-      const marker = buildLinkMarker({
-        pullOwner,
-        pullRepo,
-        pullNumber: pull.number,
-        issueOwner: issue.owner,
-        issueRepo: issue.repo,
-        issueNumber: issue.number,
-      })
-
-      const issueRecord = await githubIssueService.getIssue(
-        userId,
-        issue.owner,
-        issue.repo,
-        issue.number
-      )
-      const issueComments = await githubIssueService.getIssueComments(
-        userId,
-        issue.owner,
-        issue.repo,
-        issue.number
-      )
-
-      const pullAlreadyLinked = pullComments.some((comment) =>
-        comment.body.includes(marker)
-      )
-      if (!pullAlreadyLinked) {
-        await githubIssueService.createIssueComment(
-          userId,
-          pullOwner,
-          pullRepo,
-          pull.number,
-          buildPullCommentBody({
-            marker,
-            issueOwner: issue.owner,
-            issueRepo: issue.repo,
-            issueNumber: issue.number,
-            issueUrl: issueRecord.html_url,
-          })
-        )
-      }
-
-      const issueAlreadyLinked = issueComments.some((comment) =>
-        comment.body.includes(marker)
-      )
-      if (!issueAlreadyLinked) {
-        await githubIssueService.createIssueComment(
-          userId,
-          issue.owner,
-          issue.repo,
-          issue.number,
-          buildIssueCommentBody({
-            marker,
+    const pullBody = pull.body ?? ''
+    const bodyWithoutManagedLinks = stripManagedLinkBlock(pullBody)
+    const managedReferences = uniqueIssues
+      .filter(
+        (issue) =>
+          !hasClosingReference({
+            body: bodyWithoutManagedLinks,
             pullOwner,
             pullRepo,
-            pullNumber: pull.number,
-            pullUrl: pull.html_url,
+            issue,
           })
-        )
-      }
+      )
+      .map((issue) => buildClosingReference(pullOwner, pullRepo, issue))
 
-      linkedIssues.push(issue)
+    const nextBody = withManagedLinkBlock(pull.body, managedReferences)
+
+    if (nextBody !== pullBody) {
+      await githubPullsService.updatePullRequest({
+        userId,
+        owner: pullOwner,
+        repo: pullRepo,
+        pullNumber: pull.number,
+        title: pull.title,
+        body: nextBody,
+      })
     }
 
-    return linkedIssues
+    return uniqueIssues
   },
 }
