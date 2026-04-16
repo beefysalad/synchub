@@ -21,3 +21,23 @@ export const githubIssueFormSchema = z.object({
 })
 
 export type GitHubIssueFormValues = z.infer<typeof githubIssueFormSchema>
+
+export const githubIssueAssigneesSchema = z.object({
+  assignees: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, 'Assignee login is required.')
+        .regex(
+          /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})?$/,
+          'Each assignee must be a valid GitHub username.'
+        )
+    )
+    .max(100, 'Keep the assignee list under 100 users.')
+    .transform((assignees) =>
+      Array.from(new Set(assignees.map((assignee) => assignee.trim())))
+    ),
+})
+
+export type GitHubIssueAssigneesValues = z.infer<typeof githubIssueAssigneesSchema>

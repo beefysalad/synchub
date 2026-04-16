@@ -20,6 +20,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 import { EditGitHubThreadForm } from '@/components/dashboard/github/edit-github-thread-form'
+import { IssueAssigneesManager } from '@/components/dashboard/github/issue-assignees-manager'
 import { SectionHeader } from '@/components/dashboard/section-header'
 import { Button } from '@/components/ui/button'
 import {
@@ -34,6 +35,7 @@ import { useSummarizeGithubIssue } from '@/hooks/use-github-ai'
 import {
   useDeleteGithubIssue,
   useEditGithubIssue,
+  useGithubAssignableUsers,
   useGithubIssueDetail,
   useUpdateGithubIssueState,
 } from '@/hooks/use-github-issues'
@@ -85,6 +87,8 @@ export function IssueDetailPage({
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const { data, isLoading, error } = useGithubIssueDetail(owner, repo, issueNumber)
+  const { data: assignableUsersData, isLoading: isLoadingAssignableUsers } =
+    useGithubAssignableUsers(owner, repo)
   const updateState = useUpdateGithubIssueState(owner, repo, issueNumber)
   const editIssue = useEditGithubIssue(owner, repo, issueNumber)
   const deleteIssue = useDeleteGithubIssue(owner, repo, issueNumber)
@@ -92,6 +96,7 @@ export function IssueDetailPage({
 
   const issue = data?.issue
   const comments = data?.comments ?? []
+  const assignableUsers = assignableUsersData?.users ?? []
 
   function handleClose() {
     updateState.mutate('closed', {
@@ -166,6 +171,17 @@ export function IssueDetailPage({
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Unable to update issue'
+      )
+    }
+  }
+
+  async function handleAssigneesChange(assignees: string[]) {
+    try {
+      await editIssue.mutateAsync({ assignees })
+      toast.success(`Assignees updated for issue #${issueNumber}.`)
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to update assignees'
       )
     }
   }
@@ -274,6 +290,13 @@ export function IssueDetailPage({
               </p>
               <p className="mt-2 text-lg font-semibold">{issue.user.login}</p>
             </div>
+            <IssueAssigneesManager
+              issue={issue}
+              availableUsers={assignableUsers}
+              isLoadingUsers={isLoadingAssignableUsers}
+              isSaving={editIssue.isPending}
+              onChange={handleAssigneesChange}
+            />
             <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 Conversation
