@@ -91,8 +91,12 @@ export function PullDetailPage({
   const pull = data?.pull
   const comments = data?.comments ?? []
   const detectedIssueReferences = data?.detectedIssueReferences ?? []
+  const likelyLinkedIssue = data?.likelyLinkedIssue ?? null
   const availableIssues =
     issuesData?.issues.filter((issue) => issue.number !== pullNumber) ?? []
+  const likelyLinkedIssueDetails = likelyLinkedIssue
+    ? availableIssues.find((issue) => issue.number === likelyLinkedIssue.number)
+    : null
 
   function handleManualLink() {
     const issueNumber = Number(selectedIssueNumber)
@@ -205,6 +209,38 @@ export function PullDetailPage({
               <p className="mt-2 text-lg font-semibold">
                 {comments.length + 1} entries
               </p>
+            </div>
+            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Likely linked issue
+              </p>
+              {likelyLinkedIssue ? (
+                <div className="mt-3 space-y-3">
+                  <div className="rounded-2xl border border-sky-200 bg-sky-50 px-3 py-3 text-sm dark:border-sky-500/20 dark:bg-sky-500/10">
+                    <p className="font-semibold text-sky-950 dark:text-sky-100">
+                      {likelyLinkedIssue.fullName} #{likelyLinkedIssue.number}
+                    </p>
+                    <p className="mt-1 text-sky-900/80 dark:text-sky-100/80">
+                      {likelyLinkedIssueDetails?.title ??
+                        `Detected from branch name \`${pull.head.ref}\`.`}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() =>
+                      setSelectedIssueNumber(String(likelyLinkedIssue.number))
+                    }
+                  >
+                    Use this issue in linker
+                  </Button>
+                </div>
+              ) : (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  No likely issue was inferred from the branch name.
+                </p>
+              )}
             </div>
             <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">

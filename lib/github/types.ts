@@ -114,6 +114,9 @@ export type GitHubPullRequest = {
   created_at: string
   updated_at: string
   html_url: string
+  head: {
+    ref: string
+  }
   user: {
     login: string
     avatar_url: string
@@ -151,6 +154,7 @@ export type GitHubPullDetailResponse = {
   pull: GitHubPullRequest
   comments: GitHubIssueComment[]
   detectedIssueReferences: GitHubIssueReference[]
+  likelyLinkedIssue: GitHubIssueReference | null
 }
 
 export type UpdateGitHubPullPayload = {
@@ -176,6 +180,15 @@ export type GithubIssueSummaryResponse = {
   summary: string[]
   risks: string[]
   nextSteps: string[]
+}
+
+export type GithubBranchSuggestion = {
+  name: string
+  reason: string
+}
+
+export type GithubBranchSuggestionsResponse = {
+  suggestions: GithubBranchSuggestion[]
 }
 
 export type GithubIssueDraftResponse = {

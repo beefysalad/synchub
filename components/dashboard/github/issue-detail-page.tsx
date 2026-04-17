@@ -4,6 +4,7 @@ import { formatDistanceToNow } from 'date-fns'
 import {
   ArrowLeft,
   BellRing,
+  Copy,
   ExternalLink,
   FilePenLine,
   Lock,
@@ -31,7 +32,10 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
-import { useSummarizeGithubIssue } from '@/hooks/use-github-ai'
+import {
+  useSuggestGithubBranchNames,
+  useSummarizeGithubIssue,
+} from '@/hooks/use-github-ai'
 import {
   useDeleteGithubIssue,
   useEditGithubIssue,
@@ -93,6 +97,7 @@ export function IssueDetailPage({
   const editIssue = useEditGithubIssue(owner, repo, issueNumber)
   const deleteIssue = useDeleteGithubIssue(owner, repo, issueNumber)
   const summarizeIssue = useSummarizeGithubIssue()
+  const suggestBranchNames = useSuggestGithubBranchNames()
 
   const issue = data?.issue
   const comments = data?.comments ?? []
@@ -160,6 +165,45 @@ export function IssueDetailPage({
       })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Unable to summarize issue')
+    }
+  }
+
+  async function handleSuggestBranchNames() {
+    if (!issue) {
+      return
+    }
+
+    try {
+      const response = await suggestBranchNames.mutateAsync({
+        repository: `${owner}/${repo}`,
+        issueNumber,
+        title: issue.title,
+        body: issue.body ?? '',
+        comments: comments.map((comment) => ({
+          author: comment.user.login,
+          body: comment.body,
+          createdAt: comment.created_at,
+        })),
+      })
+
+      if (response.suggestions.length) {
+        toast.success('Branch name suggestions are ready.')
+      } else {
+        toast.message('No branch suggestions were returned.')
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to suggest branch names'
+      )
+    }
+  }
+
+  async function handleCopyBranchName(branchName: string) {
+    try {
+      await navigator.clipboard.writeText(branchName)
+      toast.success(`Copied ${branchName}`)
+    } catch {
+      toast.error('Unable to copy branch name')
     }
   }
 
@@ -321,6 +365,68 @@ export function IssueDetailPage({
                   </Link>
                 </Button>
               </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  Branch naming
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full"
+                  disabled={suggestBranchNames.isPending}
+                  onClick={handleSuggestBranchNames}
+                >
+                  {suggestBranchNames.isPending ? (
+                    <>
+                      <Spinner />
+                      Thinking...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="size-4" />
+                      Suggest names
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {suggestBranchNames.data?.suggestions.length ? (
+                <div className="mt-4 space-y-3">
+                  {suggestBranchNames.data.suggestions.map((suggestion) => (
+                    <div
+                      key={suggestion.name}
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="font-mono text-sm font-semibold text-foreground">
+                            {suggestion.name}
+                          </p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {suggestion.reason}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="rounded-full"
+                          onClick={() => handleCopyBranchName(suggestion.name)}
+                        >
+                          <Copy className="size-4" />
+                          Copy
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Let Gemini propose a few consistent branch names for this issue so the team follows the same naming pattern.
+                </p>
+              )}
             </div>
 
             <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">

@@ -155,6 +155,40 @@ export function extractIssueReferencesFromPullRequest({
   return Array.from(references.values())
 }
 
+export function extractLikelyIssueFromBranchName({
+  owner,
+  repo,
+  branchName,
+  pullNumber,
+}: {
+  owner: string
+  repo: string
+  branchName?: string | null
+  pullNumber?: number
+}) {
+  if (!branchName) {
+    return null
+  }
+
+  const match = branchName.match(/(?:^|[/-])(\d+)(?:[/-]|$)/)
+
+  if (!match) {
+    return null
+  }
+
+  const issueNumber = Number(match[1])
+
+  if (Number.isNaN(issueNumber) || issueNumber <= 0) {
+    return null
+  }
+
+  if (pullNumber && issueNumber === pullNumber) {
+    return null
+  }
+
+  return buildIssueReference(owner, repo, issueNumber)
+}
+
 type LinkPullRequestToIssuesInput = {
   userId: string
   pullOwner: string
@@ -165,6 +199,7 @@ type LinkPullRequestToIssuesInput = {
 
 export const githubPullIssueLinkService = {
   extractIssueReferencesFromPullRequest,
+  extractLikelyIssueFromBranchName,
 
   async linkPullRequestToIssues({
     userId,
