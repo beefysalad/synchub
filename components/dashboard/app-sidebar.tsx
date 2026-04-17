@@ -21,7 +21,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const navigation = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/integrations', label: 'Integrations', icon: Link2 },
   { href: '/repos', label: 'Repositories', icon: FolderGit2 },
   { href: '/reminders', label: 'Reminders', icon: BellRing },
@@ -56,10 +56,10 @@ export function AppSidebar() {
               open ? 'opacity-100' : 'w-0 overflow-hidden opacity-0'
             )}
           >
-            <div className="text-sm font-semibold tracking-tight text-foreground">
+            <div className="text-foreground text-sm font-semibold tracking-tight">
               SyncHub
             </div>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground line-clamp-2">
+            <p className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-5">
               A calmer workspace for GitHub issues.
             </p>
           </div>
@@ -71,7 +71,7 @@ export function AppSidebar() {
           <div>
             <p
               className={cn(
-                'px-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/75 transition-all duration-300',
+                'text-muted-foreground/75 px-3 text-[11px] font-semibold tracking-[0.22em] uppercase transition-all duration-300',
                 !open && 'h-0 overflow-hidden opacity-0'
               )}
             >
@@ -92,14 +92,14 @@ export function AppSidebar() {
                       open
                         ? active
                           ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'text-muted-foreground hover:bg-white/70 hover:text-foreground dark:hover:bg-white/5'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-white/70 dark:hover:bg-white/5'
                         : 'mx-auto flex size-14 items-center justify-center rounded-full px-0 py-0'
                     )}
                   >
                     {open ? (
                       <>
                         <Icon className="size-4 shrink-0" />
-                        <span className="transition-all duration-300 opacity-100">
+                        <span className="opacity-100 transition-all duration-300">
                           {label}
                         </span>
                       </>
@@ -109,7 +109,7 @@ export function AppSidebar() {
                           'flex size-14 items-center justify-center rounded-full transition-all duration-300',
                           active
                             ? 'bg-primary text-primary-foreground shadow-sm'
-                            : 'text-muted-foreground hover:bg-white/70 hover:text-foreground dark:hover:bg-white/5'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-white/70 dark:hover:bg-white/5'
                         )}
                       >
                         <Icon className="size-5 shrink-0" />

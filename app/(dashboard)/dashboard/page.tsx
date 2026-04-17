@@ -105,7 +105,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <SectionHeader
-        eyebrow="Overview"
+        eyebrow="Dashboard"
         title="Your GitHub workspace"
         description="See what needs attention, what is already connected, and where your team should pick work up next."
         actions={

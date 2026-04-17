@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/sidebar'
 
 const pageTitles = [
-  { prefix: '/dashboard', title: 'Overview' },
+  { prefix: '/dashboard', title: 'Dashboard' },
   { prefix: '/integrations', title: 'Integrations' },
   { prefix: '/repos', title: 'Repositories' },
   { prefix: '/issues', title: 'Issues' },

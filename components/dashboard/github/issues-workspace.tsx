@@ -16,9 +16,9 @@ import { StatusCard } from '@/components/dashboard/status-card'
 import { Button } from '@/components/ui/button'
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -371,7 +371,7 @@ export function IssuesWorkspace({
             Loading your tracked repositories...
           </div>
         ) : trackedRepositories.length ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
             {trackedRepositories.map((repository) => {
               const isDefault =
                 preferences.defaultRepository === repository.full_name
@@ -379,102 +379,106 @@ export function IssuesWorkspace({
               return (
                 <Card
                   key={repository.id}
-                  className="transition-all duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-none"
+                  className="h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-none"
                 >
-                  <CardHeader className="space-y-4">
-                    <CardAction>
-                      <div className="border-primary/20 bg-primary/5 text-primary rounded-full border px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
-                        {repository.private ? 'Private' : 'Public'}
-                      </div>
-                    </CardAction>
+                  <CardHeader className="grid-cols-1 gap-4 px-6 pb-0">
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <CardTitle className="text-xl font-bold transition-all duration-300">
-                          {repository.full_name}
-                        </CardTitle>
-                        <CardDescription className="mt-2 line-clamp-2 leading-relaxed transition-all duration-300">
-                          {repository.description ??
-                            'This repository is now available in your SyncHub issue flow.'}
-                        </CardDescription>
+                      <div className="border-border text-muted-foreground inline-flex max-w-full items-center rounded-full border px-3 py-1 text-[10px] font-bold tracking-[0.18em] uppercase transition-all duration-300">
+                        {repository.owner.login}
                       </div>
-                      {isDefault ? (
-                        <span className="bg-primary/10 text-primary rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
-                          Default
-                        </span>
-                      ) : null}
+                      <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                        {isDefault ? (
+                          <span className="bg-primary/10 text-primary inline-flex items-center rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
+                            Default
+                          </span>
+                        ) : null}
+                        <div className="border-primary/20 bg-primary/5 text-primary inline-flex max-w-full items-center rounded-full border px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
+                          {repository.private ? 'Private' : 'Public'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <CardTitle className="min-h-[3.75rem] text-[1.95rem] font-bold leading-[1.05] tracking-tight transition-all duration-300">
+                          {repository.name}
+                        </CardTitle>
+                        <p className="text-muted-foreground font-mono text-xs tracking-wide transition-all duration-300">
+                          {repository.full_name}
+                        </p>
+                      </div>
+                      <CardDescription className="min-h-[3.5rem] line-clamp-2 text-sm leading-relaxed transition-all duration-300">
+                        {repository.description ??
+                          'Tracked in SyncHub and ready for issue triage, planning, and follow-up work.'}
+                      </CardDescription>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      <span className="text-muted-foreground border-border rounded-full border px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
-                        Owner: {repository.owner.login}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        asChild
-                        className="rounded-full px-6 shadow-sm transition-all duration-300"
-                      >
-                        <Link
-                          href={`/repos/${repository.owner.login}/${repository.name}`}
-                        >
-                          Open repo
-                        </Link>
-                      </Button>
-
-                      {isDefault ? (
-                        <span className="border-primary/20 bg-primary/5 text-primary rounded-full border px-4 py-2 text-xs font-bold tracking-wider uppercase transition-all duration-300">
-                          Default
-                        </span>
-                      ) : (
+                  <CardContent className="flex flex-1 flex-col justify-end px-6 pt-6">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <Button
-                          type="button"
-                          variant="outline"
-                          className="rounded-full px-5 transition-all duration-300"
-                          onClick={() =>
-                            handleSetDefaultRepository(repository.full_name)
-                          }
-                          disabled={updatePreferences.isPending}
+                          asChild
+                          className="h-11 rounded-full px-5 shadow-sm transition-all duration-300"
                         >
-                          {updatePreferences.isPending &&
-                          pendingRepositoryAction ===
-                            `default:${repository.full_name}` ? (
-                            <>
-                              <Spinner />
-                              Saving...
-                            </>
-                          ) : (
-                            'Set default'
-                          )}
+                          <Link
+                            href={`/repos/${repository.owner.login}/${repository.name}`}
+                          >
+                            Open repo
+                          </Link>
                         </Button>
-                      )}
 
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-full px-4 transition-all duration-300"
-                        onClick={() =>
-                          handleRemoveTrackedRepository(repository.full_name)
-                        }
-                        disabled={updatePreferences.isPending}
-                      >
-                        {updatePreferences.isPending &&
-                        pendingRepositoryAction ===
-                          `remove:${repository.full_name}` ? (
-                          <>
-                            <Spinner />
-                            Removing...
-                          </>
+                        {isDefault ? (
+                          <span className="border-primary/20 bg-primary/5 text-primary inline-flex h-11 items-center rounded-full border px-4 text-xs font-bold tracking-wider uppercase transition-all duration-300">
+                            Default
+                          </span>
                         ) : (
-                          <>
-                            <Trash2 className="size-4" />
-                            Remove
-                          </>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-11 rounded-full px-4 transition-all duration-300"
+                            onClick={() =>
+                              handleSetDefaultRepository(repository.full_name)
+                            }
+                            disabled={updatePreferences.isPending}
+                          >
+                            {updatePreferences.isPending &&
+                            pendingRepositoryAction ===
+                              `default:${repository.full_name}` ? (
+                              <>
+                                <Spinner />
+                                Saving...
+                              </>
+                            ) : (
+                              'Set default'
+                            )}
+                          </Button>
                         )}
-                      </Button>
+                      </div>
                     </div>
                   </CardContent>
+                  <CardFooter className="justify-end px-6 pt-4">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive size-10 shrink-0 rounded-full transition-all duration-300"
+                      onClick={() =>
+                        handleRemoveTrackedRepository(repository.full_name)
+                      }
+                      disabled={updatePreferences.isPending}
+                    >
+                      {updatePreferences.isPending &&
+                      pendingRepositoryAction ===
+                        `remove:${repository.full_name}` ? (
+                        <Spinner />
+                      ) : (
+                        <Trash2 className="size-4" />
+                      )}
+                      <span className="sr-only">
+                        Remove {repository.full_name}
+                      </span>
+                    </Button>
+                  </CardFooter>
                 </Card>
               )
             })}
