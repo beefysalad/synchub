@@ -1,11 +1,10 @@
 'use client'
 
-import { MessageCircle, Save, Send, Sparkles } from 'lucide-react'
+import { MessageCircle, Save, Send } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
 import {
   useDiscordChannels,
@@ -37,7 +36,7 @@ export function DailySummarySettingsForm({
         discordChannelId: selectedChannel,
       })
       toast.success('Daily summary preferences saved')
-    } catch (error) {
+    } catch {
       toast.error('Failed to save preferences')
     }
   }

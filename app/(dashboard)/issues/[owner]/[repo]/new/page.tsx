@@ -1,16 +1,12 @@
-import { CreateGithubIssuePage } from '@/components/dashboard/github/create-github-issue-page'
+import CreateIssuePage from '@/components/page/issues/create-issue-page'
 
-type CreateGithubIssueRouteProps = {
+type PageProps = {
   params: Promise<{
     owner: string
     repo: string
   }>
 }
 
-export default async function CreateGithubIssueRoute({
-  params,
-}: CreateGithubIssueRouteProps) {
-  const { owner, repo } = await params
-
-  return <CreateGithubIssuePage owner={owner} repo={repo} />
+export default function Page(props: PageProps) {
+  return <CreateIssuePage {...props} />
 }

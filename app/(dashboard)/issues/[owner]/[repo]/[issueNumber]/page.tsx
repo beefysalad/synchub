@@ -1,17 +1,13 @@
-import { IssueDetailPage } from '@/components/dashboard/github/issue-detail-page'
+import IssueDetailPage from '@/components/page/issues/issue-detail-page'
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ owner: string; repo: string; issueNumber: string }>
-}) {
-  const { owner, repo, issueNumber } = await params
+type PageProps = {
+  params: Promise<{
+    owner: string
+    repo: string
+    issueNumber: string
+  }>
+}
 
-  return (
-    <IssueDetailPage
-      owner={owner}
-      repo={repo}
-      issueNumber={parseInt(issueNumber, 10)}
-    />
-  )
+export default function Page(props: PageProps) {
+  return <IssueDetailPage {...props} />
 }

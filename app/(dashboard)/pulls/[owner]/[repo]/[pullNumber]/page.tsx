@@ -1,17 +1,13 @@
-import { PullDetailPage } from '@/components/dashboard/github/pull-detail-page'
+import PullDetailPage from '@/components/page/pulls/pull-detail-page'
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ owner: string; repo: string; pullNumber: string }>
-}) {
-  const { owner, repo, pullNumber } = await params
+type PageProps = {
+  params: Promise<{
+    owner: string
+    repo: string
+    pullNumber: string
+  }>
+}
 
-  return (
-    <PullDetailPage
-      owner={owner}
-      repo={repo}
-      pullNumber={parseInt(pullNumber, 10)}
-    />
-  )
+export default function Page(props: PageProps) {
+  return <PullDetailPage {...props} />
 }

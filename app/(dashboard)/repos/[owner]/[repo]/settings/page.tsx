@@ -1,13 +1,12 @@
-import { RepositorySettingsPage } from '@/components/dashboard/github/repository-settings'
+import RepositorySettingsPage from '@/components/page/repos/repository-settings-page'
 
-type Props = {
+type PageProps = {
   params: Promise<{
     owner: string
     repo: string
   }>
 }
 
-export default async function Page(props: Props) {
-  const params = await props.params
-  return <RepositorySettingsPage owner={params.owner} repo={params.repo} />
+export default function Page(props: PageProps) {
+  return <RepositorySettingsPage {...props} />
 }

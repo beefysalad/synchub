@@ -11,17 +11,14 @@ import {
   MessageSquareMore,
   Trash2,
 } from 'lucide-react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 
-import { EditGitHubThreadForm } from '@/components/dashboard/github/edit-github-thread-form'
-import { IssueAssigneesManager } from '@/components/dashboard/github/issue-assignees-manager'
-import { SectionHeader } from '@/components/dashboard/section-header'
+import { IssueAssigneesManager } from '@/components/page/issues/components/issue-assignees-manager'
+import { EditGitHubThreadForm } from '@/components/shared/edit-github-thread-form'
+import { SectionHeader } from '@/components/shared/section-header'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -42,41 +39,7 @@ import {
   useGithubIssueDetail,
   useUpdateGithubIssueState,
 } from '@/hooks/use-github-issues'
-
-function ConversationEntry({
-  avatarUrl,
-  body,
-  createdAt,
-  username,
-}: {
-  avatarUrl?: string
-  body: string
-  createdAt: string
-  username: string
-}) {
-  return (
-    <div className="flex gap-4">
-      <Image
-        src={avatarUrl ?? `https://github.com/${username}.png`}
-        alt={username}
-        width={40}
-        height={40}
-        className="size-10 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800"
-      />
-      <div className="glass-panel border-border/50 min-w-0 flex-1 shadow-sm transition-all duration-300">
-        <div className="glass-surface border-border/40 rounded-t-3xl border-b px-5 py-3 text-sm transition-all duration-300">
-          <span className="font-semibold">{username}</span> commented{' '}
-          {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
-        </div>
-        <div className="prose prose-slate prose-sm dark:prose-invert max-w-none px-5 py-5">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {body || '*No description provided.*'}
-          </ReactMarkdown>
-        </div>
-      </div>
-    </div>
-  )
-}
+import ConversationEntry from './conversation-entry'
 
 export function IssueDetailPage({
   owner,
@@ -485,80 +448,6 @@ export function IssueDetailPage({
               <p className="text-muted-foreground text-sm">
                 Let Gemini propose a few consistent branch names for this issue
                 so the team follows the same naming pattern.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle>AI summary</CardTitle>
-                <CardDescription className="mt-1">
-                  Generate a quick readout of the description and discussion so
-                  far.
-                </CardDescription>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-full"
-                disabled={summarizeIssue.isPending}
-                onClick={handleGenerateSummary}
-              >
-                {summarizeIssue.isPending ? (
-                  <>
-                    <Spinner />
-                    Summarizing...
-                  </>
-                ) : (
-                  <>Generate</>
-                )}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {summarizeIssue.data ? (
-              <div className="space-y-4 text-sm">
-                <div>
-                  <p className="text-foreground font-semibold">
-                    {summarizeIssue.data.headline}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-foreground font-medium">Summary</p>
-                  <ul className="text-muted-foreground mt-2 space-y-2">
-                    {summarizeIssue.data.summary.map((item) => (
-                      <li key={item}>• {item}</li>
-                    ))}
-                  </ul>
-                </div>
-                {summarizeIssue.data.risks.length ? (
-                  <div>
-                    <p className="text-foreground font-medium">Risks</p>
-                    <ul className="text-muted-foreground mt-2 space-y-2">
-                      {summarizeIssue.data.risks.map((item) => (
-                        <li key={item}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-                {summarizeIssue.data.nextSteps.length ? (
-                  <div>
-                    <p className="text-foreground font-medium">Next steps</p>
-                    <ul className="text-muted-foreground mt-2 space-y-2">
-                      {summarizeIssue.data.nextSteps.map((item) => (
-                        <li key={item}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">
-                Generate a quick Gemini summary of the issue description and
-                discussion so far.
               </p>
             )}
           </CardContent>

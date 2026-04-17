@@ -12,7 +12,7 @@ import {
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-import { DashboardUserControls } from '@/components/dashboard/dashboard-user-controls'
+import { DashboardUserControls } from '@/components/page/dashboard/components/dashboard-user-controls'
 import {
   Sidebar,
   SidebarContent,

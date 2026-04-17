@@ -15,8 +15,8 @@ import { toast } from 'sonner'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
-import { EditGitHubThreadForm } from '@/components/dashboard/github/edit-github-thread-form'
-import { SectionHeader } from '@/components/dashboard/section-header'
+import { EditGitHubThreadForm } from '@/components/shared/edit-github-thread-form'
+import { SectionHeader } from '@/components/shared/section-header'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -58,7 +58,7 @@ function ConversationEntry({
           <span className="font-semibold">{username}</span> commented{' '}
           {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
         </div>
-        <div className="prose prose-slate prose-sm max-w-none px-5 py-5 dark:prose-invert">
+        <div className="prose prose-slate prose-sm dark:prose-invert max-w-none px-5 py-5">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {body || '*No description provided.*'}
           </ReactMarkdown>
@@ -78,7 +78,11 @@ export function PullDetailPage({
   pullNumber: number
 }) {
   const [isEditing, setIsEditing] = useState(false)
-  const { data, isLoading, error } = useGithubPullDetail(owner, repo, pullNumber)
+  const { data, isLoading, error } = useGithubPullDetail(
+    owner,
+    repo,
+    pullNumber
+  )
   const { data: issuesData } = useGithubIssues({
     owner,
     repo,
@@ -108,7 +112,9 @@ export function PullDetailPage({
 
     linkPullIssue.mutate(issueNumber, {
       onSuccess: () => {
-        toast.success(`Pull request #${pullNumber} linked to issue #${issueNumber}.`)
+        toast.success(
+          `Pull request #${pullNumber} linked to issue #${issueNumber}.`
+        )
       },
       onError: (mutationError) => {
         toast.error(mutationError.message)
@@ -130,7 +136,7 @@ export function PullDetailPage({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex min-h-[40vh] flex-col items-center justify-center gap-4 text-sm">
         <Spinner className="size-8" />
         Loading pull request details...
       </div>
@@ -174,7 +180,11 @@ export function PullDetailPage({
               onClick={() => setIsEditing((current) => !current)}
               disabled={editPull.isPending}
             >
-              {editPull.isPending ? <Spinner /> : <FilePenLine className="size-4" />}
+              {editPull.isPending ? (
+                <Spinner />
+              ) : (
+                <FilePenLine className="size-4" />
+              )}
               {isEditing ? 'Stop editing' : 'Edit details'}
             </Button>
           </>
@@ -191,19 +201,21 @@ export function PullDetailPage({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                 Status
               </p>
-              <p className="mt-2 text-2xl font-semibold capitalize">{pull.state}</p>
+              <p className="mt-2 text-2xl font-semibold capitalize">
+                {pull.state}
+              </p>
             </div>
             <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                 Author
               </p>
               <p className="mt-2 text-lg font-semibold">{pull.user.login}</p>
             </div>
             <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                 Discussion
               </p>
               <p className="mt-2 text-lg font-semibold">
@@ -211,7 +223,7 @@ export function PullDetailPage({
               </p>
             </div>
             <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                 Likely linked issue
               </p>
               {likelyLinkedIssue ? (
@@ -237,13 +249,13 @@ export function PullDetailPage({
                   </Button>
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className="text-muted-foreground mt-2 text-sm">
                   No likely issue was inferred from the branch name.
                 </p>
               )}
             </div>
             <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                 Detected references
               </p>
               {detectedIssueReferences.length ? (
@@ -258,23 +270,27 @@ export function PullDetailPage({
                   ))}
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  No issue references detected in the PR title or description yet.
+                <p className="text-muted-foreground mt-2 text-sm">
+                  No issue references detected in the PR title or description
+                  yet.
                 </p>
               )}
             </div>
             <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                 Link to issue
               </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Pick an open issue from this repo to add a native GitHub closing reference to the PR description.
+              <p className="text-muted-foreground mt-2 text-sm">
+                Pick an open issue from this repo to add a native GitHub closing
+                reference to the PR description.
               </p>
               <div className="mt-4 flex flex-col gap-3">
                 <select
                   value={selectedIssueNumber}
-                  onChange={(event) => setSelectedIssueNumber(event.target.value)}
-                  className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-emerald-400 dark:border-slate-800 dark:bg-slate-950"
+                  onChange={(event) =>
+                    setSelectedIssueNumber(event.target.value)
+                  }
+                  className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm shadow-sm transition outline-none focus:border-emerald-400 dark:border-slate-800 dark:bg-slate-950"
                 >
                   <option value="">Select an issue</option>
                   {availableIssues.map((issue) => (
@@ -309,7 +325,8 @@ export function PullDetailPage({
               Pull request details
             </CardTitle>
             <CardDescription>
-              Update the PR title and description here, then review the discussion below.
+              Update the PR title and description here, then review the
+              discussion below.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">

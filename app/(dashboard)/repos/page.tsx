@@ -1,5 +1,5 @@
-import { IssuesWorkspace } from '@/components/dashboard/github/issues-workspace'
+import RepositoriesPage from '@/components/page/repos/repositories-page'
 
-export default function IssuesPage() {
-  return <IssuesWorkspace mode="repos" />
+export default function Page() {
+  return <RepositoriesPage />
 }
