@@ -16,8 +16,8 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { SectionHeader } from '@/components/dashboard/section-header'
-import { StatusCard } from '@/components/dashboard/status-card'
+import { SectionHeader } from '@/components/shared/section-header'
+import { StatusCard } from '@/components/shared/status-card'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -58,8 +58,7 @@ const tabMeta: Record<
     description: 'Follow open bugs, requests, and triage-ready work items.',
     emptyMessage:
       'No issues matched this filter. Create a new issue to get started.',
-    accentClassName:
-      'border-primary/20 bg-primary/5 text-primary',
+    accentClassName: 'border-primary/20 bg-primary/5 text-primary',
   },
   pulls: {
     label: 'Pull requests',
@@ -127,7 +126,7 @@ function WorkspaceTabButton({
       <div
         className={`flex size-8 items-center justify-center rounded-full transition-all duration-300 ${
           active
-            ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+            ? 'bg-primary text-primary-foreground shadow-primary/20 shadow-lg'
             : 'bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary'
         }`}
       >
@@ -143,8 +142,8 @@ function WorkspaceTabButton({
 
 function ActivityEmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-3xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted-foreground transition-all duration-300">
-      <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-muted/50 mb-4">
+    <div className="border-border text-muted-foreground rounded-3xl border border-dashed px-5 py-10 text-center text-sm transition-all duration-300">
+      <div className="bg-muted/50 mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl">
         <MessageSquareMore className="size-6 opacity-20" />
       </div>
       {message}
@@ -163,7 +162,8 @@ export function RepositoryIssuesPage({
   const [issueState, setIssueState] = useState<GitHubIssueState>('open')
 
   const { data: repositoryData } = useGithubRepositories()
-  const { mutate: updatePreferences, isPending: isUpdatingPreferences } = useUpdateGithubPreferences()
+  const { mutate: updatePreferences, isPending: isUpdatingPreferences } =
+    useUpdateGithubPreferences()
 
   const {
     data: issuesData,
@@ -245,7 +245,7 @@ export function RepositoryIssuesPage({
   const tabConfig = tabMeta[activeTab]
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="animate-in fade-in space-y-8 duration-500">
       <SectionHeader
         eyebrow="Repository Workspace"
         title={repositoryFullName}
@@ -255,19 +255,30 @@ export function RepositoryIssuesPage({
         }
         actions={
           <>
-            <Button asChild variant="outline" className="rounded-full px-6 transition-all duration-300">
+            <Button
+              asChild
+              variant="outline"
+              className="rounded-full px-6 transition-all duration-300"
+            >
               <Link href="/repos">
                 <ArrowLeft className="size-4" />
                 Back
               </Link>
             </Button>
-            <Button asChild className="rounded-full px-6 transition-all duration-300 shadow-sm">
+            <Button
+              asChild
+              className="rounded-full px-6 shadow-sm transition-all duration-300"
+            >
               <Link href={`/issues/${owner}/${repo}/new`}>
                 <Plus className="size-4" />
                 New issue
               </Link>
             </Button>
-            <Button asChild variant="outline" className="rounded-full px-6 transition-all duration-300">
+            <Button
+              asChild
+              variant="outline"
+              className="rounded-full px-6 transition-all duration-300"
+            >
               <Link
                 href={
                   repository?.html_url ?? `https://github.com/${owner}/${repo}`
@@ -281,7 +292,7 @@ export function RepositoryIssuesPage({
             <Button
               asChild
               variant="ghost"
-              className="rounded-full px-4 text-muted-foreground hover:bg-primary/5 hover:text-primary transition-all duration-300"
+              className="text-muted-foreground hover:bg-primary/5 hover:text-primary rounded-full px-4 transition-all duration-300"
             >
               <Link href={`/repos/${owner}/${repo}/settings`}>
                 <Settings className="size-4" />
@@ -293,7 +304,7 @@ export function RepositoryIssuesPage({
       />
 
       {errorIssues ? (
-        <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-5 py-4 text-sm text-destructive transition-all duration-300">
+        <div className="border-destructive/20 bg-destructive/10 text-destructive rounded-2xl border px-5 py-4 text-sm transition-all duration-300">
           {errorIssues.message}
         </div>
       ) : null}
@@ -331,7 +342,8 @@ export function RepositoryIssuesPage({
             <div>
               <CardTitle>Repository activity</CardTitle>
               <CardDescription className="max-w-md leading-relaxed">
-                Move between issues, pull requests, and commits from one shared workspace.
+                Move between issues, pull requests, and commits from one shared
+                workspace.
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -372,7 +384,7 @@ export function RepositoryIssuesPage({
                 </Button>
               ) : null}
               <div
-                className={`rounded-full border px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${tabConfig.accentClassName}`}
+                className={`rounded-full border px-4 py-1.5 text-[10px] font-bold tracking-wider uppercase transition-all duration-300 ${tabConfig.accentClassName}`}
               >
                 {activeTab === 'issues' && `${issues.length} active issues`}
                 {activeTab === 'pulls' && `${pulls.length} pull requests`}
@@ -381,7 +393,7 @@ export function RepositoryIssuesPage({
             </div>
           </div>
 
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between border-y border-border/50 py-6">
+          <div className="border-border/50 flex flex-col gap-6 border-y py-6 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex flex-wrap items-center gap-3">
               <WorkspaceTabButton
                 active={activeTab === 'issues'}
@@ -406,7 +418,7 @@ export function RepositoryIssuesPage({
               />
             </div>
 
-            {(activeTab === 'issues' || activeTab === 'pulls') ? (
+            {activeTab === 'issues' || activeTab === 'pulls' ? (
               <div className="glass-surface flex flex-wrap items-center gap-1.5 rounded-full p-1.5 transition-all duration-300">
                 {issueStates.map((stateOption) => (
                   <Button
@@ -436,7 +448,7 @@ export function RepositoryIssuesPage({
             <CardTitle className="text-3xl font-bold tracking-tight">
               {tabConfig.title}
             </CardTitle>
-            <CardDescription className="text-base mt-2 max-w-2xl leading-relaxed">
+            <CardDescription className="mt-2 max-w-2xl text-base leading-relaxed">
               {tabConfig.description}
             </CardDescription>
           </div>
@@ -449,15 +461,15 @@ export function RepositoryIssuesPage({
               issues.map((issue) => (
                 <div
                   key={issue.id}
-                  className="glass-panel group relative overflow-hidden px-6 py-6 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 dark:hover:shadow-none"
+                  className="glass-panel group hover:shadow-primary/5 relative overflow-hidden px-6 py-6 transition-all duration-300 hover:shadow-xl dark:hover:shadow-none"
                 >
                   <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-4 flex-1">
+                    <div className="flex-1 space-y-4">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="bg-primary text-primary-foreground rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
                           #{issue.number}
                         </span>
-                        <span className="rounded-full border border-border bg-background/50 px-3 py-1 text-[10px] font-bold tracking-wider capitalize text-muted-foreground uppercase transition-all duration-300">
+                        <span className="border-border bg-background/50 text-muted-foreground rounded-full border px-3 py-1 text-[10px] font-bold tracking-wider capitalize uppercase transition-all duration-300">
                           {issue.state}
                         </span>
                         {issue.labels.slice(0, 5).map((label) => (
@@ -471,11 +483,14 @@ export function RepositoryIssuesPage({
                         ))}
                       </div>
                       <div>
-                        <p className="text-xl font-bold tracking-tight text-foreground transition-all duration-300 group-hover:text-primary">
+                        <p className="text-foreground group-hover:text-primary text-xl font-bold tracking-tight transition-all duration-300">
                           {issue.title}
                         </p>
-                        <p className="mt-2 text-sm text-muted-foreground/80 leading-relaxed transition-all duration-300">
-                          Opened by <span className="font-semibold text-foreground">{issue.user.login}</span>{' '}
+                        <p className="text-muted-foreground/80 mt-2 text-sm leading-relaxed transition-all duration-300">
+                          Opened by{' '}
+                          <span className="text-foreground font-semibold">
+                            {issue.user.login}
+                          </span>{' '}
                           {formatDistanceToNow(new Date(issue.created_at), {
                             addSuffix: true,
                           })}
@@ -484,7 +499,7 @@ export function RepositoryIssuesPage({
                     </div>
                     <Button
                       asChild
-                      className="shrink-0 rounded-full px-8 h-12 font-bold tracking-tight shadow-sm"
+                      className="h-12 shrink-0 rounded-full px-8 font-bold tracking-tight shadow-sm"
                     >
                       <Link href={`/issues/${owner}/${repo}/${issue.number}`}>
                         Open issue
@@ -504,24 +519,27 @@ export function RepositoryIssuesPage({
               pulls.map((pull) => (
                 <div
                   key={pull.id}
-                  className="glass-panel group relative overflow-hidden px-6 py-6 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 dark:hover:shadow-none"
+                  className="glass-panel group hover:shadow-primary/5 relative overflow-hidden px-6 py-6 transition-all duration-300 hover:shadow-xl dark:hover:shadow-none"
                 >
                   <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-4 flex-1">
+                    <div className="flex-1 space-y-4">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
+                        <span className="rounded-full bg-sky-500/10 px-3 py-1 text-[10px] font-bold tracking-wider text-sky-600 uppercase transition-all duration-300 dark:text-sky-400">
                           PR #{pull.number}
                         </span>
-                        <span className="rounded-full border border-border bg-background/50 px-3 py-1 text-[10px] font-bold tracking-wider capitalize text-muted-foreground transition-all duration-300">
+                        <span className="border-border bg-background/50 text-muted-foreground rounded-full border px-3 py-1 text-[10px] font-bold tracking-wider capitalize transition-all duration-300">
                           {pull.state}
                         </span>
                       </div>
                       <div>
-                        <p className="text-xl font-bold tracking-tight text-foreground transition-all duration-300 group-hover:text-primary">
+                        <p className="text-foreground group-hover:text-primary text-xl font-bold tracking-tight transition-all duration-300">
                           {pull.title}
                         </p>
-                        <p className="mt-2 text-sm text-muted-foreground/80 leading-relaxed transition-all duration-300">
-                          Authored by <span className="font-semibold text-foreground">{pull.user.login}</span>{' '}
+                        <p className="text-muted-foreground/80 mt-2 text-sm leading-relaxed transition-all duration-300">
+                          Authored by{' '}
+                          <span className="text-foreground font-semibold">
+                            {pull.user.login}
+                          </span>{' '}
                           {formatDistanceToNow(new Date(pull.created_at), {
                             addSuffix: true,
                           })}
@@ -531,7 +549,7 @@ export function RepositoryIssuesPage({
                     <Button
                       asChild
                       variant="outline"
-                      className="shrink-0 rounded-full px-8 h-12 font-bold tracking-tight transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:border-primary shadow-sm"
+                      className="hover:bg-primary hover:text-primary-foreground hover:border-primary h-12 shrink-0 rounded-full px-8 font-bold tracking-tight shadow-sm transition-all duration-300"
                     >
                       <Link href={`/pulls/${owner}/${repo}/${pull.number}`}>
                         Review PR
@@ -552,24 +570,24 @@ export function RepositoryIssuesPage({
                 {commits.map((commit) => (
                   <div
                     key={commit.sha}
-                    className="glass-surface border-border/50 group relative overflow-hidden rounded-2xl border px-5 py-5 transition-all duration-300 hover:border-primary/40 hover:bg-primary/5"
+                    className="glass-surface border-border/50 group hover:border-primary/40 hover:bg-primary/5 relative overflow-hidden rounded-2xl border px-5 py-5 transition-all duration-300"
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                      <div className="space-y-2 flex-1">
+                      <div className="flex-1 space-y-2">
                         <div className="flex flex-wrap items-center gap-3">
-                          <code className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary transition-all duration-300">
+                          <code className="bg-primary/10 text-primary rounded-full px-3 py-1 text-[10px] font-bold tracking-widest uppercase transition-all duration-300">
                             {commit.sha.slice(0, 7)}
                           </code>
-                          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 transition-all duration-300">
+                          <span className="text-muted-foreground/60 text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-300">
                             {commit.author?.login ?? commit.commit.author.name}
                           </span>
                         </div>
-                        <p className="text-base font-bold tracking-tight text-foreground transition-all duration-300 group-hover:text-primary">
+                        <p className="text-foreground group-hover:text-primary text-base font-bold tracking-tight transition-all duration-300">
                           {commit.commit.message}
                         </p>
-                        <p className="text-xs text-muted-foreground/70 transition-all duration-300">
+                        <p className="text-muted-foreground/70 text-xs transition-all duration-300">
                           Pushed{' '}
-                          <span className="font-medium text-foreground/80">
+                          <span className="text-foreground/80 font-medium">
                             {formatDistanceToNow(
                               new Date(commit.commit.author.date),
                               {
@@ -582,10 +600,10 @@ export function RepositoryIssuesPage({
                       <Button
                         asChild
                         variant="ghost"
-                        className="shrink-0 rounded-full px-5 transition-all duration-300 hover:bg-primary/10 hover:text-primary"
+                        className="hover:bg-primary/10 hover:text-primary shrink-0 rounded-full px-5 transition-all duration-300"
                       >
                         <Link href={commit.html_url} target="_blank">
-                          <ExternalLink className="size-4 mr-2" />
+                          <ExternalLink className="mr-2 size-4" />
                           Details
                         </Link>
                       </Button>

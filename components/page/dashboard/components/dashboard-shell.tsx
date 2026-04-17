@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 
-import { AppSidebar } from '@/components/dashboard/app-sidebar'
+import { AppSidebar } from '@/components/page/dashboard/components/app-sidebar'
 import {
   SidebarInset,
   SidebarProvider,

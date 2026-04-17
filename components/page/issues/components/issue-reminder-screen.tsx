@@ -4,8 +4,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { ArrowLeft, BellRing } from 'lucide-react'
 import Link from 'next/link'
 
-import { ReminderForm } from '@/components/dashboard/github/reminder-form'
-import { SectionHeader } from '@/components/dashboard/section-header'
+import { ReminderForm } from '@/components/page/issues/components/reminder-form'
+import { SectionHeader } from '@/components/shared/section-header'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -55,23 +55,26 @@ export function IssueReminderPage({
             Reminder settings
           </CardTitle>
           <CardDescription>
-            SyncHub will deliver this reminder to your linked chat apps once it becomes due.
+            SyncHub will deliver this reminder to your linked chat apps once it
+            becomes due.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
               Current status
             </p>
             {isLoading ? (
-              <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="text-muted-foreground mt-3 flex items-center gap-2 text-sm">
                 <Spinner className="size-4" />
                 Checking for an existing reminder...
               </div>
             ) : existingReminder ? (
               <>
-                <p className="mt-2 text-lg font-semibold">Pending reminder found</p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-2 text-lg font-semibold">
+                  Pending reminder found
+                </p>
+                <p className="text-muted-foreground mt-1 text-sm">
                   Scheduled{' '}
                   {formatDistanceToNow(new Date(existingReminder.remindAt), {
                     addSuffix: true,
@@ -81,8 +84,9 @@ export function IssueReminderPage({
             ) : (
               <>
                 <p className="mt-2 text-lg font-semibold">No reminder yet</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Save one below and SyncHub will keep the latest pending reminder for this issue.
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Save one below and SyncHub will keep the latest pending
+                  reminder for this issue.
                 </p>
               </>
             )}

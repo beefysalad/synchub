@@ -1,16 +1,12 @@
-import { RepositoryIssuesPage } from '@/components/dashboard/github/repository-issues-page'
+import RepositoryIssuesRoute from '@/components/page/repos/repository-issues-page'
 
-type RepositoryIssuesRouteProps = {
+type PageProps = {
   params: Promise<{
     owner: string
     repo: string
   }>
 }
 
-export default async function RepositoryIssuesRoute({
-  params,
-}: RepositoryIssuesRouteProps) {
-  const { owner, repo } = await params
-
-  return <RepositoryIssuesPage owner={owner} repo={repo} />
+export default function Page(props: PageProps) {
+  return <RepositoryIssuesRoute {...props} />
 }

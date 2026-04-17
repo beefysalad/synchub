@@ -1,17 +1,13 @@
-import { IssueReminderPage } from '@/components/dashboard/github/issue-reminder-page'
+import IssueReminderPage from '@/components/page/issues/issue-reminder-page'
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ owner: string; repo: string; issueNumber: string }>
-}) {
-  const { owner, repo, issueNumber } = await params
+type PageProps = {
+  params: Promise<{
+    owner: string
+    repo: string
+    issueNumber: string
+  }>
+}
 
-  return (
-    <IssueReminderPage
-      owner={owner}
-      repo={repo}
-      issueNumber={parseInt(issueNumber, 10)}
-    />
-  )
+export default function Page(props: PageProps) {
+  return <IssueReminderPage {...props} />
 }

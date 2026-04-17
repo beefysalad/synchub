@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 
-import { DashboardShell } from '@/components/dashboard/dashboard-shell'
+import { DashboardShell } from '@/components/page/dashboard/components/dashboard-shell'
 
 export default async function DashboardLayout({
   children,

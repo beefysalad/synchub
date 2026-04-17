@@ -1,7 +1,7 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, CheckSquare2, FilePenLine, Sparkles } from 'lucide-react'
+import { ArrowLeft, CheckSquare2, FilePenLine } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
@@ -12,7 +12,7 @@ import {
   useDraftGithubIssue,
   useSuggestGithubLabels,
 } from '@/hooks/use-github-ai'
-import { SectionHeader } from '@/components/dashboard/section-header'
+import { SectionHeader } from '@/components/shared/section-header'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -250,7 +250,7 @@ export function CreateGithubIssuePage({
                       </p>
                     </div>
                     {isSelected ? (
-                      <CheckSquare2 className="size-5 text-primary" />
+                      <CheckSquare2 className="text-primary size-5" />
                     ) : (
                       <CheckSquare2 className="text-muted-foreground size-5" />
                     )}
@@ -281,7 +281,7 @@ export function CreateGithubIssuePage({
                   {...form.register('title')}
                 />
                 {form.formState.errors.title ? (
-                  <p className="text-sm text-destructive">
+                  <p className="text-destructive text-sm">
                     {form.formState.errors.title.message}
                   </p>
                 ) : null}
@@ -317,12 +317,12 @@ export function CreateGithubIssuePage({
                 <textarea
                   id="body"
                   rows={16}
-                  className="placeholder:text-muted-foreground w-full rounded-3xl border border-border bg-background px-4 py-3 text-sm shadow-sm transition-all outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+                  className="placeholder:text-muted-foreground border-border bg-background focus:border-primary/50 focus:ring-primary/20 w-full rounded-3xl border px-4 py-3 text-sm shadow-sm transition-all outline-none focus:ring-2"
                   placeholder="Describe the issue"
                   {...form.register('body')}
                 />
                 {form.formState.errors.body ? (
-                  <p className="text-sm text-destructive">
+                  <p className="text-destructive text-sm">
                     {form.formState.errors.body.message}
                   </p>
                 ) : null}

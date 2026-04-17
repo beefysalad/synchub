@@ -127,21 +127,14 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1;
-    background-image:
-      radial-gradient(circle at top left, rgba(255, 255, 255, 0.92), transparent 26%),
-      radial-gradient(circle at top right, rgba(255, 236, 208, 0.84), transparent 24%),
-      radial-gradient(circle at bottom left, rgba(255, 218, 163, 0.52), transparent 28%);
+    background-image: none;
     letter-spacing: -0.01em;
   }
 }
 
 @layer utilities {
   .app-shell {
-    background:
-      radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), transparent 24%),
-      radial-gradient(circle at top right, rgba(255, 231, 194, 0.6), transparent 28%),
-      radial-gradient(circle at bottom left, rgba(255, 206, 126, 0.46), transparent 30%),
-      linear-gradient(180deg, rgba(255, 250, 242, 0.96) 0%, rgba(252, 245, 232, 1) 100%);
+    background: #fff;
   }
 
   .dark .app-shell {
