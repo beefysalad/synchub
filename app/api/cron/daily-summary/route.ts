@@ -19,14 +19,16 @@ export async function GET(request: NextRequest) {
     }
 
     const force = request.nextUrl.searchParams.get('force') === 'true'
-    const result = await dailySummaryService.generateForAllUsers({ force })
+    const result = await dailySummaryService.generateAndSendForAllUsers({
+      force,
+    })
 
     return NextResponse.json(result)
   } catch (error) {
     const message =
       error instanceof Error
         ? error.message
-        : 'Unable to generate daily summaries'
+        : 'Unable to generate and send daily summaries'
 
     return NextResponse.json({ error: message }, { status: 400 })
   }

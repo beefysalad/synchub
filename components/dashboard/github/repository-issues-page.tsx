@@ -88,12 +88,17 @@ function getIssueLabelStyles(color: string) {
   const green = parseInt(normalized.slice(2, 4), 16)
   const blue = parseInt(normalized.slice(4, 6), 16)
   const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255
+  const textScale = luminance > 0.8 ? 0.32 : luminance > 0.65 ? 0.46 : 1
+  const readableTextColor =
+    textScale === 1
+      ? `#${normalized}`
+      : `rgb(${Math.round(red * textScale)}, ${Math.round(green * textScale)}, ${Math.round(blue * textScale)})`
 
   return {
-    backgroundColor: `#${normalized}26`,
-    borderColor: `#${normalized}55`,
-    color: luminance > 0.62 ? '#0f172a' : `#${normalized}`,
-  }
+    '--issue-label-color': readableTextColor,
+    '--issue-label-background': `#${normalized}20`,
+    '--issue-label-border': `#${normalized}4d`,
+  } as React.CSSProperties
 }
 
 function WorkspaceTabButton({
@@ -458,7 +463,7 @@ export function RepositoryIssuesPage({
                         {issue.labels.slice(0, 5).map((label) => (
                           <span
                             key={label.id}
-                            className="rounded-full border px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300"
+                            className="rounded-full border border-[var(--issue-label-border)] bg-[var(--issue-label-background)] px-3 py-1 text-[10px] font-bold tracking-wider text-[var(--issue-label-color)] uppercase transition-all duration-300 dark:border-white/12 dark:bg-white/10 dark:text-white/90"
                             style={getIssueLabelStyles(label.color)}
                           >
                             {label.name}
@@ -479,8 +484,7 @@ export function RepositoryIssuesPage({
                     </div>
                     <Button
                       asChild
-                      variant="outline"
-                      className="shrink-0 rounded-full px-8 h-12 font-bold tracking-tight transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:border-primary shadow-sm"
+                      className="shrink-0 rounded-full px-8 h-12 font-bold tracking-tight shadow-sm"
                     >
                       <Link href={`/issues/${owner}/${repo}/${issue.number}`}>
                         Open issue

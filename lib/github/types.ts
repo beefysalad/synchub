@@ -195,12 +195,32 @@ export type GithubIssueDraftResponse = {
   body: string
 }
 
+export type GithubDailySummaryRawResponse = {
+  headline?: string
+  overview?: string
+  insights?: string[]
+  repositories?: Array<{
+    repository?: string
+    stats?: {
+      commits?: number
+      pullRequests?: number
+      issues?: number
+    }
+    highlights?: string[]
+  }>
+}
+
 export type GithubDailySummaryResponse = {
   headline: string
   overview: string
   insights: string[]
   repositories: Array<{
     repository: string
+    stats: {
+      commits: number
+      pullRequests: number
+      issues: number
+    }
     highlights: string[]
   }>
 }
