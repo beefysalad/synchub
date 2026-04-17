@@ -59,7 +59,7 @@ const tabMeta: Record<
     emptyMessage:
       'No issues matched this filter. Create a new issue to get started.',
     accentClassName:
-      'border-emerald-200/70 bg-emerald-50/60 text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100',
+      'border-primary/20 bg-primary/5 text-primary',
   },
   pulls: {
     label: 'Pull requests',
@@ -69,7 +69,7 @@ const tabMeta: Record<
       'Review active PRs and jump into code changes that need attention.',
     emptyMessage: 'No pull requests matched this filter.',
     accentClassName:
-      'border-sky-200/70 bg-sky-50/60 text-sky-900 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-100',
+      'border-sky-500/20 bg-sky-500/5 text-sky-600 dark:text-sky-400',
   },
   commits: {
     label: 'Commits',
@@ -78,7 +78,7 @@ const tabMeta: Record<
     description: 'Watch recent pushes land on the default branch in real time.',
     emptyMessage: 'No recent commits found on the default branch.',
     accentClassName:
-      'border-violet-200/70 bg-violet-50/60 text-violet-900 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-100',
+      'border-violet-500/20 bg-violet-500/5 text-violet-600 dark:text-violet-400',
   },
 }
 
@@ -113,23 +113,23 @@ function WorkspaceTabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`group inline-flex items-center gap-3 rounded-full border px-4 py-2 text-sm font-medium transition ${
+      className={`group inline-flex items-center gap-3 rounded-full border px-5 py-2.5 text-sm font-bold tracking-tight transition-all duration-300 ${
         active
-          ? 'border-emerald-300 bg-emerald-50 text-emerald-950 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
-          : 'border-slate-200/70 bg-white/70 text-slate-700 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-300 dark:hover:border-slate-700'
+          ? 'border-primary/30 bg-primary/10 text-primary shadow-sm'
+          : 'border-border bg-background/50 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground'
       }`}
     >
       <div
-        className={`flex size-7 items-center justify-center rounded-full ${
+        className={`flex size-8 items-center justify-center rounded-full transition-all duration-300 ${
           active
-            ? 'bg-emerald-600 text-white'
-            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+            ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+            : 'bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary'
         }`}
       >
-        <Icon className="size-3.5" />
+        <Icon className="size-4" />
       </div>
       <span>{label}</span>
-      <span className="rounded-full border border-current/15 bg-black/5 px-2 py-0.5 text-[11px] font-semibold dark:bg-white/5">
+      <span className="rounded-full border border-current/15 bg-black/5 px-2.5 py-0.5 text-[10px] font-bold tracking-wider dark:bg-white/5">
         {count}
       </span>
     </button>
@@ -138,7 +138,10 @@ function WorkspaceTabButton({
 
 function ActivityEmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-3xl border border-dashed border-slate-400/80 bg-slate-50 px-5 py-8 text-sm text-slate-700 dark:border-slate-700 dark:bg-transparent dark:text-slate-300">
+    <div className="rounded-3xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted-foreground transition-all duration-300">
+      <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-muted/50 mb-4">
+        <MessageSquareMore className="size-6 opacity-20" />
+      </div>
       {message}
     </div>
   )
@@ -155,7 +158,7 @@ export function RepositoryIssuesPage({
   const [issueState, setIssueState] = useState<GitHubIssueState>('open')
 
   const { data: repositoryData } = useGithubRepositories()
-  const updatePreferences = useUpdateGithubPreferences()
+  const { mutate: updatePreferences, isPending: isUpdatingPreferences } = useUpdateGithubPreferences()
 
   const {
     data: issuesData,
@@ -197,7 +200,7 @@ export function RepositoryIssuesPage({
   const isDefault = preferences.defaultRepository === repositoryFullName
 
   function handleTrackRepository() {
-    updatePreferences.mutate(
+    updatePreferences(
       {
         selectedRepositories: Array.from(
           new Set([...preferences.selectedRepositories, repositoryFullName])
@@ -216,7 +219,7 @@ export function RepositoryIssuesPage({
   }
 
   function handleSetDefaultRepository() {
-    updatePreferences.mutate(
+    updatePreferences(
       {
         selectedRepositories: Array.from(
           new Set([...preferences.selectedRepositories, repositoryFullName])
@@ -237,7 +240,7 @@ export function RepositoryIssuesPage({
   const tabConfig = tabMeta[activeTab]
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <SectionHeader
         eyebrow="Repository Workspace"
         title={repositoryFullName}
@@ -247,19 +250,19 @@ export function RepositoryIssuesPage({
         }
         actions={
           <>
-            <Button asChild variant="outline" className="rounded-full">
+            <Button asChild variant="outline" className="rounded-full px-6 transition-all duration-300">
               <Link href="/repos">
                 <ArrowLeft className="size-4" />
                 Back
               </Link>
             </Button>
-            <Button asChild className="rounded-full">
+            <Button asChild className="rounded-full px-6 transition-all duration-300 shadow-sm">
               <Link href={`/issues/${owner}/${repo}/new`}>
                 <Plus className="size-4" />
                 New issue
               </Link>
             </Button>
-            <Button asChild variant="outline" className="rounded-full">
+            <Button asChild variant="outline" className="rounded-full px-6 transition-all duration-300">
               <Link
                 href={
                   repository?.html_url ?? `https://github.com/${owner}/${repo}`
@@ -267,13 +270,13 @@ export function RepositoryIssuesPage({
                 target="_blank"
               >
                 <ExternalLink className="size-4" />
-                Open in GitHub
+                Open GitHub
               </Link>
             </Button>
             <Button
               asChild
               variant="ghost"
-              className="rounded-full bg-slate-100/50 text-slate-600 hover:text-slate-900 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:text-slate-100"
+              className="rounded-full px-4 text-muted-foreground hover:bg-primary/5 hover:text-primary transition-all duration-300"
             >
               <Link href={`/repos/${owner}/${repo}/settings`}>
                 <Settings className="size-4" />
@@ -285,7 +288,7 @@ export function RepositoryIssuesPage({
       />
 
       {errorIssues ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+        <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-5 py-4 text-sm text-destructive transition-all duration-300">
           {errorIssues.message}
         </div>
       ) : null}
@@ -317,27 +320,25 @@ export function RepositoryIssuesPage({
         />
       </div>
 
-      <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
-        <CardHeader className="space-y-5">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+      <Card className="transition-all duration-300">
+        <CardHeader className="space-y-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div>
-              <CardTitle className="text-slate-950 dark:text-slate-50">
-                Repository activity
-              </CardTitle>
-              <CardDescription className="mt-1 text-slate-600 dark:text-slate-300">
+              <CardTitle>Repository activity</CardTitle>
+              <CardDescription className="max-w-md leading-relaxed">
                 Move between issues, pull requests, and commits from one shared workspace.
               </CardDescription>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               {!isTracked ? (
                 <Button
                   type="button"
                   variant="outline"
-                  className="rounded-full"
+                  className="rounded-full px-6 transition-all duration-300"
                   onClick={handleTrackRepository}
-                  disabled={updatePreferences.isPending}
+                  disabled={isUpdatingPreferences}
                 >
-                  {updatePreferences.isPending ? (
+                  {isUpdatingPreferences ? (
                     <>
                       <Spinner />
                       Tracking...
@@ -351,11 +352,11 @@ export function RepositoryIssuesPage({
                 <Button
                   type="button"
                   variant="outline"
-                  className="rounded-full"
+                  className="rounded-full px-6 transition-all duration-300"
                   onClick={handleSetDefaultRepository}
-                  disabled={updatePreferences.isPending}
+                  disabled={isUpdatingPreferences}
                 >
-                  {updatePreferences.isPending ? (
+                  {isUpdatingPreferences ? (
                     <>
                       <Spinner />
                       Saving...
@@ -366,17 +367,17 @@ export function RepositoryIssuesPage({
                 </Button>
               ) : null}
               <div
-                className={`rounded-full border px-3 py-1 text-xs font-medium ${tabConfig.accentClassName}`}
+                className={`rounded-full border px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${tabConfig.accentClassName}`}
               >
-                {activeTab === 'issues' && `${issues.length} issues`}
+                {activeTab === 'issues' && `${issues.length} active issues`}
                 {activeTab === 'pulls' && `${pulls.length} pull requests`}
-                {activeTab === 'commits' && `${commits.length} commits`}
+                {activeTab === 'commits' && `${commits.length} recent commits`}
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between border-y border-border/50 py-6">
+            <div className="flex flex-wrap items-center gap-3">
               <WorkspaceTabButton
                 active={activeTab === 'issues'}
                 count={issues.length}
@@ -401,20 +402,20 @@ export function RepositoryIssuesPage({
             </div>
 
             {(activeTab === 'issues' || activeTab === 'pulls') ? (
-              <div className="flex flex-wrap items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50 px-2 py-1 dark:border-slate-800 dark:bg-slate-900/70">
+              <div className="glass-surface flex flex-wrap items-center gap-1.5 rounded-full p-1.5 transition-all duration-300">
                 {issueStates.map((stateOption) => (
                   <Button
                     key={stateOption}
                     type="button"
                     variant={issueState === stateOption ? 'default' : 'ghost'}
                     size="sm"
-                    className="h-8 rounded-full px-4 capitalize"
+                    className="h-9 rounded-full px-6 font-bold tracking-tight capitalize transition-all duration-300"
                     onClick={() => setIssueState(stateOption)}
                     disabled={isFetchingIssues}
                   >
                     {issueState === stateOption && isFetchingIssues ? (
                       <>
-                        <Spinner />
+                        <Spinner className="mr-2" />
                         Loading...
                       </>
                     ) : (
@@ -426,11 +427,11 @@ export function RepositoryIssuesPage({
             ) : null}
           </div>
 
-          <div>
-            <CardTitle className="text-2xl text-slate-950 dark:text-slate-50">
+          <div className="animate-in slide-in-from-left-4 duration-500">
+            <CardTitle className="text-3xl font-bold tracking-tight">
               {tabConfig.title}
             </CardTitle>
-            <CardDescription className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            <CardDescription className="text-base mt-2 max-w-2xl leading-relaxed">
               {tabConfig.description}
             </CardDescription>
           </div>
@@ -438,26 +439,26 @@ export function RepositoryIssuesPage({
         <CardContent className="space-y-4">
           {activeTab === 'issues' &&
             (isLoadingIssues ? (
-              <ActivityEmptyState message="Loading issues from GitHub..." />
+              <ActivityEmptyState message="Syncing issues from GitHub..." />
             ) : issues.length ? (
               issues.map((issue) => (
                 <div
                   key={issue.id}
-                  className="rounded-3xl border border-slate-300 bg-white px-5 py-5 shadow-sm transition hover:border-emerald-400 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/70 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+                  className="glass-panel group relative overflow-hidden px-6 py-6 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 dark:hover:shadow-none"
                 >
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-3">
+                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="space-y-4 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white dark:bg-slate-100 dark:text-slate-950">
+                        <span className="bg-primary text-primary-foreground rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
                           #{issue.number}
                         </span>
-                        <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-medium capitalize text-slate-700 dark:border-slate-700 dark:bg-transparent dark:text-slate-300">
+                        <span className="rounded-full border border-border bg-background/50 px-3 py-1 text-[10px] font-bold tracking-wider capitalize text-muted-foreground uppercase transition-all duration-300">
                           {issue.state}
                         </span>
-                        {issue.labels.slice(0, 3).map((label) => (
+                        {issue.labels.slice(0, 5).map((label) => (
                           <span
                             key={label.id}
-                            className="rounded-full border px-3 py-1 text-xs font-semibold"
+                            className="rounded-full border px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300"
                             style={getIssueLabelStyles(label.color)}
                           >
                             {label.name}
@@ -465,11 +466,11 @@ export function RepositoryIssuesPage({
                         ))}
                       </div>
                       <div>
-                        <p className="text-lg font-semibold text-slate-950 dark:text-slate-50">
+                        <p className="text-xl font-bold tracking-tight text-foreground transition-all duration-300 group-hover:text-primary">
                           {issue.title}
                         </p>
-                        <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
-                          Opened by {issue.user.login}{' '}
+                        <p className="mt-2 text-sm text-muted-foreground/80 leading-relaxed transition-all duration-300">
+                          Opened by <span className="font-semibold text-foreground">{issue.user.login}</span>{' '}
                           {formatDistanceToNow(new Date(issue.created_at), {
                             addSuffix: true,
                           })}
@@ -479,7 +480,7 @@ export function RepositoryIssuesPage({
                     <Button
                       asChild
                       variant="outline"
-                      className="shrink-0 rounded-full"
+                      className="shrink-0 rounded-full px-8 h-12 font-bold tracking-tight transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:border-primary shadow-sm"
                     >
                       <Link href={`/issues/${owner}/${repo}/${issue.number}`}>
                         Open issue
@@ -494,29 +495,29 @@ export function RepositoryIssuesPage({
 
           {activeTab === 'pulls' &&
             (isLoadingPulls ? (
-              <ActivityEmptyState message="Loading pull requests from GitHub..." />
+              <ActivityEmptyState message="Syncing pull requests from GitHub..." />
             ) : pulls.length ? (
               pulls.map((pull) => (
                 <div
                   key={pull.id}
-                  className="rounded-3xl border border-sky-300 bg-white px-5 py-5 shadow-sm transition hover:border-sky-500 hover:shadow-md dark:border-sky-900/40 dark:bg-slate-900/70 dark:hover:border-sky-700 dark:hover:bg-slate-900"
+                  className="glass-panel group relative overflow-hidden px-6 py-6 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 dark:hover:shadow-none"
                 >
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-3">
+                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="space-y-4 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-sky-600 px-3 py-1 text-xs font-medium text-white dark:bg-sky-500">
+                        <span className="bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
                           PR #{pull.number}
                         </span>
-                        <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-medium capitalize text-slate-700 dark:border-slate-700 dark:bg-transparent dark:text-slate-300">
+                        <span className="rounded-full border border-border bg-background/50 px-3 py-1 text-[10px] font-bold tracking-wider capitalize text-muted-foreground transition-all duration-300">
                           {pull.state}
                         </span>
                       </div>
                       <div>
-                        <p className="text-lg font-semibold text-slate-950 dark:text-slate-50">
+                        <p className="text-xl font-bold tracking-tight text-foreground transition-all duration-300 group-hover:text-primary">
                           {pull.title}
                         </p>
-                        <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
-                          Authored by {pull.user.login}{' '}
+                        <p className="mt-2 text-sm text-muted-foreground/80 leading-relaxed transition-all duration-300">
+                          Authored by <span className="font-semibold text-foreground">{pull.user.login}</span>{' '}
                           {formatDistanceToNow(new Date(pull.created_at), {
                             addSuffix: true,
                           })}
@@ -526,7 +527,7 @@ export function RepositoryIssuesPage({
                     <Button
                       asChild
                       variant="outline"
-                      className="shrink-0 rounded-full"
+                      className="shrink-0 rounded-full px-8 h-12 font-bold tracking-tight transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:border-primary shadow-sm"
                     >
                       <Link href={`/pulls/${owner}/${repo}/${pull.number}`}>
                         Review PR
@@ -541,45 +542,47 @@ export function RepositoryIssuesPage({
 
           {activeTab === 'commits' &&
             (isLoadingCommits ? (
-              <ActivityEmptyState message="Loading recent commits from GitHub..." />
+              <ActivityEmptyState message="Syncing recent commits from GitHub..." />
             ) : commits.length ? (
-              <div className="space-y-3">
+              <div className="grid gap-3">
                 {commits.map((commit) => (
                   <div
                     key={commit.sha}
-                    className="rounded-3xl border border-violet-300 bg-white px-5 py-5 shadow-sm transition hover:border-violet-500 hover:shadow-md dark:border-violet-900/40 dark:bg-slate-900/70 dark:hover:border-violet-700 dark:hover:bg-slate-900"
+                    className="glass-surface border-border/50 group relative overflow-hidden rounded-2xl border px-5 py-5 transition-all duration-300 hover:border-primary/40 hover:bg-primary/5"
                   >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-violet-600 px-3 py-1 text-xs font-medium text-white dark:bg-violet-500">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <code className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary transition-all duration-300">
                             {commit.sha.slice(0, 7)}
-                          </span>
-                          <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-transparent dark:text-slate-300">
+                          </code>
+                          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 transition-all duration-300">
                             {commit.author?.login ?? commit.commit.author.name}
                           </span>
                         </div>
-                        <p className="text-lg font-semibold text-slate-950 dark:text-slate-50">
+                        <p className="text-base font-bold tracking-tight text-foreground transition-all duration-300 group-hover:text-primary">
                           {commit.commit.message}
                         </p>
-                        <p className="text-sm text-slate-700 dark:text-slate-300">
+                        <p className="text-xs text-muted-foreground/70 transition-all duration-300">
                           Pushed{' '}
-                          {formatDistanceToNow(
-                            new Date(commit.commit.author.date),
-                            {
-                              addSuffix: true,
-                            }
-                          )}
+                          <span className="font-medium text-foreground/80">
+                            {formatDistanceToNow(
+                              new Date(commit.commit.author.date),
+                              {
+                                addSuffix: true,
+                              }
+                            )}
+                          </span>
                         </p>
                       </div>
                       <Button
                         asChild
-                        variant="outline"
-                        className="shrink-0 rounded-full"
+                        variant="ghost"
+                        className="shrink-0 rounded-full px-5 transition-all duration-300 hover:bg-primary/10 hover:text-primary"
                       >
                         <Link href={commit.html_url} target="_blank">
-                          <ExternalLink className="size-4" />
-                          View commit
+                          <ExternalLink className="size-4 mr-2" />
+                          Details
                         </Link>
                       </Button>
                     </div>

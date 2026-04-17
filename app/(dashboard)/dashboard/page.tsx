@@ -105,16 +105,13 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <SectionHeader
-        eyebrow="Control Plane"
-        title="SyncHub Dashboard"
-        description="Your unified view of tracked repositories, active reminders, and recent issues requiring triage."
+        eyebrow="Overview"
+        title="Your GitHub workspace"
+        description="See what needs attention, what is already connected, and where your team should pick work up next."
         actions={
           <>
-            <Button asChild className="rounded-full">
+            <Button asChild>
               <Link href="/integrations">Manage integrations</Link>
-            </Button>
-            <Button asChild variant="outline" className="rounded-full">
-              <Link href="/issues">Review tracked repos</Link>
             </Button>
           </>
         }
@@ -148,16 +145,15 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-6">
-        <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+        <Card>
           <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle>Daily Summary</CardTitle>
+              <CardTitle>Daily summary</CardTitle>
               <CardDescription>
-                Today&apos;s AI recap is generated separately from the dashboard
-                and can be reviewed on its own page.
+                Review today&apos;s briefing in one focused view.
               </CardDescription>
             </div>
-            <Button asChild className="rounded-full">
+            <Button asChild>
               <Link href="/summary">
                 <FileText className="size-4" />
                 View daily summary
@@ -166,7 +162,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {todaySummary ? (
-              <div className="flex flex-col gap-4 rounded-3xl border border-emerald-200/60 bg-emerald-50/60 px-5 py-5 lg:flex-row lg:items-center lg:justify-between dark:border-emerald-500/20 dark:bg-emerald-500/10">
+              <div className="border-primary/20 bg-primary/10 flex flex-col gap-4 rounded-3xl border px-5 py-5 transition-all duration-300 lg:flex-row lg:items-center lg:justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <p className="text-foreground font-semibold">
@@ -183,7 +179,7 @@ export default async function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="text-muted-foreground rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm dark:border-slate-700">
+              <div className="text-muted-foreground border-border rounded-3xl border border-dashed px-5 py-8 text-sm transition-all duration-300">
                 No daily summary has been generated for today yet. When
                 it&apos;s ready, you&apos;ll be able to open it from here.
               </div>
@@ -191,18 +187,18 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+        <Card>
           <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle>Recent Issues</CardTitle>
+              <CardTitle>Recent issues</CardTitle>
               <CardDescription>
                 {defaultRepo
-                  ? `Most recent open issues in ${defaultRepo.fullName}.`
-                  : 'Set a default repository to view recent issues here.'}
+                  ? `Recent open work from ${defaultRepo.fullName}.`
+                  : 'Set a default repository to keep recent work visible here.'}
               </CardDescription>
             </div>
             {defaultRepo ? (
-              <Button asChild variant="outline" className="rounded-full">
+              <Button asChild variant="outline">
                 <Link href={`/issues/${defaultOwner}/${defaultRepoName}/new`}>
                   <Plus className="size-4" />
                   New issue
@@ -221,12 +217,12 @@ export default async function DashboardPage() {
               recentIssues.map((issue) => (
                 <div
                   key={issue.id}
-                  className="rounded-3xl border border-slate-200/70 bg-slate-50 px-5 py-5 dark:border-slate-800 dark:bg-slate-900/60"
+                  className="glass-surface rounded-3xl px-5 py-5 transition-all duration-300"
                 >
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs font-medium text-white dark:bg-slate-100 dark:text-slate-950">
+                        <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs font-bold tracking-wider transition-all duration-300">
                           #{issue.number}
                         </span>
                         <p className="font-semibold">{issue.title}</p>

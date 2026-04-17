@@ -66,7 +66,7 @@ export function DailySummaryCard() {
                 {renderedSummary.repositories.map((repository) => (
                   <div
                     key={repository.repository}
-                    className="rounded-3xl border border-slate-200/70 bg-slate-50 px-5 py-5 dark:border-slate-800 dark:bg-slate-900/60"
+                    className="glass-surface rounded-3xl px-5 py-5 transition-all duration-300"
                   >
                     <p className="font-semibold text-foreground">
                       {repository.repository}

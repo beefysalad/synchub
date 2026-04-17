@@ -113,15 +113,15 @@ export default async function SettingsPage() {
     <div className="space-y-8">
       <SectionHeader
         eyebrow="Settings"
-        title="Operational settings"
-        description="Review your public endpoints, integration health, and repository notification coverage in one place."
+        title="Workspace settings"
+        description="Manage delivery health, channel readiness, and repository coverage from one calm control surface."
         actions={
           <>
-            <Button asChild className="rounded-full">
+            <Button asChild>
               <Link href="/integrations">Manage integrations</Link>
             </Button>
-            <Button asChild variant="outline" className="rounded-full">
-              <Link href="/issues">Review tracked repos</Link>
+            <Button asChild variant="outline">
+              <Link href="/repos">Review repositories</Link>
             </Button>
           </>
         }
@@ -166,13 +166,13 @@ export default async function SettingsPage() {
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+      <div className="grid gap-6 2xl:grid-cols-[1.05fr_0.95fr]">
+        <Card>
           <CardHeader>
-            <CardTitle>Webhook endpoints</CardTitle>
+            <CardTitle>Endpoint readiness</CardTitle>
             <CardDescription>
-              These are the public endpoints your providers need to reach. When
-              your ngrok URL changes, this is the first place to sanity check.
+              These are the routes external providers call when SyncHub is live.
+              If your public URL changes, update this section first.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -187,7 +187,7 @@ export default async function SettingsPage() {
                     />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Auto-provisioned when you enable notifications for a tracked repository.
+                    Provisioned when notifications are enabled for a tracked repository.
                   </p>
                   <p className="break-all text-xs text-muted-foreground">
                     {expectedGithubWebhookUrl ?? 'Set NEXT_PUBLIC_APP_URL first'}
@@ -207,7 +207,7 @@ export default async function SettingsPage() {
                     />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Telegram should post bot updates here after you refresh the webhook.
+                    Telegram sends bot updates here after the webhook is refreshed.
                   </p>
                   <p className="break-all text-xs text-muted-foreground">
                     Expected: {expectedTelegramWebhookUrl ?? 'Set NEXT_PUBLIC_APP_URL first'}
@@ -244,13 +244,13 @@ export default async function SettingsPage() {
                     />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Paste this into the Discord Developer Portal as the interactions endpoint URL.
+                    Use this as the interactions endpoint in the Discord Developer Portal.
                   </p>
                   <p className="break-all text-xs text-muted-foreground">
                     {expectedDiscordInteractionsUrl ?? 'Set NEXT_PUBLIC_APP_URL first'}
                   </p>
                 </div>
-                <Button asChild variant="outline" className="rounded-full">
+                <Button asChild variant="outline">
                   <Link href="/integrations">Manage Discord setup</Link>
                 </Button>
               </div>
@@ -258,11 +258,11 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+        <Card>
           <CardHeader>
             <CardTitle>Integration health</CardTitle>
             <CardDescription>
-              Keep the channel links and app secrets in sync before you expect notifications to fan out reliably.
+              Confirm each service is connected before you depend on routing and automation.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -305,7 +305,7 @@ export default async function SettingsPage() {
             ))}
 
             <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-900/60">
-              <p className="font-medium">If your ngrok URL changes</p>
+              <p className="font-medium">If your public URL changes</p>
               <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                 <li>1. Update `NEXT_PUBLIC_APP_URL` and restart the app.</li>
                 <li>2. Refresh the Telegram webhook.</li>
@@ -317,14 +317,14 @@ export default async function SettingsPage() {
         </Card>
       </div>
 
-      <Card className="border-indigo-200/50 bg-indigo-50/20 shadow-lg shadow-indigo-100/20 backdrop-blur dark:border-indigo-900/30 dark:bg-indigo-950/20 dark:shadow-none">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings2 className="size-5 text-indigo-500" />
-            Daily Summary Preferences
+            <Settings2 className="size-5 text-foreground" />
+            Daily summary preferences
           </CardTitle>
           <CardDescription>
-            Configure where daily recaps are delivered, then use the manual controls here for testing while cron-job.org handles scheduled generation.
+            Choose where the daily briefing should land and use the controls here for manual checks when needed.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -349,11 +349,11 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+      <Card>
         <CardHeader>
           <CardTitle>Repository notification coverage</CardTitle>
           <CardDescription>
-            Each tracked repository can forward GitHub activity to Telegram or Discord. Open repo settings to manage exactly which events are sent.
+            See which repositories are already routing events into Telegram or Discord.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -408,18 +408,18 @@ export default async function SettingsPage() {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <Button asChild variant="outline" className="rounded-full">
+                      <Button asChild variant="outline">
                         <Link href={`/repos/${owner}/${repoName}/settings`}>
                           <Settings2 className="size-4" />
                           Repo settings
                         </Link>
                       </Button>
-                      <Button asChild variant="outline" className="rounded-full">
+                      <Button asChild variant="outline">
                         <Link href={`/issues/${owner}/${repoName}`}>
                           View issues
                         </Link>
                       </Button>
-                      <Button asChild variant="outline" className="rounded-full">
+                      <Button asChild variant="outline">
                         <Link
                           href={`https://github.com/${repo.fullName}/settings/hooks`}
                           target="_blank"

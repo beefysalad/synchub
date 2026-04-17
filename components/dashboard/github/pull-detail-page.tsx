@@ -53,8 +53,8 @@ function ConversationEntry({
         height={40}
         className="size-10 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800"
       />
-      <div className="min-w-0 flex-1 rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <div className="rounded-t-3xl border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm dark:border-slate-800/50 dark:bg-slate-900/50">
+      <div className="glass-panel border-border/50 min-w-0 flex-1 shadow-sm transition-all duration-300">
+        <div className="glass-surface border-border/40 rounded-t-3xl border-b px-5 py-3 text-sm transition-all duration-300">
           <span className="font-semibold">{username}</span> commented{' '}
           {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
         </div>
@@ -181,8 +181,8 @@ export function PullDetailPage({
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
-        <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+      <div className="grid gap-6 2xl:grid-cols-[0.8fr_1.2fr]">
+        <Card>
           <CardHeader>
             <CardTitle>Pull request overview</CardTitle>
             <CardDescription>
@@ -190,19 +190,19 @@ export function PullDetailPage({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 Status
               </p>
               <p className="mt-2 text-2xl font-semibold capitalize">{pull.state}</p>
             </div>
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 Author
               </p>
               <p className="mt-2 text-lg font-semibold">{pull.user.login}</p>
             </div>
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 Discussion
               </p>
@@ -210,7 +210,7 @@ export function PullDetailPage({
                 {comments.length + 1} entries
               </p>
             </div>
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 Likely linked issue
               </p>
@@ -242,7 +242,7 @@ export function PullDetailPage({
                 </p>
               )}
             </div>
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 Detected references
               </p>
@@ -263,7 +263,7 @@ export function PullDetailPage({
                 </p>
               )}
             </div>
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 Link to issue
               </p>
@@ -302,7 +302,7 @@ export function PullDetailPage({
           </CardContent>
         </Card>
 
-        <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <GitPullRequest className="size-5 text-sky-600 dark:text-sky-300" />

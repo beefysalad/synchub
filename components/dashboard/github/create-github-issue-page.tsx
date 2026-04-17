@@ -8,7 +8,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 
-import { useDraftGithubIssue, useSuggestGithubLabels } from '@/hooks/use-github-ai'
+import {
+  useDraftGithubIssue,
+  useSuggestGithubLabels,
+} from '@/hooks/use-github-ai'
 import { SectionHeader } from '@/components/dashboard/section-header'
 import { Button } from '@/components/ui/button'
 import {
@@ -137,7 +140,9 @@ export function CreateGithubIssuePage({
       })
 
       setLabelSuggestions(response.suggestions)
-      setSelectedLabels(response.suggestions.map((suggestion) => suggestion.label))
+      setSelectedLabels(
+        response.suggestions.map((suggestion) => suggestion.label)
+      )
 
       if (response.suggestions.length) {
         toast.success('AI label suggestions are ready.')
@@ -174,7 +179,9 @@ export function CreateGithubIssuePage({
       )
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Unable to generate issue draft'
+        error instanceof Error
+          ? error.message
+          : 'Unable to generate issue draft'
       )
     }
   }
@@ -206,8 +213,8 @@ export function CreateGithubIssuePage({
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-        <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+      <div className="grid gap-6 2xl:grid-cols-[0.85fr_1.15fr]">
+        <Card>
           <CardHeader>
             <CardTitle>Issue template</CardTitle>
             <CardDescription>
@@ -229,10 +236,10 @@ export function CreateGithubIssuePage({
                       templateKey as GitHubIssueFormValues['template']
                     )
                   }
-                  className={`w-full rounded-3xl border px-4 py-4 text-left transition ${
+                  className={`w-full rounded-3xl border px-4 py-4 text-left transition-all duration-300 ${
                     isSelected
-                      ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10'
-                      : 'border-slate-200 bg-white hover:border-emerald-200 dark:border-slate-800 dark:bg-slate-950'
+                      ? 'border-primary/30 bg-primary/10 shadow-sm'
+                      : 'border-border bg-background hover:border-primary/40 dark:hover:bg-primary/5'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -243,7 +250,7 @@ export function CreateGithubIssuePage({
                       </p>
                     </div>
                     {isSelected ? (
-                      <CheckSquare2 className="size-5 text-emerald-600 dark:text-emerald-300" />
+                      <CheckSquare2 className="size-5 text-primary" />
                     ) : (
                       <CheckSquare2 className="text-muted-foreground size-5" />
                     )}
@@ -254,7 +261,7 @@ export function CreateGithubIssuePage({
           </CardContent>
         </Card>
 
-        <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+        <Card>
           <CardHeader>
             <CardTitle>Issue details</CardTitle>
             <CardDescription>
@@ -274,7 +281,7 @@ export function CreateGithubIssuePage({
                   {...form.register('title')}
                 />
                 {form.formState.errors.title ? (
-                  <p className="text-sm text-red-600 dark:text-red-300">
+                  <p className="text-sm text-destructive">
                     {form.formState.errors.title.message}
                   </p>
                 ) : null}
@@ -310,23 +317,24 @@ export function CreateGithubIssuePage({
                 <textarea
                   id="body"
                   rows={16}
-                  className="placeholder:text-muted-foreground w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm transition outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-200 dark:border-slate-800 dark:bg-slate-950 dark:focus:border-emerald-500/40 dark:focus:ring-emerald-500/20"
+                  className="placeholder:text-muted-foreground w-full rounded-3xl border border-border bg-background px-4 py-3 text-sm shadow-sm transition-all outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                   placeholder="Describe the issue"
                   {...form.register('body')}
                 />
                 {form.formState.errors.body ? (
-                  <p className="text-sm text-red-600 dark:text-red-300">
+                  <p className="text-sm text-destructive">
                     {form.formState.errors.body.message}
                   </p>
                 ) : null}
               </div>
 
-              <div className="space-y-3 rounded-3xl border border-slate-200/80 bg-slate-50/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/50">
+              <div className="glass-surface space-y-3 rounded-3xl px-4 py-4 transition-all duration-300">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-medium">AI label suggestions</p>
-                    <p className="text-sm text-muted-foreground">
-                      Let Gemini review this issue draft and recommend the most relevant GitHub labels.
+                    <p className="text-muted-foreground text-sm">
+                      Let Gemini review this issue draft and recommend the most
+                      relevant GitHub labels.
                     </p>
                   </div>
                   <Button
@@ -342,10 +350,7 @@ export function CreateGithubIssuePage({
                         Thinking...
                       </>
                     ) : (
-                      <>
-                        <Sparkles className="size-4" />
-                        Suggest labels
-                      </>
+                      <>Suggest labels</>
                     )}
                   </Button>
                 </div>
@@ -354,17 +359,19 @@ export function CreateGithubIssuePage({
                   <div className="space-y-3">
                     <div className="flex flex-wrap gap-2">
                       {labelSuggestions.map((suggestion) => {
-                        const isSelected = selectedLabels.includes(suggestion.label)
+                        const isSelected = selectedLabels.includes(
+                          suggestion.label
+                        )
 
                         return (
                           <button
                             key={suggestion.label}
                             type="button"
                             onClick={() => toggleLabel(suggestion.label)}
-                            className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                            className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-all duration-300 ${
                               isSelected
-                                ? 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
-                                : 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300'
+                                ? 'border-primary/30 bg-primary/10 text-primary shadow-sm'
+                                : 'border-border bg-background text-muted-foreground hover:bg-primary/5 hover:text-foreground'
                             }`}
                           >
                             {suggestion.label}
@@ -376,9 +383,11 @@ export function CreateGithubIssuePage({
                       {labelSuggestions.map((suggestion) => (
                         <div
                           key={`${suggestion.label}-reason`}
-                          className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-950"
+                          className="glass-panel border-border/50 rounded-2xl px-3 py-3 text-sm transition-all duration-300"
                         >
-                          <span className="font-medium">{suggestion.label}</span>
+                          <span className="font-medium">
+                            {suggestion.label}
+                          </span>
                           <span className="text-muted-foreground">
                             {' '}
                             — {suggestion.reason}
@@ -388,8 +397,9 @@ export function CreateGithubIssuePage({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
-                    No suggestions yet. Generate them after you’ve written a meaningful draft.
+                  <p className="text-muted-foreground text-sm">
+                    No suggestions yet. Generate them after you’ve written a
+                    meaningful draft.
                   </p>
                 )}
               </div>

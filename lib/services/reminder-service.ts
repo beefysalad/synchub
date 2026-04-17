@@ -5,19 +5,22 @@ import prisma from '@/lib/prisma'
 export const reminderService = {
   async listUserReminders(
     userId: string,
-    status?: ReminderStatus,
+    status?: ReminderStatus | 'ARCHIVED',
     filters?: {
       repository?: string
       issueNumber?: number
     }
   ) {
+    const archivedFilter =
+      status === 'ARCHIVED' ? true : false
+
     return prisma.reminder.findMany({
       where: {
         userId,
-        ...(status ? { status } : {}),
+        ...(status && status !== 'ARCHIVED' ? { status } : {}),
         ...(filters?.repository ? { repository: filters.repository } : {}),
         ...(filters?.issueNumber ? { issueNumber: filters.issueNumber } : {}),
-        archived: false,
+        archived: archivedFilter,
       },
       orderBy: [{ remindAt: 'asc' }, { createdAt: 'desc' }],
     })

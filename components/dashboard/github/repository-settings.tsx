@@ -103,7 +103,7 @@ export function RepositorySettingsPage({
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="rounded-3xl border border-slate-200/70 bg-slate-50/60 px-6 py-6 dark:border-slate-800 dark:bg-slate-900/50">
+                <div className="glass-surface rounded-3xl px-6 py-6 transition-all duration-300">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
@@ -188,7 +188,7 @@ export function RepositorySettingsPage({
                       return (
                         <label
                           key={`tg-${eventType}`}
-                          className="flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800"
+                          className="glass-panel border-border/50 flex cursor-pointer items-start gap-4 p-4 shadow-sm transition-all duration-300 hover:bg-primary/5"
                         >
                           <input
                             type="checkbox"
@@ -258,7 +258,7 @@ export function RepositorySettingsPage({
                       return (
                         <div
                           key={`dc-${eventType}`}
-                          className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-800"
+                          className="glass-panel border-border/50 space-y-3 p-4 shadow-sm transition-all duration-300 hover:bg-primary/5"
                         >
                           <label className="flex cursor-pointer items-start gap-4">
                             <input

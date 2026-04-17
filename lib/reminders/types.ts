@@ -1,4 +1,9 @@
-export type ReminderStatus = 'PENDING' | 'SENT' | 'CANCELED' | 'FAILED'
+export type ReminderStatus =
+  | 'PENDING'
+  | 'SENT'
+  | 'CANCELED'
+  | 'FAILED'
+  | 'ARCHIVED'
 
 export type ReminderRecord = {
   id: string

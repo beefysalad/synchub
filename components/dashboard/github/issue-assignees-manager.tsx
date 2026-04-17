@@ -46,7 +46,7 @@ export function IssueAssigneesManager({
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+    <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">

@@ -100,46 +100,46 @@ export default async function IntegrationsPage({
     <div className="space-y-8">
       <SectionHeader
         eyebrow="Integrations"
-        title="Connect the tools your team already uses"
-        description="Clerk handles app authentication, while each integration flow grants the platform-specific access SyncHub needs to do real work."
+        title="Connect the channels your team lives in"
+        description="Keep GitHub, Telegram, and Discord ready so SyncHub can route updates, reminders, and actions without extra setup every time."
       />
 
       {resolvedSearchParams?.github === 'connected' ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100">
+        <div className="border-primary/20 bg-primary/10 text-primary rounded-2xl border px-5 py-4 text-sm transition-all duration-300">
           GitHub authorization completed. SyncHub can now use your dedicated
           GitHub access token for issue actions.
         </div>
       ) : null}
 
       {resolvedSearchParams?.telegramWebhook === 'registered' ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100">
+        <div className="border-primary/20 bg-primary/10 text-primary rounded-2xl border px-5 py-4 text-sm transition-all duration-300">
           Telegram webhook registered successfully. Telegram can now deliver bot
           updates to SyncHub.
         </div>
       ) : null}
 
       {resolvedSearchParams?.telegramWebhook === 'error' ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+        <div className="border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl border px-5 py-4 text-sm transition-all duration-300">
           Telegram webhook registration failed.
           {resolvedSearchParams.reason ? ` ${resolvedSearchParams.reason}` : ''}
         </div>
       ) : null}
 
       {resolvedSearchParams?.discordCommands === 'registered' ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100">
+        <div className="border-primary/20 bg-primary/10 text-primary rounded-2xl border px-5 py-4 text-sm transition-all duration-300">
           Discord slash commands registered successfully. Your server should now
           expose `/link`, `/whoami`, and `/status`.
         </div>
       ) : null}
 
       {resolvedSearchParams?.discordCommands === 'error' ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+        <div className="border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl border px-5 py-4 text-sm transition-all duration-300">
           Discord command registration failed.
           {resolvedSearchParams.reason ? ` ${resolvedSearchParams.reason}` : ''}
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
         {integrationCards.map(
           ({
             key,
@@ -168,11 +168,11 @@ export default async function IntegrationsPage({
             return (
               <Card
                 key={title}
-                className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none"
+                className="h-full"
               >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex size-12 items-center justify-center rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <div className="glass-surface flex size-12 items-center justify-center rounded-2xl shadow-sm transition-all duration-300">
                       <Image
                         src={icon}
                         alt={`${title} logo`}
@@ -182,7 +182,7 @@ export default async function IntegrationsPage({
                       />
                     </div>
                     {isConnected ? (
-                      <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+                      <div className="bg-primary/10 text-primary inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
                         <CheckCircle2 className="size-3.5" />
                         Connected
                       </div>
@@ -193,7 +193,7 @@ export default async function IntegrationsPage({
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm text-muted-foreground">
                   {isConnected ? (
-                    <div className="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+                    <div className="glass-surface rounded-2xl px-4 py-3 transition-all duration-300">
                       <p className="font-medium text-foreground">
                         {account?.username
                           ? `Connected as ${account.username}`
@@ -208,7 +208,7 @@ export default async function IntegrationsPage({
                   ) : null}
 
                   {showTelegramWebhookStatus ? (
-                    <div className="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+                    <div className="glass-surface rounded-2xl px-4 py-3 transition-all duration-300">
                       <p className="font-medium text-foreground">
                         Webhook:{' '}
                         {telegramWebhookRegistered ? 'registered' : 'not registered'}
@@ -231,7 +231,7 @@ export default async function IntegrationsPage({
                   ) : null}
 
                   {showDiscordStatus ? (
-                    <div className="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+                    <div className="glass-surface rounded-2xl px-4 py-3 transition-all duration-300">
                       <p className="font-medium text-foreground">
                         Slash commands:{' '}
                         {discordCommandsRegistered ? 'registered' : 'not registered'}
@@ -242,7 +242,7 @@ export default async function IntegrationsPage({
                         </p>
                       ) : null}
                       {resolvedSearchParams?.discordCode ? (
-                        <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950">
+                        <div className="glass-panel border-border/50 mt-3 rounded-xl px-3 py-3 shadow-sm transition-all duration-300">
                           <p className="font-medium text-foreground">
                             Your current link code: {resolvedSearchParams.discordCode}
                           </p>
@@ -270,7 +270,7 @@ export default async function IntegrationsPage({
                         loadingLabel={
                           isConnected ? 'Reconnecting Telegram...' : 'Connecting Telegram...'
                         }
-                        className="w-full rounded-full"
+                        className="w-full"
                       />
                       <IntegrationActionLink
                         href="/api/integrations/telegram/webhook/register"
@@ -281,7 +281,7 @@ export default async function IntegrationsPage({
                         }
                         loadingLabel="Registering Telegram webhook..."
                         variant="outline"
-                        className="w-full rounded-full"
+                        className="w-full"
                       />
                     </div>
                   ) : key === 'DISCORD' ? (
@@ -292,7 +292,7 @@ export default async function IntegrationsPage({
                         loadingLabel={
                           isConnected ? 'Reconnecting Discord...' : 'Starting Discord link...'
                         }
-                        className="w-full rounded-full"
+                        className="w-full"
                       />
                       <IntegrationActionLink
                         href="/api/integrations/discord/commands/register"
@@ -303,13 +303,13 @@ export default async function IntegrationsPage({
                         }
                         loadingLabel="Registering Discord commands..."
                         variant="outline"
-                        className="w-full rounded-full"
+                        className="w-full"
                       />
                     </div>
                   ) : isConnected ? (
                     <Button
                       disabled
-                      className="w-full rounded-full bg-emerald-600 text-white opacity-100 hover:bg-emerald-600"
+                      className="w-full opacity-100"
                     >
                       {key === 'GITHUB' ? 'GitHub Authorized' : `${title} Connected`}
                     </Button>
@@ -318,7 +318,7 @@ export default async function IntegrationsPage({
                       href={href}
                       label={defaultCtaLabel}
                       loadingLabel="Redirecting..."
-                      className="w-full rounded-full"
+                      className="w-full"
                     />
                   )}
                 </CardFooter>

@@ -64,12 +64,12 @@ function ConversationEntry({
         height={40}
         className="size-10 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800"
       />
-      <div className="min-w-0 flex-1 rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <div className="rounded-t-3xl border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-sm dark:border-slate-800/50 dark:bg-slate-900/50">
+      <div className="glass-panel border-border/50 min-w-0 flex-1 shadow-sm transition-all duration-300">
+        <div className="glass-surface border-border/40 rounded-t-3xl border-b px-5 py-3 text-sm transition-all duration-300">
           <span className="font-semibold">{username}</span> commented{' '}
           {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
         </div>
-        <div className="prose prose-slate prose-sm max-w-none px-5 py-5 dark:prose-invert">
+        <div className="prose prose-slate prose-sm dark:prose-invert max-w-none px-5 py-5">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {body || '*No description provided.*'}
           </ReactMarkdown>
@@ -90,7 +90,11 @@ export function IssueDetailPage({
 }) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
-  const { data, isLoading, error } = useGithubIssueDetail(owner, repo, issueNumber)
+  const { data, isLoading, error } = useGithubIssueDetail(
+    owner,
+    repo,
+    issueNumber
+  )
   const { data: assignableUsersData, isLoading: isLoadingAssignableUsers } =
     useGithubAssignableUsers(owner, repo)
   const updateState = useUpdateGithubIssueState(owner, repo, issueNumber)
@@ -164,7 +168,9 @@ export function IssueDetailPage({
         })),
       })
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Unable to summarize issue')
+      toast.error(
+        err instanceof Error ? err.message : 'Unable to summarize issue'
+      )
     }
   }
 
@@ -193,7 +199,9 @@ export function IssueDetailPage({
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Unable to suggest branch names'
+        error instanceof Error
+          ? error.message
+          : 'Unable to suggest branch names'
       )
     }
   }
@@ -232,7 +240,7 @@ export function IssueDetailPage({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex min-h-[40vh] flex-col items-center justify-center gap-4 text-sm">
         <Spinner className="size-8" />
         Loading issue details...
       </div>
@@ -241,7 +249,7 @@ export function IssueDetailPage({
 
   if (error || !issue) {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+      <div className="border-destructive/20 bg-destructive/10 text-destructive rounded-2xl border px-5 py-4 text-sm transition-all duration-300">
         {error?.message ?? 'Issue not found.'}
       </div>
     )
@@ -267,31 +275,43 @@ export function IssueDetailPage({
             {issue.state === 'open' ? (
               <Button
                 variant="outline"
-                className="rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/50 dark:hover:bg-red-900/20"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 rounded-full transition-all duration-300"
                 onClick={handleClose}
                 disabled={updateState.isPending}
               >
-                {updateState.isPending ? <Spinner /> : <Lock className="size-4" />}
+                {updateState.isPending ? (
+                  <Spinner />
+                ) : (
+                  <Lock className="size-4" />
+                )}
                 Close issue
               </Button>
             ) : (
               <Button
                 variant="outline"
-                className="rounded-full border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:border-emerald-900/50 dark:hover:bg-emerald-900/20"
+                className="border-primary/20 text-primary hover:bg-primary/10 hover:text-primary rounded-full transition-all duration-300"
                 onClick={handleReopen}
                 disabled={updateState.isPending}
               >
-                {updateState.isPending ? <Spinner /> : <Lock className="size-4" />}
+                {updateState.isPending ? (
+                  <Spinner />
+                ) : (
+                  <Lock className="size-4" />
+                )}
                 Reopen issue
               </Button>
             )}
             <Button
               variant="outline"
-              className="rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/50 dark:hover:bg-red-900/20"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 rounded-full transition-all duration-300"
               onClick={handleDelete}
               disabled={deleteIssue.isPending}
             >
-              {deleteIssue.isPending ? <Spinner /> : <Trash2 className="size-4" />}
+              {deleteIssue.isPending ? (
+                <Spinner />
+              ) : (
+                <Trash2 className="size-4" />
+              )}
               Delete via API
             </Button>
             <Button asChild className="rounded-full">
@@ -306,30 +326,37 @@ export function IssueDetailPage({
               onClick={() => setIsEditing((current) => !current)}
               disabled={editIssue.isPending}
             >
-              {editIssue.isPending ? <Spinner /> : <FilePenLine className="size-4" />}
+              {editIssue.isPending ? (
+                <Spinner />
+              ) : (
+                <FilePenLine className="size-4" />
+              )}
               {isEditing ? 'Stop editing' : 'Edit details'}
             </Button>
           </>
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
-        <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+      <div className="grid gap-6 2xl:grid-cols-[0.8fr_1.2fr]">
+        <Card>
           <CardHeader>
             <CardTitle>Issue overview</CardTitle>
             <CardDescription>
-              A quick summary of the current issue state before you dive into the conversation.
+              A quick summary of the current issue state before you dive into
+              the conversation.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
+              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                 Status
               </p>
-              <p className="mt-2 text-2xl font-semibold capitalize">{issue.state}</p>
+              <p className="mt-2 text-2xl font-semibold capitalize">
+                {issue.state}
+              </p>
             </div>
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
+              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                 Author
               </p>
               <p className="mt-2 text-lg font-semibold">{issue.user.login}</p>
@@ -341,8 +368,8 @@ export function IssueDetailPage({
               isSaving={editIssue.isPending}
               onChange={handleAssigneesChange}
             />
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
+              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                 Conversation
               </p>
               <p className="mt-2 text-lg font-semibold">
@@ -350,16 +377,19 @@ export function IssueDetailPage({
               </p>
             </div>
 
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
+              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                 Reminder
               </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Schedule or adjust a follow-up reminder from a dedicated page instead of managing it inline here.
+              <p className="text-muted-foreground mt-2 text-sm">
+                Schedule or adjust a follow-up reminder from a dedicated page
+                instead of managing it inline here.
               </p>
               <div className="mt-4">
                 <Button asChild className="w-full rounded-full sm:w-auto">
-                  <Link href={`/issues/${owner}/${repo}/${issueNumber}/reminder`}>
+                  <Link
+                    href={`/issues/${owner}/${repo}/${issueNumber}/reminder`}
+                  >
                     <BellRing className="size-4" />
                     Manage reminder
                   </Link>
@@ -367,9 +397,9 @@ export function IssueDetailPage({
               </div>
             </div>
 
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                   Branch naming
                 </p>
                 <Button
@@ -385,10 +415,7 @@ export function IssueDetailPage({
                       Thinking...
                     </>
                   ) : (
-                    <>
-                      <Sparkles className="size-4" />
-                      Suggest names
-                    </>
+                    <>Suggest names</>
                   )}
                 </Button>
               </div>
@@ -402,10 +429,10 @@ export function IssueDetailPage({
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
-                          <p className="font-mono text-sm font-semibold text-foreground">
+                          <p className="text-foreground font-mono text-sm font-semibold">
                             {suggestion.name}
                           </p>
-                          <p className="mt-1 text-sm text-muted-foreground">
+                          <p className="text-muted-foreground mt-1 text-sm">
                             {suggestion.reason}
                           </p>
                         </div>
@@ -423,15 +450,16 @@ export function IssueDetailPage({
                   ))}
                 </div>
               ) : (
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Let Gemini propose a few consistent branch names for this issue so the team follows the same naming pattern.
+                <p className="text-muted-foreground mt-3 text-sm">
+                  Let Gemini propose a few consistent branch names for this
+                  issue so the team follows the same naming pattern.
                 </p>
               )}
             </div>
 
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                   AI summary
                 </p>
                 <Button
@@ -447,10 +475,7 @@ export function IssueDetailPage({
                       Summarizing...
                     </>
                   ) : (
-                    <>
-                      <Sparkles className="size-4" />
-                      Generate
-                    </>
+                    <>Generate</>
                   )}
                 </Button>
               </div>
@@ -458,13 +483,13 @@ export function IssueDetailPage({
               {summarizeIssue.data ? (
                 <div className="mt-4 space-y-4 text-sm">
                   <div>
-                    <p className="font-semibold text-foreground">
+                    <p className="text-foreground font-semibold">
                       {summarizeIssue.data.headline}
                     </p>
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">Summary</p>
-                    <ul className="mt-2 space-y-2 text-muted-foreground">
+                    <p className="text-foreground font-medium">Summary</p>
+                    <ul className="text-muted-foreground mt-2 space-y-2">
                       {summarizeIssue.data.summary.map((item) => (
                         <li key={item}>• {item}</li>
                       ))}
@@ -472,8 +497,8 @@ export function IssueDetailPage({
                   </div>
                   {summarizeIssue.data.risks.length ? (
                     <div>
-                      <p className="font-medium text-foreground">Risks</p>
-                      <ul className="mt-2 space-y-2 text-muted-foreground">
+                      <p className="text-foreground font-medium">Risks</p>
+                      <ul className="text-muted-foreground mt-2 space-y-2">
                         {summarizeIssue.data.risks.map((item) => (
                           <li key={item}>• {item}</li>
                         ))}
@@ -482,8 +507,8 @@ export function IssueDetailPage({
                   ) : null}
                   {summarizeIssue.data.nextSteps.length ? (
                     <div>
-                      <p className="font-medium text-foreground">Next steps</p>
-                      <ul className="mt-2 space-y-2 text-muted-foreground">
+                      <p className="text-foreground font-medium">Next steps</p>
+                      <ul className="text-muted-foreground mt-2 space-y-2">
                         {summarizeIssue.data.nextSteps.map((item) => (
                           <li key={item}>• {item}</li>
                         ))}
@@ -492,22 +517,24 @@ export function IssueDetailPage({
                   ) : null}
                 </div>
               ) : (
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Generate a quick Gemini summary of the issue description and discussion so far.
+                <p className="text-muted-foreground mt-3 text-sm">
+                  Generate a quick Gemini summary of the issue description and
+                  discussion so far.
                 </p>
               )}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <MessageSquareMore className="size-5 text-emerald-600 dark:text-emerald-300" />
+              <MessageSquareMore className="text-primary size-5" />
               Issue details
             </CardTitle>
             <CardDescription>
-              Update the issue content here, then review the full discussion below.
+              Update the issue content here, then review the full discussion
+              below.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">

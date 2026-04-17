@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
   const repository = request.nextUrl.searchParams.get('repository') ?? undefined
   const issueNumberParam = request.nextUrl.searchParams.get('issueNumber')
   const issueNumber = issueNumberParam ? Number(issueNumberParam) : undefined
+  const wantsArchived = status === 'ARCHIVED'
   const normalizedStatus =
     status && ['PENDING', 'SENT', 'CANCELED', 'FAILED'].includes(status)
       ? (status as ReminderStatus)
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
 
   const reminders = await reminderService.listUserReminders(
     user.id,
-    normalizedStatus,
+    wantsArchived ? 'ARCHIVED' : normalizedStatus,
     {
       repository,
       issueNumber:
@@ -46,7 +47,12 @@ export async function GET(request: NextRequest) {
     }
   )
 
-  return NextResponse.json({ reminders })
+  return NextResponse.json({
+    reminders: reminders.map((reminder) => ({
+      ...reminder,
+      status: reminder.archived ? 'ARCHIVED' : reminder.status,
+    })),
+  })
 }
 
 export async function POST(request: NextRequest) {

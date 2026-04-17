@@ -26,6 +26,7 @@ const reminderStatuses: Array<ReminderStatus | 'ALL'> = [
   'SENT',
   'FAILED',
   'CANCELED',
+  'ARCHIVED'
 ]
 
 function ReminderCard({
@@ -68,14 +69,14 @@ function ReminderCard({
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-5 py-5 dark:border-slate-800 dark:bg-slate-900/60">
+    <div className="glass-surface rounded-3xl px-5 py-5 transition-all duration-300">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-3">
+        <div className="space-y-3 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white dark:bg-slate-100 dark:text-slate-950">
+            <span className="bg-primary text-primary-foreground rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
               #{reminder.issueNumber}
             </span>
-            <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-transparent dark:text-slate-300">
+            <span className="border-border bg-background/50 text-muted-foreground rounded-full border px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
               {reminder.status}
             </span>
           </div>
@@ -157,7 +158,7 @@ export default function RemindersPage() {
       />
 
       {error ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+        <div className="border-destructive/20 bg-destructive/10 text-destructive rounded-2xl border px-5 py-4 text-sm transition-all duration-300">
           {error.message}
         </div>
       ) : null}
@@ -194,7 +195,7 @@ export default function RemindersPage() {
         />
       </div>
 
-      <Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/40 backdrop-blur dark:border-white/10 dark:bg-slate-950/70 dark:shadow-none">
+      <Card>
         <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <CardTitle>Reminder queue</CardTitle>
@@ -218,7 +219,7 @@ export default function RemindersPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading ? (
-            <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
+            <div className="border-border text-muted-foreground rounded-3xl border border-dashed px-5 py-8 text-sm transition-all duration-300">
               Loading reminders...
             </div>
           ) : reminders.length ? (
@@ -226,7 +227,7 @@ export default function RemindersPage() {
               <ReminderCard key={reminder.id} reminder={reminder} />
             ))
           ) : (
-            <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
+            <div className="border-border text-muted-foreground rounded-3xl border border-dashed px-5 py-8 text-sm transition-all duration-300">
               No reminders yet. Open an issue and create a reminder from its detail page.
             </div>
           )}

@@ -90,7 +90,7 @@ export function DailySummarySettingsForm({
             value={selectedChannel}
             onChange={(e) => setSelectedChannel(e.target.value)}
             disabled={isSaving || isLoadingChannels}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm transition outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-200 dark:border-slate-800 dark:bg-slate-950 dark:focus:border-indigo-500/40 dark:focus:ring-indigo-500/20"
+            className="border-border bg-background focus:border-primary/50 focus:ring-primary/20 w-full rounded-2xl border px-4 py-2.5 text-sm transition-all outline-none focus:ring-2"
           >
             <option value="">Use linked default channel</option>
             {channels?.map((channel) => (
@@ -118,13 +118,13 @@ export function DailySummarySettingsForm({
         </p>
       </div>
 
-      <Card className="rounded-3xl border border-slate-200/70 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900/60">
+      <div className="glass-surface rounded-3xl p-5 transition-all duration-300">
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
+            <p className="text-muted-foreground text-xs font-medium tracking-[0.16em] uppercase">
               Manual Testing
             </p>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="text-muted-foreground mt-2 text-sm">
               Use these controls to test generation and delivery manually. For
               production, point cron-job.org at your daily summary cron endpoint
               so summaries are created automatically each day.
@@ -143,10 +143,7 @@ export function DailySummarySettingsForm({
                   Generating...
                 </>
               ) : (
-                <>
-                  <Sparkles className="mr-2 size-4" />
-                  Generate today&apos;s summary
-                </>
+                <>Generate today&apos;s summary</>
               )}
             </Button>
             <Button
@@ -187,12 +184,12 @@ export function DailySummarySettingsForm({
             </Button>
           </div>
 
-          <div className="rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-sm text-muted-foreground dark:border-slate-700">
+          <div className="border-border text-muted-foreground rounded-2xl border border-dashed px-4 py-3 text-sm transition-all duration-300">
             {dailySummaryQuery.isFetching ? (
               'Checking whether a summary already exists for today...'
             ) : currentSummary ? (
               <>
-                <span className="font-medium text-foreground">
+                <span className="text-foreground font-medium">
                   Today&apos;s summary is ready.
                 </span>{' '}
                 {currentSummary.headline}
@@ -202,7 +199,7 @@ export function DailySummarySettingsForm({
             )}
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }
