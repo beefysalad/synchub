@@ -79,123 +79,137 @@ export function DailySummarySettingsForm({
     sendDailySummary.isPending
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <label className="text-muted-foreground text-xs font-medium tracking-[0.16em] uppercase">
-          Discord Target Channel
-        </label>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <select
-            value={selectedChannel}
-            onChange={(e) => setSelectedChannel(e.target.value)}
-            disabled={isSaving || isLoadingChannels}
-            className="border-border bg-background focus:border-primary/50 focus:ring-primary/20 w-full rounded-2xl border px-4 py-2.5 text-sm transition-all outline-none focus:ring-2"
-          >
-            <option value="">Use linked default channel</option>
-            {channels?.map((channel) => (
-              <option key={channel.id} value={channel.id}>
-                #{channel.name}
-              </option>
-            ))}
-          </select>
-          <Button
-            onClick={handleSave}
-            disabled={isSaving || isLoadingChannels}
-            className="rounded-full"
-          >
-            {isSaving ? (
-              <Spinner className="mr-2 inline size-4" />
-            ) : (
-              <Save className="mr-2 size-4" />
-            )}
-            Save Preference
-          </Button>
-        </div>
-        <p className="text-muted-foreground text-xs">
-          Choose which Discord channel should receive your automated daily
-          recaps.
-        </p>
-      </div>
-
+    <div className="space-y-5">
       <div className="glass-surface rounded-3xl p-5 transition-all duration-300">
         <div className="space-y-4">
           <div>
             <p className="text-muted-foreground text-xs font-medium tracking-[0.16em] uppercase">
-              Manual Testing
+              Channel routing
             </p>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Use these controls to test generation and delivery manually. For
-              production, point cron-job.org at your daily summary cron endpoint
-              so summaries are created automatically each day.
+            <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+              Choose which Discord channel should receive your automated daily
+              recaps.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={handleGenerate}
-              disabled={isTesting}
-              className="rounded-full"
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+            <select
+              value={selectedChannel}
+              onChange={(e) => setSelectedChannel(e.target.value)}
+              disabled={isSaving || isLoadingChannels}
+              className="border-border bg-background focus:border-primary/50 focus:ring-primary/20 w-full rounded-2xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2"
             >
-              {generateDailySummary.isPending ? (
-                <>
-                  <Spinner className="mr-2 size-4" />
-                  Generating...
-                </>
-              ) : (
-                <>Generate today&apos;s summary</>
-              )}
-            </Button>
+              <option value="">Use linked default channel</option>
+              {channels?.map((channel) => (
+                <option key={channel.id} value={channel.id}>
+                  #{channel.name}
+                </option>
+              ))}
+            </select>
             <Button
-              variant="outline"
-              onClick={() => handleSend(['TELEGRAM'])}
-              disabled={isTesting || !currentSummary}
-              className="rounded-full"
+              onClick={handleSave}
+              disabled={isSaving || isLoadingChannels}
+              className="h-11 rounded-full px-5"
             >
-              {sendDailySummary.isPending ? (
-                <>
-                  <Spinner className="mr-2 size-4" />
-                  Sending...
-                </>
+              {isSaving ? (
+                <Spinner className="mr-2 inline size-4" />
               ) : (
-                <>
-                  <Send className="mr-2 size-4" />
-                  Send to Telegram
-                </>
+                <Save className="mr-2 size-4" />
               )}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleSend(['DISCORD'])}
-              disabled={isTesting || !currentSummary}
-              className="rounded-full"
-            >
-              {sendDailySummary.isPending ? (
-                <>
-                  <Spinner className="mr-2 size-4" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <MessageCircle className="mr-2 size-4" />
-                  Send to Discord
-                </>
-              )}
+              Save preference
             </Button>
           </div>
+        </div>
+      </div>
 
-          <div className="border-border text-muted-foreground rounded-2xl border border-dashed px-4 py-3 text-sm transition-all duration-300">
-            {dailySummaryQuery.isFetching ? (
-              'Checking whether a summary already exists for today...'
-            ) : currentSummary ? (
-              <>
-                <span className="text-foreground font-medium">
-                  Today&apos;s summary is ready.
-                </span>{' '}
-                {currentSummary.headline}
-              </>
-            ) : (
-              'No daily summary exists for today yet. Generate one first, then send it to Telegram or Discord.'
-            )}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
+        <div className="glass-surface rounded-3xl p-5 transition-all duration-300">
+          <div className="space-y-4">
+            <div>
+              <p className="text-muted-foreground text-xs font-medium tracking-[0.16em] uppercase">
+                Manual testing
+              </p>
+              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+                Test generation and delivery manually. For production, point
+                cron-job.org at your daily summary cron endpoint so summaries
+                are created automatically each day.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={handleGenerate}
+                disabled={isTesting}
+                className="rounded-full"
+              >
+                {generateDailySummary.isPending ? (
+                  <>
+                    <Spinner className="mr-2 size-4" />
+                    Generating...
+                  </>
+                ) : (
+                  <>Generate today&apos;s summary</>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleSend(['TELEGRAM'])}
+                disabled={isTesting || !currentSummary}
+                className="rounded-full"
+              >
+                {sendDailySummary.isPending ? (
+                  <>
+                    <Spinner className="mr-2 size-4" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 size-4" />
+                    Send to Telegram
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleSend(['DISCORD'])}
+                disabled={isTesting || !currentSummary}
+                className="rounded-full"
+              >
+                {sendDailySummary.isPending ? (
+                  <>
+                    <Spinner className="mr-2 size-4" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="mr-2 size-4" />
+                    Send to Discord
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-surface rounded-3xl p-5 transition-all duration-300">
+          <div className="space-y-3">
+            <p className="text-muted-foreground text-xs font-medium tracking-[0.16em] uppercase">
+              Summary state
+            </p>
+            <div className="border-border text-muted-foreground rounded-2xl border border-dashed px-4 py-4 text-sm leading-relaxed transition-all duration-300">
+              {dailySummaryQuery.isFetching ? (
+                'Checking whether a summary already exists for today...'
+              ) : currentSummary ? (
+                <>
+                  <span className="text-foreground font-medium">
+                    Today&apos;s summary is ready.
+                  </span>{' '}
+                  {currentSummary.headline}
+                </>
+              ) : (
+                'No daily summary exists for today yet. Generate one first, then send it to Telegram or Discord.'
+              )}
+            </div>
           </div>
         </div>
       </div>
