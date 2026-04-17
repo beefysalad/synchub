@@ -447,12 +447,19 @@ async function collectDailyActivities({
           .catch(() => []),
       ])
 
+      const hasExistingRepositoryHistory =
+        commits.length > 0 || pulls.length > 0 || issues.length > 0
+
       const trackingEvents = isOnDateKey(
         trackedRepo.createdAt,
         dateKey,
         timeZone
       )
-        ? ['Created and started tracking this project today.']
+        ? [
+            hasExistingRepositoryHistory
+              ? 'This repository was newly tracked in SyncHub today, but it already existed and had prior GitHub history.'
+              : 'This repository appears to have been newly created and first tracked in SyncHub today.',
+          ]
         : []
 
       const commitHighlights = commits
