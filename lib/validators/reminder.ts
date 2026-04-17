@@ -29,6 +29,7 @@ export const updateReminderSchema = z.object({
     .optional(),
   note: z.string().trim().max(500).nullable().optional(),
   status: z.enum(['PENDING', 'SENT', 'CANCELED', 'FAILED']).optional(),
+  archived: z.boolean().optional(),
 })
 
 export type CreateReminderValues = z.infer<typeof createReminderSchema>

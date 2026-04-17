@@ -17,6 +17,7 @@ export const reminderService = {
         ...(status ? { status } : {}),
         ...(filters?.repository ? { repository: filters.repository } : {}),
         ...(filters?.issueNumber ? { issueNumber: filters.issueNumber } : {}),
+        archived: false,
       },
       orderBy: [{ remindAt: 'asc' }, { createdAt: 'desc' }],
     })
@@ -43,6 +44,7 @@ export const reminderService = {
         repository,
         issueNumber,
         status: 'PENDING',
+        archived: false,
       },
       orderBy: {
         createdAt: 'desc',
@@ -55,6 +57,30 @@ export const reminderService = {
         data: {
           remindAt,
           note: normalizedNote,
+        },
+      })
+    }
+
+    const archivedReminder = await prisma.reminder.findFirst({
+      where: {
+        userId,
+        repository,
+        issueNumber,
+        archived: true,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    })
+
+    if (archivedReminder) {
+      return prisma.reminder.update({
+        where: { id: archivedReminder.id },
+        data: {
+          remindAt,
+          note: normalizedNote,
+          status: 'PENDING',
+          archived: false,
         },
       })
     }
@@ -77,6 +103,7 @@ export const reminderService = {
       remindAt?: Date
       note?: string | null
       status?: ReminderStatus
+      archived?: boolean
     }
   ) {
     const reminder = await prisma.reminder.findFirst({
@@ -96,6 +123,7 @@ export const reminderService = {
         ...(updates.remindAt ? { remindAt: updates.remindAt } : {}),
         ...(updates.note !== undefined ? { note: updates.note } : {}),
         ...(updates.status ? { status: updates.status } : {}),
+        ...(updates.archived !== undefined ? { archived: updates.archived } : {}),
       },
     })
   },
@@ -104,6 +132,7 @@ export const reminderService = {
     return prisma.reminder.findMany({
       where: {
         status: 'PENDING',
+        archived: false,
         remindAt: {
           lte: referenceDate,
         },

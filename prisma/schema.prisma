@@ -27,16 +27,16 @@ enum ReminderStatus {
 }
 
 model User {
-  id             String          @id @default(cuid())
-  clerkUserId    String          @unique
-  linkedAccounts LinkedAccount[]
-  pendingLinks   PendingLink[]
-  reminders      Reminder[]
-  trackedRepos   TrackedRepo[]
-  dailySummaries DailySummary[]
+  id                String             @id @default(cuid())
+  clerkUserId       String             @unique
+  linkedAccounts    LinkedAccount[]
+  pendingLinks      PendingLink[]
+  reminders         Reminder[]
+  trackedRepos      TrackedRepo[]
+  dailySummaries    DailySummary[]
   notificationRules NotificationRule[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 }
 
 model LinkedAccount {
@@ -83,19 +83,20 @@ model Reminder {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  archived    Boolean        @default(false)
 
   @@index([userId, status])
   @@index([repository, issueNumber])
 }
 
 model TrackedRepo {
-  id        String   @id @default(cuid())
-  userId    String
-  fullName  String
-  isDefault Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String             @id @default(cuid())
+  userId            String
+  fullName          String
+  isDefault         Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   notificationRules NotificationRule[]
 
   @@unique([userId, fullName])
@@ -103,17 +104,17 @@ model TrackedRepo {
 }
 
 model NotificationRule {
-  id        String          @id @default(cuid())
-  userId    String
-  repoId    String
-  provider  AccountProvider
-  events    String[]
+  id               String          @id @default(cuid())
+  userId           String
+  repoId           String
+  provider         AccountProvider
+  events           String[]
   channelOverrides Json?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  repo      TrackedRepo     @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repo TrackedRepo @relation(fields: [repoId], references: [id], onDelete: Cascade)
 
   @@unique([repoId, provider])
   @@index([userId, provider])
@@ -122,8 +123,8 @@ model NotificationRule {
 model DailySummary {
   id        String   @id @default(cuid())
   userId    String
-  date      String   // Format: YYYY-MM-DD
-  summary   Json     // Storing GithubDailySummaryResponse
+  date      String // Format: YYYY-MM-DD
+  summary   Json // Storing GithubDailySummaryResponse
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

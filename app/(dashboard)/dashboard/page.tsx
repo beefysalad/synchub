@@ -43,7 +43,9 @@ export default async function DashboardPage() {
   const [trackedReposCount, pendingRemindersCount, linkedAccounts] =
     await Promise.all([
       prisma.trackedRepo.count({ where: { userId: user.id } }),
-      prisma.reminder.count({ where: { userId: user.id, status: 'PENDING' } }),
+      prisma.reminder.count({
+        where: { userId: user.id, status: 'PENDING', archived: false },
+      }),
       prisma.linkedAccount.findMany({
         where: { userId: user.id },
         select: { provider: true },
