@@ -51,6 +51,22 @@ function ReminderCard({
     )
   }
 
+  function handleArchiveReminder() {
+    updateReminder.mutate(
+      {
+        archived: true,
+      },
+      {
+        onSuccess: () => {
+          toast.success('Reminder archived.')
+        },
+        onError: (error) => {
+          toast.error(error.message)
+        },
+      }
+    )
+  }
+
   return (
     <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-5 py-5 dark:border-slate-800 dark:bg-slate-900/60">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -100,6 +116,24 @@ function ReminderCard({
                   <XCircle className="size-4" />
                   Cancel
                 </>
+              )}
+            </Button>
+          ) : null}
+          {reminder.status === 'SENT' ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full"
+              onClick={handleArchiveReminder}
+              disabled={updateReminder.isPending}
+            >
+              {updateReminder.isPending ? (
+                <>
+                  <Spinner />
+                  Archiving...
+                </>
+              ) : (
+                'Archive'
               )}
             </Button>
           ) : null}

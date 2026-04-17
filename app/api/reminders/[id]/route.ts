@@ -34,6 +34,7 @@ export async function PATCH(
       ...(body.remindAt ? { remindAt: new Date(body.remindAt) } : {}),
       ...(body.note !== undefined ? { note: body.note } : {}),
       ...(body.status ? { status: body.status } : {}),
+      ...(body.archived !== undefined ? { archived: body.archived } : {}),
     })
 
     return NextResponse.json({ reminder })

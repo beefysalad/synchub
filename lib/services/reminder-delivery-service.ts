@@ -10,6 +10,7 @@ export const reminderDeliveryService = {
     const dueReminders = await prisma.reminder.findMany({
       where: {
         status: 'PENDING',
+        archived: false,
         remindAt: {
           lte: new Date(),
         },

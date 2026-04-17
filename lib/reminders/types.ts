@@ -6,6 +6,7 @@ export type ReminderRecord = {
   repository: string
   remindAt: string
   status: ReminderStatus
+  archived: boolean
   note: string | null
   createdAt: string
   updatedAt: string
@@ -26,4 +27,5 @@ export type UpdateReminderPayload = {
   remindAt?: string
   note?: string | null
   status?: ReminderStatus
+  archived?: boolean
 }
