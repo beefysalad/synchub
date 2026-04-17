@@ -4,7 +4,10 @@ import { githubAssistantService } from '@/lib/ai/github-assistant'
 import { getCurrentClerkUserProfile } from '@/lib/clerk'
 import { sendDiscordMessage } from '@/lib/discord/api'
 import { githubCommitsService } from '@/lib/github/commits'
-import type { GithubDailySummaryResponse } from '@/lib/github/types'
+import type {
+  GithubDailySummaryResponse,
+  GithubDailySummaryRawResponse,
+} from '@/lib/github/types'
 import { githubIssueService } from '@/lib/github/issues'
 import { githubPullsService } from '@/lib/github/pulls'
 import prisma from '@/lib/prisma'
@@ -174,7 +177,7 @@ function truncateDiscordMessage(
 }
 
 function normalizeDailySummary(
-  value: Partial<GithubDailySummaryResponse> | null | undefined,
+  value: GithubDailySummaryRawResponse | null | undefined,
   dateLabel: string
 ): GithubDailySummaryResponse {
   return {
@@ -203,6 +206,20 @@ function normalizeDailySummary(
             repository: getRepositoryLabel(
               repository.repository?.trim() ?? ''
             ).toUpperCase(),
+            stats: {
+              commits:
+                typeof repository.stats?.commits === 'number'
+                  ? Math.max(0, repository.stats.commits)
+                  : 0,
+              pullRequests:
+                typeof repository.stats?.pullRequests === 'number'
+                  ? Math.max(0, repository.stats.pullRequests)
+                  : 0,
+              issues:
+                typeof repository.stats?.issues === 'number'
+                  ? Math.max(0, repository.stats.issues)
+                  : 0,
+            },
             highlights: Array.isArray(repository.highlights)
               ? repository.highlights
                   .map((highlight) => truncateForChat(highlight, 220))
@@ -252,7 +269,7 @@ function formatTelegramDailySummaryMessage({
 }) {
   const insights =
     summary.insights.length > 0
-      ? `<b>Smart Insights</b>\n${summary.insights
+      ? `<b>Insights</b>\n${summary.insights
           .map((insight) => `• ${escapeTelegramHtml(insight)}`)
           .join('\n')}`
       : ''
@@ -260,23 +277,29 @@ function formatTelegramDailySummaryMessage({
   const sections = summary.repositories.length
     ? summary.repositories
         .map((repository) => {
+          const counts = `Committed ${repository.stats.commits} times • Opened ${repository.stats.pullRequests} PRs • Created ${repository.stats.issues} issues`
           const highlights = repository.highlights
             .map((highlight) => `• ${escapeTelegramHtml(highlight)}`)
             .join('\n')
 
-          return `<b>${escapeTelegramHtml(repository.repository)}</b>\n${highlights}`
+          return [
+            `<b>${escapeTelegramHtml(repository.repository)}</b>`,
+            `<i>${escapeTelegramHtml(counts)}</i>`,
+            highlights,
+          ].join('\n')
         })
         .join('\n\n')
     : '• No tracked GitHub activity was found for this day.'
 
   return [
     `<b>${escapeTelegramHtml(getGreeting())} ${escapeTelegramHtml(recipientName)}</b>`,
-    `Here is your daily summary for <b>${escapeTelegramHtml(dateLabel)}</b>.`,
+    `Daily report for <b>${escapeTelegramHtml(dateLabel)}</b>`,
     '',
     `<b>${escapeTelegramHtml(summary.headline)}</b>`,
     escapeTelegramHtml(summary.overview),
     '',
     ...(insights ? [insights, ''] : []),
+    `<b>Repository Activity</b>`,
     sections,
   ].join('\n')
 }
@@ -284,44 +307,65 @@ function formatTelegramDailySummaryMessage({
 function formatDiscordDailySummaryMessage({
   recipientName,
   dateLabel,
-  summary,
 }: {
   recipientName: string
   dateLabel: string
-  summary: GithubDailySummaryResponse
 }) {
-  const insights =
-    summary.insights.length > 0
-      ? `**Smart Insights**\n${summary.insights
-          .map((insight) => `- ${insight}`)
-          .join('\n')}`
-      : ''
-
-  const sections = summary.repositories.length
-    ? summary.repositories
-        .map((repository) => {
-          const highlights = repository.highlights
-            .map((highlight) => `- ${highlight}`)
-            .join('\n')
-
-          return `**${repository.repository}**\n${highlights}`
-        })
-        .join('\n\n')
-    : '- No tracked GitHub activity was found for this day.'
-
   return truncateDiscordMessage(
     [
       `**${getGreeting()} ${recipientName}**`,
-      `Here is your daily summary for **${dateLabel}**.`,
-      '',
-      `**${summary.headline}**`,
-      summary.overview,
-      '',
-      ...(insights ? [insights, ''] : []),
-      sections,
+      `Daily report for **${dateLabel}**`,
     ],
     1900
   )
+}
+
+function buildDiscordDailySummaryEmbeds({
+  dateLabel,
+  summary,
+}: {
+  dateLabel: string
+  summary: GithubDailySummaryResponse
+}) {
+  const embeds: Array<Record<string, unknown>> = [
+    {
+      title: summary.headline,
+      description: summary.overview,
+      color: 0x2f855a,
+      footer: {
+        text: `Daily report • ${dateLabel}`,
+      },
+      fields: summary.insights.length
+        ? [
+            {
+              name: 'Insights',
+              value: summary.insights.map((insight) => `• ${insight}`).join('\n'),
+            },
+          ]
+        : [],
+    },
+  ]
+
+  for (const repository of summary.repositories.slice(0, 8)) {
+    const activityLine = `Committed ${repository.stats.commits} times, opened ${repository.stats.pullRequests} PRs, and created ${repository.stats.issues} issues.`
+    const highlights = repository.highlights.map((highlight) => `• ${highlight}`).join('\n')
+
+    embeds.push({
+      title: repository.repository,
+      color: 0x14532d,
+      description: truncateDiscordMessage([activityLine, '', highlights], 4000),
+    })
+  }
+
+  if (!summary.repositories.length) {
+    embeds.push({
+      title: 'Repository Activity',
+      color: 0x14532d,
+      description: 'No tracked GitHub activity was found for this day.',
+    })
+  }
+
+  return embeds
 }
 
 async function getSummaryUser(clerkUserId: string) {
@@ -357,7 +401,7 @@ async function getExistingSummaryForUserId({
   }
 
   return normalizeDailySummary(
-    record.summary as Partial<GithubDailySummaryResponse>,
+    record.summary as GithubDailySummaryRawResponse,
     dateLabel
   )
 }
@@ -429,39 +473,39 @@ async function collectDailyActivities({
             )
         )
 
-      const pullHighlights = pulls
-        .filter((pull) => {
+      const relevantPulls = pulls.filter((pull) => {
           const authorLogin = pull.user.login.toLowerCase()
-          const relevantDate = pull.updated_at || pull.created_at
 
           return (
-            isOnDateKey(relevantDate, dateKey, timeZone) &&
+            isOnDateKey(pull.created_at, dateKey, timeZone) &&
             (!githubUsername || authorLogin === githubUsername)
           )
         })
+
+      const pullHighlights = relevantPulls
         .slice(0, 20)
         .map((pull) => ({
           title: truncateForChat(
-            `${pull.state === 'closed' ? 'Worked on PR' : 'Opened PR'} #${pull.number}: ${pull.title}`,
+            `Opened PR #${pull.number}: ${pull.title}`,
             180
           ),
           body: pull.body ? truncateForChat(pull.body, 420) : null,
         }))
 
-      const issueHighlights = issues
-        .filter((issue) => {
+      const relevantIssues = issues.filter((issue) => {
           const authorLogin = issue.user.login.toLowerCase()
-          const relevantDate = issue.updated_at || issue.created_at
 
           return (
-            isOnDateKey(relevantDate, dateKey, timeZone) &&
+            isOnDateKey(issue.created_at, dateKey, timeZone) &&
             (!githubUsername || authorLogin === githubUsername)
           )
         })
+
+      const issueHighlights = relevantIssues
         .slice(0, 20)
         .map((issue) => ({
           title: truncateForChat(
-            `${isOnDateKey(issue.created_at, dateKey, timeZone) ? 'Opened issue' : 'Updated issue'} #${issue.number}: ${issue.title}`,
+            `Opened issue #${issue.number}: ${issue.title}`,
             180
           ),
           body: issue.body ? truncateForChat(issue.body, 420) : null,
@@ -469,6 +513,11 @@ async function collectDailyActivities({
 
       return {
         repository: getRepositoryLabel(trackedRepo.fullName).toUpperCase(),
+        stats: {
+          commits: commitHighlights.length,
+          pullRequests: relevantPulls.length,
+          issues: relevantIssues.length,
+        },
         trackingEvents,
         commits: commitHighlights,
         pullRequests: pullHighlights,
@@ -590,6 +639,21 @@ export const dailySummaryService = {
           dateLabel
         )
 
+    if (activities.length) {
+      const statsByRepository = new Map(
+        activities.map((activity) => [activity.repository, activity.stats])
+      )
+
+      summary.repositories = summary.repositories.map((repository) => ({
+        ...repository,
+        stats: statsByRepository.get(repository.repository) ?? {
+          commits: 0,
+          pullRequests: 0,
+          issues: 0,
+        },
+      }))
+    }
+
     await prisma.dailySummary.upsert({
       where: {
         userId_date: {
@@ -668,6 +732,100 @@ export const dailySummaryService = {
     }
   },
 
+  async generateAndSendForAllUsers({
+    date = new Date(),
+    force = false,
+  }: {
+    date?: Date
+    force?: boolean
+  } = {}) {
+    const users = await prisma.user.findMany({
+      where: {
+        trackedRepos: {
+          some: {},
+        },
+        linkedAccounts: {
+          some: {
+            provider: {
+              in: [AccountProvider.TELEGRAM, AccountProvider.DISCORD],
+            },
+            chatId: {
+              not: null,
+            },
+          },
+        },
+      },
+      select: {
+        clerkUserId: true,
+        linkedAccounts: {
+          where: {
+            provider: {
+              in: [AccountProvider.TELEGRAM, AccountProvider.DISCORD],
+            },
+            chatId: {
+              not: null,
+            },
+          },
+          select: {
+            provider: true,
+          },
+        },
+      },
+    })
+
+    let generated = 0
+    let reused = 0
+    let delivered = 0
+    let failed = 0
+
+    for (const user of users) {
+      try {
+        const generationResult = await this.generateForClerkUser(user.clerkUserId, {
+          date,
+          force,
+        })
+
+        if (generationResult.reusedExisting) {
+          reused += 1
+        } else {
+          generated += 1
+        }
+
+        const providers = Array.from(
+          new Set(user.linkedAccounts.map((account) => account.provider))
+        )
+
+        if (!providers.length) {
+          continue
+        }
+
+        await this.sendToLinkedApps({
+          clerkUserId: user.clerkUserId,
+          providers,
+          date,
+          generateIfMissing: false,
+        })
+
+        delivered += 1
+      } catch (error) {
+        failed += 1
+        console.error(
+          `Daily summary generate/send failed for ${user.clerkUserId}:`,
+          error
+        )
+      }
+    }
+
+    return {
+      processed: users.length,
+      generated,
+      reused,
+      delivered,
+      failed,
+      dateKey: this.getDateKey(date),
+    }
+  },
+
   async sendToLinkedApps({
     clerkUserId,
     providers,
@@ -725,6 +883,9 @@ export const dailySummaryService = {
     const discordContent = formatDiscordDailySummaryMessage({
       recipientName,
       dateLabel,
+    })
+    const discordEmbeds = buildDiscordDailySummaryEmbeds({
+      dateLabel,
       summary,
     })
 
@@ -757,6 +918,7 @@ export const dailySummaryService = {
         await sendDiscordMessage({
           channelId: preferredChannelId || account.chatId,
           content: discordContent,
+          embeds: discordEmbeds,
         })
         deliveredProviders.push(AccountProvider.DISCORD)
       }

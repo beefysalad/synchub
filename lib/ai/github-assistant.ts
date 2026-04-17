@@ -121,6 +121,17 @@ function sanitizeBranchName(value: string, issueNumber: number) {
     .slice(0, 120)
 }
 
+function sanitizeDailySummaryHeadline(value: string, dateLabel: string) {
+  const normalized = value.trim()
+  const escapedDate = dateLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+  return normalized
+    .replace(new RegExp(escapedDate, 'ig'), '')
+    .replace(/^\s*(daily (work )?report|daily summary)\s*[:\-]?\s*/i, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[\s:,\-–—]+|[\s:,\-–—]+$/g, '')
+}
+
 export const githubAssistantService = {
   async summarizeDailyActivity({
     dateLabel,
@@ -129,6 +140,11 @@ export const githubAssistantService = {
     dateLabel: string
     activities: Array<{
       repository: string
+      stats: {
+        commits: number
+        pullRequests: number
+        issues: number
+      }
       trackingEvents: string[]
       commits: string[]
       pullRequests: Array<{ title: string; body?: string | null }>
@@ -139,6 +155,7 @@ export const githubAssistantService = {
       .map((activity) =>
         [
           `Repository: ${activity.repository}`,
+          `Counts: ${activity.stats.commits} commits, ${activity.stats.pullRequests} pull requests created, ${activity.stats.issues} issues created`,
           `Repository lifecycle: ${
             activity.trackingEvents.length
               ? activity.trackingEvents.join(' | ')
@@ -176,13 +193,19 @@ export const githubAssistantService = {
       }>
     }>({
       prompt: [
-        'You are a developer assistant writing a precise daily work summary.',
-        `Create a professional recap for ${dateLabel}.`,
+        'You are a developer assistant writing a concise daily work report.',
+        `Create a professional daily report for ${dateLabel}.`,
         'Use only the supplied activity. Do not invent work or generalize beyond what is present.',
         'Write complete, concrete sentences. Do not use ellipses.',
+        'Make it read like a work report, not a chat message or motivational note.',
+        'Do not repeat the full date in the headline, overview, or repository highlights because the date is already shown around the report.',
+        'Do not use phrasing like "Today\'s work focused on" or "On [date]". Start directly with the substance of the report.',
         'Write smart insights in the second person when appropriate, such as "You demonstrated..." or "You maintained...". Avoid phrases like "The developer".',
         'If a repository was created or first tracked today, explicitly mention that as a project kickoff or new project setup.',
-        'For repository highlights, prefer exact actions such as merged PRs, opened issues, implemented features, bug fixes, and new project setup.',
+        'Treat the counts as factual context, but do not let them dominate the summary or insights.',
+        'Do not spend the smart insights mostly repeating raw counts. Focus on the actual features, fixes, and progress those activities represent.',
+        'For repository highlights, prefer exact actions such as shipped features, bug fixes, workflow improvements, and notable product or engineering progress.',
+        'Avoid repeating the same activity twice in slightly different wording.',
         'For smart insights, synthesize 2-3 short observations about focus, momentum, or work patterns. Keep them specific and fully written, not cut off.',
         `Activity Context:\n${activityBlock}`,
       ].join('\n\n'),
@@ -193,12 +216,15 @@ export const githubAssistantService = {
 
     const sanitized = {
       headline: truncateText(
-        result.headline?.trim() || `Daily summary for ${dateLabel}`,
+        sanitizeDailySummaryHeadline(
+          result.headline?.trim() || 'Daily work report',
+          dateLabel
+        ) || 'Daily work report',
         140
       ),
       overview: truncateText(
         result.overview?.trim() ||
-          'A concise summary of repository activity for the day.',
+          'Progress continued across tracked repositories with meaningful product and workflow updates.',
         240
       ),
       insights: normalizeTextList(result.insights, {
