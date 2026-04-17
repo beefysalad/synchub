@@ -59,8 +59,18 @@ function isOnDateKey(
   return getDateKeyInTimezone(new Date(value), timeZone) === dateKey
 }
 
-function getGreeting(date = new Date()) {
-  const hour = date.getHours()
+function getHourInTimezone(date: Date, timeZone: string) {
+  return Number(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour: '2-digit',
+      hour12: false,
+    }).format(date)
+  )
+}
+
+function getGreeting(date = new Date(), timeZone = getDailySummaryTimezone()) {
+  const hour = getHourInTimezone(date, timeZone)
 
   if (hour < 12) {
     return 'Good morning'
@@ -258,14 +268,28 @@ function resolveRecipientName({
   )
 }
 
+function formatRepositoryActivityLine(
+  repository: GithubDailySummaryResponse['repositories'][number]
+) {
+  const { commits, pullRequests, issues } = repository.stats
+
+  if (commits === 0 && pullRequests === 0 && issues === 0) {
+    return 'This repository saw follow-up progress, but no new commits, pull requests, or issues were created that day.'
+  }
+
+  return `Committed ${commits} times, opened ${pullRequests} PRs, and created ${issues} issues.`
+}
+
 function formatTelegramDailySummaryMessage({
   recipientName,
   dateLabel,
   summary,
+  timeZone,
 }: {
   recipientName: string
   dateLabel: string
   summary: GithubDailySummaryResponse
+  timeZone: string
 }) {
   const insights =
     summary.insights.length > 0
@@ -277,14 +301,13 @@ function formatTelegramDailySummaryMessage({
   const sections = summary.repositories.length
     ? summary.repositories
         .map((repository) => {
-          const counts = `Committed ${repository.stats.commits} times • Opened ${repository.stats.pullRequests} PRs • Created ${repository.stats.issues} issues`
           const highlights = repository.highlights
             .map((highlight) => `• ${escapeTelegramHtml(highlight)}`)
             .join('\n')
 
           return [
             `<b>${escapeTelegramHtml(repository.repository)}</b>`,
-            `<i>${escapeTelegramHtml(counts)}</i>`,
+            `<i>${escapeTelegramHtml(formatRepositoryActivityLine(repository))}</i>`,
             highlights,
           ].join('\n')
         })
@@ -292,7 +315,7 @@ function formatTelegramDailySummaryMessage({
     : '• No tracked GitHub activity was found for this day.'
 
   return [
-    `<b>${escapeTelegramHtml(getGreeting())} ${escapeTelegramHtml(recipientName)}</b>`,
+    `<b>${escapeTelegramHtml(getGreeting(new Date(), timeZone))} ${escapeTelegramHtml(recipientName)}</b>`,
     `Daily report for <b>${escapeTelegramHtml(dateLabel)}</b>`,
     '',
     `<b>${escapeTelegramHtml(summary.headline)}</b>`,
@@ -307,13 +330,15 @@ function formatTelegramDailySummaryMessage({
 function formatDiscordDailySummaryMessage({
   recipientName,
   dateLabel,
+  timeZone,
 }: {
   recipientName: string
   dateLabel: string
+  timeZone: string
 }) {
   return truncateDiscordMessage(
     [
-      `**${getGreeting()} ${recipientName}**`,
+      `**${getGreeting(new Date(), timeZone)} ${recipientName}**`,
       `Daily report for **${dateLabel}**`,
     ],
     1900
@@ -347,7 +372,7 @@ function buildDiscordDailySummaryEmbeds({
   ]
 
   for (const repository of summary.repositories.slice(0, 8)) {
-    const activityLine = `Committed ${repository.stats.commits} times, opened ${repository.stats.pullRequests} PRs, and created ${repository.stats.issues} issues.`
+    const activityLine = formatRepositoryActivityLine(repository)
     const highlights = repository.highlights.map((highlight) => `• ${highlight}`).join('\n')
 
     embeds.push({
@@ -877,6 +902,7 @@ export const dailySummaryService = {
     const linkedTargets = user.linkedAccounts.filter(
       (account) => providers.includes(account.provider) && Boolean(account.chatId)
     )
+    const timeZone = getDailySummaryTimezone()
 
     if (!linkedTargets.length) {
       throw new Error('No linked Telegram or Discord destination is available.')
@@ -886,10 +912,12 @@ export const dailySummaryService = {
       recipientName,
       dateLabel,
       summary,
+      timeZone,
     })
     const discordContent = formatDiscordDailySummaryMessage({
       recipientName,
       dateLabel,
+      timeZone,
     })
     const discordEmbeds = buildDiscordDailySummaryEmbeds({
       dateLabel,
