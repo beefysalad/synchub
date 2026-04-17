@@ -95,6 +95,11 @@ export default async function IntegrationsPage({
     ['link', 'whoami', 'status'].every((commandName) =>
       discordCommands?.some((command) => command.name === commandName)
     )
+  const connectedCount = integrationCards.filter(({ key }) => {
+    const account = accountsByProvider.get(key)
+
+    return key === 'GITHUB' ? Boolean(account?.accessToken) : Boolean(account)
+  }).length
 
   return (
     <div className="space-y-8">
@@ -139,6 +144,42 @@ export default async function IntegrationsPage({
         </div>
       ) : null}
 
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="glass-surface rounded-3xl px-5 py-5 transition-all duration-300">
+          <p className="text-muted-foreground text-xs font-bold tracking-[0.22em] uppercase">
+            Coverage
+          </p>
+          <p className="mt-3 text-3xl font-bold tracking-tight">
+            {connectedCount}/3
+          </p>
+          <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+            Core integrations currently connected to your workspace.
+          </p>
+        </div>
+        <div className="glass-surface rounded-3xl px-5 py-5 transition-all duration-300">
+          <p className="text-muted-foreground text-xs font-bold tracking-[0.22em] uppercase">
+            Telegram
+          </p>
+          <p className="mt-3 text-3xl font-bold tracking-tight">
+            {telegramWebhookRegistered ? 'Ready' : 'Needs setup'}
+          </p>
+          <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+            Webhook delivery {telegramWebhookRegistered ? 'is healthy' : 'still needs registration'}.
+          </p>
+        </div>
+        <div className="glass-surface rounded-3xl px-5 py-5 transition-all duration-300">
+          <p className="text-muted-foreground text-xs font-bold tracking-[0.22em] uppercase">
+            Discord
+          </p>
+          <p className="mt-3 text-3xl font-bold tracking-tight">
+            {discordCommandsRegistered ? 'Commands live' : 'Commands missing'}
+          </p>
+          <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+            Slash commands {discordCommandsRegistered ? 'are available to your server' : 'still need to be registered'}.
+          </p>
+        </div>
+      </div>
+
       <div className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
         {integrationCards.map(
           ({
@@ -165,14 +206,57 @@ export default async function IntegrationsPage({
               : []
             const showTelegramWebhookStatus = key === 'TELEGRAM'
             const showDiscordStatus = key === 'DISCORD'
+            const telegramStatusItems = [
+              {
+                label: 'Webhook',
+                value: telegramWebhookRegistered ? 'Registered' : 'Not registered',
+              },
+              {
+                label: 'Expected URL',
+                value:
+                  expectedTelegramWebhookUrl ?? 'Set NEXT_PUBLIC_APP_URL first',
+              },
+              ...(telegramWebhookInfo?.result.url
+                ? [
+                    {
+                      label: 'Current URL',
+                      value: telegramWebhookInfo.result.url,
+                    },
+                  ]
+                : []),
+              ...(telegramWebhookInfo?.result.last_error_message
+                ? [
+                    {
+                      label: 'Last error',
+                      value: telegramWebhookInfo.result.last_error_message,
+                    },
+                  ]
+                : []),
+            ]
+            const discordStatusItems = [
+              {
+                label: 'Slash commands',
+                value: discordCommandsRegistered ? 'Registered' : 'Not registered',
+              },
+              ...(discordCommands?.length
+                ? [
+                    {
+                      label: 'Available',
+                      value: discordCommands
+                        .map((command) => `/${command.name}`)
+                        .join(', '),
+                    },
+                  ]
+                : []),
+            ]
             return (
               <Card
                 key={title}
-                className="h-full"
+                className="h-full overflow-hidden"
               >
-                <CardHeader>
+                <CardHeader className="gap-4 px-6 pb-0">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="glass-surface flex size-12 items-center justify-center rounded-2xl shadow-sm transition-all duration-300">
+                    <div className="glass-surface flex size-13 items-center justify-center rounded-2xl shadow-sm transition-all duration-300">
                       <Image
                         src={icon}
                         alt={`${title} logo`}
@@ -181,26 +265,46 @@ export default async function IntegrationsPage({
                         className="size-6"
                       />
                     </div>
-                    {isConnected ? (
-                      <div className="bg-primary/10 text-primary inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
-                        <CheckCircle2 className="size-3.5" />
-                        Connected
-                      </div>
-                    ) : null}
+                    <div
+                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300 ${
+                        isConnected
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      <CheckCircle2 className="size-3.5" />
+                      {isConnected ? 'Connected' : 'Not connected'}
+                    </div>
                   </div>
-                  <CardTitle>{title}</CardTitle>
-                  <CardDescription>{description}</CardDescription>
+                  <div className="space-y-2">
+                    <p className="text-muted-foreground text-xs font-bold tracking-[0.22em] uppercase">
+                      {key === 'GITHUB'
+                        ? 'Source Control'
+                        : key === 'TELEGRAM'
+                          ? 'Notifications'
+                          : 'Team Commands'}
+                    </p>
+                    <CardTitle className="text-2xl font-bold tracking-tight">
+                      {title}
+                    </CardTitle>
+                    <CardDescription className="text-sm leading-relaxed">
+                      {description}
+                    </CardDescription>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <CardContent className="space-y-4 px-6 pt-6 text-sm text-muted-foreground">
                   {isConnected ? (
                     <div className="glass-surface rounded-2xl px-4 py-3 transition-all duration-300">
-                      <p className="font-medium text-foreground">
+                      <p className="text-muted-foreground text-[11px] font-bold tracking-[0.18em] uppercase">
+                        Linked account
+                      </p>
+                      <p className="mt-2 font-medium text-foreground">
                         {account?.username
                           ? `Connected as ${account.username}`
                           : `${title} is connected`}
                       </p>
                       {key === 'GITHUB' && scopes.length > 0 ? (
-                        <p className="mt-2 text-xs">
+                        <p className="mt-2 text-xs leading-relaxed">
                           Granted scopes: {scopes.join(', ')}
                         </p>
                       ) : null}
@@ -209,45 +313,63 @@ export default async function IntegrationsPage({
 
                   {showTelegramWebhookStatus ? (
                     <div className="glass-surface rounded-2xl px-4 py-3 transition-all duration-300">
-                      <p className="font-medium text-foreground">
-                        Webhook:{' '}
-                        {telegramWebhookRegistered ? 'registered' : 'not registered'}
+                      <p className="text-muted-foreground text-[11px] font-bold tracking-[0.18em] uppercase">
+                        Delivery health
                       </p>
-                      <p className="mt-2 text-xs">
-                        Expected URL:{' '}
-                        {expectedTelegramWebhookUrl ?? 'Set NEXT_PUBLIC_APP_URL first'}
-                      </p>
-                      {telegramWebhookInfo?.result.url ? (
-                        <p className="mt-1 text-xs">
-                          Current URL: {telegramWebhookInfo.result.url}
-                        </p>
-                      ) : null}
-                      {telegramWebhookInfo?.result.last_error_message ? (
-                        <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                          Last Telegram error: {telegramWebhookInfo.result.last_error_message}
-                        </p>
-                      ) : null}
+                      <div className="mt-3 space-y-3">
+                        {telegramStatusItems.map((item) => (
+                          <div
+                            key={item.label}
+                            className="border-border/60 flex flex-col gap-1 border-b pb-3 last:border-b-0 last:pb-0"
+                          >
+                            <p className="text-muted-foreground text-[11px] font-bold tracking-[0.16em] uppercase">
+                              {item.label}
+                            </p>
+                            <p
+                              className={`break-all text-sm leading-relaxed ${
+                                item.label === 'Last error'
+                                  ? 'text-amber-700 dark:text-amber-300'
+                                  : 'text-foreground'
+                              }`}
+                            >
+                              {item.value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ) : null}
 
                   {showDiscordStatus ? (
                     <div className="glass-surface rounded-2xl px-4 py-3 transition-all duration-300">
-                      <p className="font-medium text-foreground">
-                        Slash commands:{' '}
-                        {discordCommandsRegistered ? 'registered' : 'not registered'}
+                      <p className="text-muted-foreground text-[11px] font-bold tracking-[0.18em] uppercase">
+                        Command status
                       </p>
-                      {discordCommands?.length ? (
-                        <p className="mt-2 text-xs">
-                          Available commands: {discordCommands.map((command) => `/${command.name}`).join(', ')}
-                        </p>
-                      ) : null}
+                      <div className="mt-3 space-y-3">
+                        {discordStatusItems.map((item) => (
+                          <div
+                            key={item.label}
+                            className="border-border/60 flex flex-col gap-1 border-b pb-3 last:border-b-0 last:pb-0"
+                          >
+                            <p className="text-muted-foreground text-[11px] font-bold tracking-[0.16em] uppercase">
+                              {item.label}
+                            </p>
+                            <p className="text-foreground text-sm leading-relaxed">
+                              {item.value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                       {resolvedSearchParams?.discordCode ? (
-                        <div className="glass-panel border-border/50 mt-3 rounded-xl px-3 py-3 shadow-sm transition-all duration-300">
-                          <p className="font-medium text-foreground">
+                        <div className="glass-panel border-border/50 mt-4 rounded-xl px-3 py-3 shadow-sm transition-all duration-300">
+                          <p className="text-muted-foreground text-[11px] font-bold tracking-[0.16em] uppercase">
+                            Active link code
+                          </p>
+                          <p className="mt-2 font-medium text-foreground">
                             Your current link code: {resolvedSearchParams.discordCode}
                           </p>
                           {resolvedSearchParams.discordInstructions ? (
-                            <p className="mt-1 text-xs">
+                            <p className="mt-1 text-xs leading-relaxed">
                               {resolvedSearchParams.discordInstructions}
                             </p>
                           ) : null}
@@ -261,16 +383,16 @@ export default async function IntegrationsPage({
                     </div>
                   ) : null}
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="mt-auto px-6 pt-6">
                   {key === 'TELEGRAM' ? (
-                    <div className="flex w-full flex-col gap-3">
+                    <div className="grid w-full gap-3 sm:grid-cols-2">
                       <IntegrationActionLink
                         href={href}
                         label={isConnected ? 'Reconnect Telegram' : defaultCtaLabel}
                         loadingLabel={
                           isConnected ? 'Reconnecting Telegram...' : 'Connecting Telegram...'
                         }
-                        className="w-full"
+                        className="h-11 w-full rounded-full"
                       />
                       <IntegrationActionLink
                         href="/api/integrations/telegram/webhook/register"
@@ -281,18 +403,18 @@ export default async function IntegrationsPage({
                         }
                         loadingLabel="Registering Telegram webhook..."
                         variant="outline"
-                        className="w-full"
+                        className="h-11 w-full rounded-full"
                       />
                     </div>
                   ) : key === 'DISCORD' ? (
-                    <div className="flex w-full flex-col gap-3">
+                    <div className="grid w-full gap-3 sm:grid-cols-2">
                       <IntegrationActionLink
                         href={href}
                         label={isConnected ? 'Reconnect Discord' : defaultCtaLabel}
                         loadingLabel={
                           isConnected ? 'Reconnecting Discord...' : 'Starting Discord link...'
                         }
-                        className="w-full"
+                        className="h-11 w-full rounded-full"
                       />
                       <IntegrationActionLink
                         href="/api/integrations/discord/commands/register"
@@ -303,13 +425,13 @@ export default async function IntegrationsPage({
                         }
                         loadingLabel="Registering Discord commands..."
                         variant="outline"
-                        className="w-full"
+                        className="h-11 w-full rounded-full"
                       />
                     </div>
                   ) : isConnected ? (
                     <Button
                       disabled
-                      className="w-full opacity-100"
+                      className="h-11 w-full rounded-full opacity-100"
                     >
                       {key === 'GITHUB' ? 'GitHub Authorized' : `${title} Connected`}
                     </Button>
@@ -318,7 +440,7 @@ export default async function IntegrationsPage({
                       href={href}
                       label={defaultCtaLabel}
                       loadingLabel="Redirecting..."
-                      className="w-full"
+                      className="h-11 w-full rounded-full"
                     />
                   )}
                 </CardFooter>

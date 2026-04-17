@@ -12,9 +12,11 @@ import {
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+import { DashboardUserControls } from '@/components/dashboard/dashboard-user-controls'
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
   useSidebar,
 } from '@/components/ui/sidebar'
@@ -122,6 +124,10 @@ export function AppSidebar() {
           </div>
         </div>
       </SidebarContent>
+
+      <SidebarFooter>
+        <DashboardUserControls />
+      </SidebarFooter>
     </Sidebar>
   )
 }

@@ -3,7 +3,6 @@
 import { usePathname } from 'next/navigation'
 
 import { AppSidebar } from '@/components/dashboard/app-sidebar'
-import { DashboardUserControls } from '@/components/dashboard/dashboard-user-controls'
 import {
   SidebarInset,
   SidebarProvider,
@@ -37,20 +36,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <AppSidebar />
         <SidebarInset>
           <div className="mx-auto flex min-h-screen w-full max-w-[1700px] flex-col px-4 py-4 transition-all duration-300 sm:px-6 lg:px-8">
-            <div className="glass-surface sticky top-0 z-30 mb-8 flex items-center justify-between rounded-2xl px-4 py-3 shadow-sm transition-all duration-300">
-              <div className="flex min-w-0 items-center gap-3">
-                <SidebarTrigger />
+            <div className="mb-8">
+              <div className="border-border/60 flex items-center gap-3 border-b px-1 pb-4 transition-all duration-300">
+                <SidebarTrigger className="shrink-0 rounded-xl" />
                 <div className="min-w-0">
-                  <p className="text-muted-foreground/60 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-300">
-                    SyncHub
+                  <p className="text-muted-foreground text-[10px] font-bold tracking-[0.24em] uppercase transition-all duration-300">
+                    Workspace
                   </p>
-                  <p className="text-foreground truncate text-sm font-semibold transition-all duration-300">
+                  <p className="text-foreground truncate text-base font-semibold tracking-tight transition-all duration-300">
                     {getCurrentTitle(pathname)}
                   </p>
                 </div>
-              </div>
-              <div className="hidden md:block">
-                <DashboardUserControls />
               </div>
             </div>
 

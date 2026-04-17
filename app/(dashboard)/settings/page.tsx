@@ -1,14 +1,8 @@
-import { CheckCircle2, ExternalLink, Github, MessageSquareCode, Settings2, TriangleAlert, Webhook } from 'lucide-react'
+import { CheckCircle2, Settings2, TriangleAlert } from 'lucide-react'
 import Link from 'next/link'
 
-import { getOrCreateCurrentUserRecord } from '@/lib/clerk'
-import { getDiscordCommands } from '@/lib/discord/api'
-import prisma from '@/lib/prisma'
-import { getTelegramWebhookInfo } from '@/lib/telegram/api'
-import { getTelegramWebhookUrl } from '@/lib/telegram/linking'
-import { IntegrationActionLink } from '@/components/dashboard/integration-action-link'
 import { SectionHeader } from '@/components/dashboard/section-header'
-import { StatusCard } from '@/components/dashboard/status-card'
+import { DailySummarySettingsForm } from '@/components/dashboard/settings/daily-summary-settings-form'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -17,14 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { DailySummarySettingsForm } from '@/components/dashboard/settings/daily-summary-settings-form'
-
-const notificationEventLabels: Record<string, string> = {
-  issues: 'New issues',
-  pull_request: 'New pull requests',
-  push: 'Pushes',
-  issue_comment: 'Issue comments',
-}
+import { getOrCreateCurrentUserRecord } from '@/lib/clerk'
+import { getDiscordCommands } from '@/lib/discord/api'
+import prisma from '@/lib/prisma'
+import { getTelegramWebhookInfo } from '@/lib/telegram/api'
+import { getTelegramWebhookUrl } from '@/lib/telegram/linking'
 
 function EndpointStatusBadge({
   healthy,
@@ -41,7 +32,11 @@ function EndpointStatusBadge({
           : 'bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-100'
       }`}
     >
-      {healthy ? <CheckCircle2 className="size-3.5" /> : <TriangleAlert className="size-3.5" />}
+      {healthy ? (
+        <CheckCircle2 className="size-3.5" />
+      ) : (
+        <TriangleAlert className="size-3.5" />
+      )}
       {label}
     </span>
   )
@@ -135,134 +130,13 @@ export default async function SettingsPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatusCard
-          icon={Webhook}
-          label="Public App URL"
-          value={appUrl ? 'Configured' : 'Missing'}
-          detail={appUrl ?? 'Set NEXT_PUBLIC_APP_URL to a public HTTPS URL.'}
-        />
-        <StatusCard
-          icon={Github}
-          label="Tracked repos"
-          value={String(trackedRepos.length)}
-          detail={`${reposWithRules.length} repositories currently have live notification rules.`}
-        />
-        <StatusCard
-          icon={MessageSquareCode}
-          label="Linked channels"
-          value={String([githubLinked, telegramLinked, discordLinked].filter(Boolean).length)}
-          detail={`GitHub ${githubLinked ? 'connected' : 'missing'}, Telegram ${telegramLinked ? 'connected' : 'missing'}, Discord ${discordLinked ? 'connected' : 'missing'}.`}
-        />
-        <StatusCard
-          icon={Settings2}
-          label="Discord commands"
-          value={discordCommandsRegistered ? 'Ready' : 'Needs setup'}
-          detail={
-            discordCommandsRegistered
-              ? `Registered: ${discordCommands?.map((command) => `/${command.name}`).join(', ')}`
-              : 'Register slash commands again if your Discord setup was reset.'
-          }
-        />
-      </div>
-
       <div className="grid gap-6 2xl:grid-cols-[1.05fr_0.95fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Endpoint readiness</CardTitle>
-            <CardDescription>
-              These are the routes external providers call when SyncHub is live.
-              If your public URL changes, update this section first.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-900/60">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">GitHub repository events</p>
-                    <EndpointStatusBadge
-                      healthy={Boolean(expectedGithubWebhookUrl)}
-                      label={expectedGithubWebhookUrl ? 'Ready to provision' : 'Missing app URL'}
-                    />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Provisioned when notifications are enabled for a tracked repository.
-                  </p>
-                  <p className="break-all text-xs text-muted-foreground">
-                    {expectedGithubWebhookUrl ?? 'Set NEXT_PUBLIC_APP_URL first'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-900/60">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">Telegram webhook</p>
-                    <EndpointStatusBadge
-                      healthy={telegramWebhookRegistered}
-                      label={telegramWebhookRegistered ? 'Registered' : 'Needs refresh'}
-                    />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Telegram sends bot updates here after the webhook is refreshed.
-                  </p>
-                  <p className="break-all text-xs text-muted-foreground">
-                    Expected: {expectedTelegramWebhookUrl ?? 'Set NEXT_PUBLIC_APP_URL first'}
-                  </p>
-                  {telegramWebhookInfo?.result.url ? (
-                    <p className="break-all text-xs text-muted-foreground">
-                      Current: {telegramWebhookInfo.result.url}
-                    </p>
-                  ) : null}
-                  {telegramWebhookInfo?.result.last_error_message ? (
-                    <p className="text-xs text-amber-700 dark:text-amber-300">
-                      Last Telegram error: {telegramWebhookInfo.result.last_error_message}
-                    </p>
-                  ) : null}
-                </div>
-                <IntegrationActionLink
-                  href="/api/integrations/telegram/webhook/register"
-                  label={telegramWebhookRegistered ? 'Refresh Telegram webhook' : 'Register Telegram webhook'}
-                  loadingLabel="Registering Telegram webhook..."
-                  variant="outline"
-                  className="rounded-full"
-                />
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-900/60">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">Discord interactions</p>
-                    <EndpointStatusBadge
-                      healthy={discordCommandsRegistered}
-                      label={discordCommandsRegistered ? 'Commands live' : 'Check portal'}
-                    />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Use this as the interactions endpoint in the Discord Developer Portal.
-                  </p>
-                  <p className="break-all text-xs text-muted-foreground">
-                    {expectedDiscordInteractionsUrl ?? 'Set NEXT_PUBLIC_APP_URL first'}
-                  </p>
-                </div>
-                <Button asChild variant="outline">
-                  <Link href="/integrations">Manage Discord setup</Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader>
             <CardTitle>Integration health</CardTitle>
             <CardDescription>
-              Confirm each service is connected before you depend on routing and automation.
+              Confirm each service is connected before you depend on routing and
+              automation.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -300,17 +174,25 @@ export default async function SettingsPage() {
                     label={item.healthy ? 'Connected' : 'Needs setup'}
                   />
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">{item.detail}</p>
+                <p className="text-muted-foreground mt-2 text-sm">
+                  {item.detail}
+                </p>
               </div>
             ))}
 
             <div className="rounded-3xl border border-slate-200/70 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-900/60">
               <p className="font-medium">If your public URL changes</p>
-              <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+              <ul className="text-muted-foreground mt-3 space-y-2 text-sm">
                 <li>1. Update `NEXT_PUBLIC_APP_URL` and restart the app.</li>
                 <li>2. Refresh the Telegram webhook.</li>
-                <li>3. Update the Discord interactions endpoint in the developer portal.</li>
-                <li>4. Re-save repo notification rules so GitHub re-provisions the webhook with the new URL.</li>
+                <li>
+                  3. Update the Discord interactions endpoint in the developer
+                  portal.
+                </li>
+                <li>
+                  4. Re-save repo notification rules so GitHub re-provisions the
+                  webhook with the new URL.
+                </li>
               </ul>
             </div>
           </CardContent>
@@ -320,17 +202,18 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings2 className="size-5 text-foreground" />
+            <Settings2 className="text-foreground size-5" />
             Daily summary preferences
           </CardTitle>
           <CardDescription>
-            Choose where the daily briefing should land and use the controls here for manual checks when needed.
+            Choose where the daily briefing should land and use the controls
+            here for manual checks when needed.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {discordLinked ? (
             <div className="max-w-2xl">
-              <DailySummarySettingsForm 
+              <DailySummarySettingsForm
                 initialChannelId={
                   (
                     accountsByProvider.get('DISCORD')?.metadata as Record<
@@ -338,105 +221,14 @@ export default async function SettingsPage() {
                       unknown
                     >
                   )?.dailySummaryChannelId as string
-                } 
+                }
               />
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Link a Discord account to configure specific delivery channels for your daily summaries.
+            <p className="text-muted-foreground text-sm">
+              Link a Discord account to configure specific delivery channels for
+              your daily summaries.
             </p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Repository notification coverage</CardTitle>
-          <CardDescription>
-            See which repositories are already routing events into Telegram or Discord.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {trackedRepos.length ? (
-            trackedRepos.map((repo) => {
-              const [owner, repoName] = repo.fullName.split('/')
-              const telegramRule = repo.notificationRules.find(
-                (rule) => rule.provider === 'TELEGRAM'
-              )
-              const discordRule = repo.notificationRules.find(
-                (rule) => rule.provider === 'DISCORD'
-              )
-
-              return (
-                <div
-                  key={repo.id}
-                  className="rounded-3xl border border-slate-200/70 bg-slate-50 px-5 py-5 dark:border-slate-800 dark:bg-slate-900/60"
-                >
-                  <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-lg font-semibold">{repo.fullName}</p>
-                        {repo.isDefault ? (
-                          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-900 dark:bg-emerald-500/15 dark:text-emerald-100">
-                            Default
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
-                          <p className="font-medium">Telegram delivery</p>
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            {telegramRule?.events.length
-                              ? telegramRule.events
-                                  .map((event) => notificationEventLabels[event] ?? event)
-                                  .join(', ')
-                              : 'No Telegram events enabled yet.'}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
-                          <p className="font-medium">Discord delivery</p>
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            {discordRule?.events.length
-                              ? discordRule.events
-                                  .map((event) => notificationEventLabels[event] ?? event)
-                                  .join(', ')
-                              : 'No Discord events enabled yet.'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <Button asChild variant="outline">
-                        <Link href={`/repos/${owner}/${repoName}/settings`}>
-                          <Settings2 className="size-4" />
-                          Repo settings
-                        </Link>
-                      </Button>
-                      <Button asChild variant="outline">
-                        <Link href={`/issues/${owner}/${repoName}`}>
-                          View issues
-                        </Link>
-                      </Button>
-                      <Button asChild variant="outline">
-                        <Link
-                          href={`https://github.com/${repo.fullName}/settings/hooks`}
-                          target="_blank"
-                        >
-                          <ExternalLink className="size-4" />
-                          GitHub hooks
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })
-          ) : (
-            <div className="rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm text-muted-foreground dark:border-slate-700">
-              You are not tracking any repositories yet. Add one from the issues page before configuring notification routing.
-            </div>
           )}
         </CardContent>
       </Card>
