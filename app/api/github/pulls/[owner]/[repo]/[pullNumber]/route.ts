@@ -59,7 +59,19 @@ export async function GET(
         pullNumber: pull.number,
       })
 
-    return NextResponse.json({ pull, comments, detectedIssueReferences })
+    const likelyLinkedIssue = githubPullIssueLinkService.extractLikelyIssueFromBranchName({
+      owner: validatedRepository.owner,
+      repo: validatedRepository.repo,
+      branchName: pull.head.ref,
+      pullNumber: pull.number,
+    })
+
+    return NextResponse.json({
+      pull,
+      comments,
+      detectedIssueReferences,
+      likelyLinkedIssue,
+    })
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Unable to fetch GitHub PR'

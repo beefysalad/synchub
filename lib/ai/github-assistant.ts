@@ -18,6 +18,18 @@ const githubIssueSummarySchema = z.object({
   nextSteps: z.array(z.string().min(1).max(220)).max(3),
 })
 
+const githubBranchSuggestionsSchema = z.object({
+  suggestions: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(120),
+        reason: z.string().min(1).max(160),
+      })
+    )
+    .min(1)
+    .max(4),
+})
+
 const githubIssueDraftSchema = z.object({
   body: z.string().min(20).max(10000),
 })
@@ -83,6 +95,30 @@ function normalizeTextList(
   }
 
   return fallback.slice(0, max)
+}
+
+function sanitizeBranchName(value: string, issueNumber: number) {
+  const normalized = value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9/_-]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/\/{2,}/g, '/')
+    .replace(/^[-/.]+|[-/.]+$/g, '')
+
+  const parts = normalized.split('/').filter(Boolean)
+  const prefix = parts[0] || 'chore'
+  const suffix = parts.slice(1).join('-').replace(/\/+/g, '-') || `issue-${issueNumber}`
+  const suffixWithIssue = suffix.includes(`${issueNumber}`)
+    ? suffix
+    : `${issueNumber}-${suffix}`
+
+  return `${prefix}/${suffixWithIssue}`
+    .replace(/-{2,}/g, '-')
+    .replace(/\/{2,}/g, '/')
+    .replace(/^[-/.]+|[-/.]+$/g, '')
+    .slice(0, 120)
 }
 
 export const githubAssistantService = {
@@ -344,5 +380,82 @@ export const githubAssistantService = {
     }
 
     return githubIssueSummarySchema.parse(sanitizedResult)
+  },
+
+  async suggestBranchNames({
+    repository,
+    issueNumber,
+    title,
+    body,
+    comments,
+  }: {
+    repository: string
+    issueNumber: number
+    title: string
+    body: string
+    comments: Array<{
+      author: string
+      body: string
+      createdAt: string
+    }>
+  }) {
+    const commentsBlock = comments.length
+      ? comments
+          .slice(0, 8)
+          .map(
+            (comment, index) =>
+              `${index + 1}. ${comment.author} at ${comment.createdAt}: ${comment.body}`
+          )
+          .join('\n')
+      : 'No comments yet.'
+
+    const result = await generateGeminiJson<{
+      suggestions?: Array<{
+        name?: string
+        reason?: string
+      }>
+    }>({
+      prompt: [
+        'You are an engineering assistant proposing standardized git branch names for GitHub issue work.',
+        `Repository: ${repository}`,
+        `Issue number: ${issueNumber}`,
+        `Issue title: ${title}`,
+        `Issue description:\n${body || 'No description provided.'}`,
+        `Recent comments:\n${commentsBlock}`,
+        'Return 3 branch name suggestions.',
+        'Use concise, professional names that are easy to scan in pull requests.',
+        'Prefer one of these prefixes when appropriate: feature, fix, chore, docs, refactor, test.',
+        'Every suggestion must include the issue number and a short kebab-case slug.',
+        'Keep each reason under 160 characters.',
+      ].join('\n\n'),
+      schemaDescription:
+        '{"suggestions":[{"name":"feature/123-short-slug","reason":"why this name fits"}]}',
+      temperature: 0.3,
+    })
+
+    const sanitizedResult = {
+      suggestions: (result.suggestions ?? [])
+        .map((suggestion) => ({
+          name: sanitizeBranchName(suggestion.name?.trim() ?? '', issueNumber),
+          reason: truncateText(suggestion.reason?.trim() ?? '', 160),
+        }))
+        .filter((suggestion) => suggestion.name && suggestion.reason)
+        .filter(
+          (suggestion, index, suggestions) =>
+            suggestions.findIndex((item) => item.name === suggestion.name) === index
+        )
+        .slice(0, 4),
+    }
+
+    if (!sanitizedResult.suggestions.length) {
+      sanitizedResult.suggestions = [
+        {
+          name: sanitizeBranchName(`feature/${issueNumber}-${title}`, issueNumber),
+          reason: 'Clear default branch name derived from the issue title.',
+        },
+      ]
+    }
+
+    return githubBranchSuggestionsSchema.parse(sanitizedResult)
   },
 }

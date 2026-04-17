@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import api from '@/lib/axios'
 import { handleApiError } from '@/lib/error-handler'
 import type {
+  GithubBranchSuggestionsResponse,
   GithubIssueDraftResponse,
   GithubIssueSummaryResponse,
   GithubLabelSuggestionsResponse,
@@ -71,6 +72,33 @@ export function useSummarizeGithubIssue() {
       try {
         const response = await api.post<GithubIssueSummaryResponse>(
           '/ai/github/issues/summary',
+          payload
+        )
+
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+  })
+}
+
+export function useSuggestGithubBranchNames() {
+  return useMutation({
+    mutationFn: async (payload: {
+      repository: string
+      issueNumber: number
+      title: string
+      body: string
+      comments: Array<{
+        author: string
+        body: string
+        createdAt: string
+      }>
+    }) => {
+      try {
+        const response = await api.post<GithubBranchSuggestionsResponse>(
+          '/ai/github/issues/branch-name',
           payload
         )
 
