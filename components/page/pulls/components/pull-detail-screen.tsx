@@ -103,6 +103,22 @@ export function PullDetailPage({
   const likelyLinkedIssueDetails = likelyLinkedIssue
     ? availableIssues.find((issue) => issue.number === likelyLinkedIssue.number)
     : null
+  const linkedIssues = detectedIssueReferences.map((reference) => {
+    const matchingIssue =
+      reference.owner === owner && reference.repo === repo
+        ? availableIssues.find((issue) => issue.number === reference.number)
+        : null
+
+    return {
+      ...reference,
+      title: matchingIssue?.title ?? null,
+      internalHref:
+        reference.owner === owner && reference.repo === repo
+          ? `/issues/${owner}/${repo}/${reference.number}`
+          : null,
+      externalHref: `https://github.com/${reference.owner}/${reference.repo}/issues/${reference.number}`,
+    }
+  })
   const selectedIssues = availableIssues.filter((issue) =>
     selectedIssueNumbers.includes(issue.number)
   )
@@ -209,37 +225,75 @@ export function PullDetailPage({
         }
       />
 
-      <div className="grid gap-6 2xl:grid-cols-[0.8fr_1.2fr]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.35fr)_320px]">
         <Card>
           <CardHeader>
-            <CardTitle>Pull request overview</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <GitPullRequest className="size-5 text-sky-600 dark:text-sky-300" />
+              Pull request details
+            </CardTitle>
             <CardDescription>
-              Quick context before you open the full review flow in GitHub.
+              Review the PR description and discussion first, then use the side
+              panel for linked issue controls and quick context.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {isEditing ? (
+              <EditGitHubThreadForm
+                initialTitle={pull.title}
+                initialBody={pull.body ?? ''}
+                isPending={editPull.isPending}
+                onCancel={() => setIsEditing(false)}
+                onSubmit={handleEditSubmit}
+              />
+            ) : (
+              <ConversationEntry
+                avatarUrl={pull.user.avatar_url}
+                body={pull.body ?? '*No description provided.*'}
+                createdAt={pull.created_at}
+                username={pull.user.login}
+              />
+            )}
+
+            {comments.map((comment) => (
+              <ConversationEntry
+                key={comment.id}
+                avatarUrl={comment.user.avatar_url}
+                body={comment.body}
+                createdAt={comment.created_at}
+                username={comment.user.login}
+              />
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="xl:sticky xl:top-6">
+          <CardHeader>
+            <CardTitle>Overview</CardTitle>
+            <CardDescription>
+              Quick context and issue linking without blocking the PR content.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
-                Status
-              </p>
-              <p className="mt-2 text-2xl font-semibold capitalize">
+            <div className="flex flex-wrap gap-2">
+              <span className="bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-700 capitalize dark:text-sky-300">
                 {pull.state}
-              </p>
-            </div>
-            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
-                Author
-              </p>
-              <p className="mt-2 text-lg font-semibold">{pull.user.login}</p>
-            </div>
-            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
-                Discussion
-              </p>
-              <p className="mt-2 text-lg font-semibold">
+              </span>
+              <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold">
+                {pull.user.login}
+              </span>
+              <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold">
                 {comments.length + 1} entries
-              </p>
+              </span>
             </div>
+
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
+              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
+                Branch
+              </p>
+              <p className="mt-2 text-lg font-semibold">{pull.head.ref}</p>
+            </div>
+
             <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
               <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                 Likely linked issue
@@ -270,20 +324,44 @@ export function PullDetailPage({
                 </p>
               )}
             </div>
+
             <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
               <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
-                Issues Linked
+                Linked issues
               </p>
-              {detectedIssueReferences.length ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {detectedIssueReferences.map((reference) => (
-                    <span
-                      key={`${reference.fullName}#${reference.number}`}
-                      className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100"
-                    >
-                      {reference.repo.toUpperCase()} #{reference.number}
-                    </span>
-                  ))}
+              {linkedIssues.length ? (
+                <div className="mt-3 space-y-2">
+                  {linkedIssues.map((reference) => {
+                    const content = (
+                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm transition-all duration-300 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                        <p className="font-semibold text-emerald-950 dark:text-emerald-100">
+                          {reference.fullName} #{reference.number}
+                        </p>
+                        <p className="mt-1 text-emerald-900/80 dark:text-emerald-100/80">
+                          {reference.title ?? 'Linked from the PR title or description.'}
+                        </p>
+                      </div>
+                    )
+
+                    return reference.internalHref ? (
+                      <Link
+                        key={`${reference.fullName}#${reference.number}`}
+                        href={reference.internalHref}
+                        className="block"
+                      >
+                        {content}
+                      </Link>
+                    ) : (
+                      <Link
+                        key={`${reference.fullName}#${reference.number}`}
+                        href={reference.externalHref}
+                        target="_blank"
+                        className="block"
+                      >
+                        {content}
+                      </Link>
+                    )
+                  })}
                 </div>
               ) : (
                 <p className="text-muted-foreground mt-2 text-sm">
@@ -377,47 +455,6 @@ export function PullDetailPage({
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <GitPullRequest className="size-5 text-sky-600 dark:text-sky-300" />
-              Pull request details
-            </CardTitle>
-            <CardDescription>
-              Update the PR title and description here, then review the
-              discussion below.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {isEditing ? (
-              <EditGitHubThreadForm
-                initialTitle={pull.title}
-                initialBody={pull.body ?? ''}
-                isPending={editPull.isPending}
-                onCancel={() => setIsEditing(false)}
-                onSubmit={handleEditSubmit}
-              />
-            ) : (
-              <ConversationEntry
-                avatarUrl={pull.user.avatar_url}
-                body={pull.body ?? '*No description provided.*'}
-                createdAt={pull.created_at}
-                username={pull.user.login}
-              />
-            )}
-
-            {comments.map((comment) => (
-              <ConversationEntry
-                key={comment.id}
-                avatarUrl={comment.user.avatar_url}
-                body={comment.body}
-                createdAt={comment.created_at}
-                username={comment.user.login}
-              />
-            ))}
           </CardContent>
         </Card>
       </div>
