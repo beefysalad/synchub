@@ -67,6 +67,7 @@ export type GitHubRepositoriesResponse = {
 
 export type GitHubIssuesResponse = {
   issues: GitHubIssue[]
+  pagination: GitHubPaginationMeta
 }
 
 export type GitHubIssueState = 'open' | 'closed' | 'all'
@@ -153,6 +154,7 @@ export type GitHubCommit = {
 
 export type GitHubPullRequestsResponse = {
   pulls: GitHubPullRequest[]
+  pagination: GitHubPaginationMeta
 }
 
 export type GitHubPullDetailResponse = {
@@ -169,6 +171,13 @@ export type UpdateGitHubPullPayload = {
 
 export type GitHubCommitsResponse = {
   commits: GitHubCommit[]
+  pagination: GitHubPaginationMeta
+}
+
+export type GitHubPaginationMeta = {
+  page: number
+  perPage: number
+  hasNextPage: boolean
 }
 
 export type GithubLabelSuggestion = {

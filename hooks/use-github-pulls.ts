@@ -13,17 +13,21 @@ export function useGithubPulls({
   owner,
   repo,
   state,
+  page = 1,
+  perPage = 10,
 }: {
   owner: string
   repo: string
   state: 'open' | 'closed' | 'all'
+  page?: number
+  perPage?: number
 }) {
   return useQuery({
-    queryKey: ['github', 'pulls', owner, repo, state],
+    queryKey: ['github', 'pulls', owner, repo, state, page, perPage],
     queryFn: async () => {
       try {
         const response = await api.get<GitHubPullRequestsResponse>('/github/pulls', {
-          params: { owner, repo, state },
+          params: { owner, repo, state, page, perPage },
         })
 
         return response.data
@@ -60,11 +64,11 @@ export function useLinkGithubPullIssue(
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (issueNumber: number) => {
+    mutationFn: async (issueNumbers: number[]) => {
       try {
         const response = await api.post<{ linkedIssues: GitHubIssueReference[] }>(
           `/github/pulls/${owner}/${repo}/${pullNumber}/link`,
-          { issueNumber }
+          { issueNumbers }
         )
 
         return response.data

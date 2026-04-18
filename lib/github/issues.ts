@@ -6,6 +6,9 @@ type IssueListParams = {
   owner: string
   repo: string
   state?: 'open' | 'closed' | 'all'
+  page?: number
+  perPage?: number
+  label?: string
 }
 
 type CreateIssueParams = {
@@ -34,6 +37,9 @@ export const githubIssueService = {
     owner,
     repo,
     state = 'open',
+    page = 1,
+    perPage = 12,
+    label,
   }: IssueListParams) {
     const accessToken = await getGitHubAccessTokenForUser(userId)
 
@@ -41,8 +47,15 @@ export const githubIssueService = {
       throw new Error('No GitHub access token is linked to this user yet.')
     }
 
+    const query = new URLSearchParams({
+      state,
+      page: String(page),
+      per_page: String(perPage),
+      ...(label ? { labels: label } : {}),
+    })
+
     const issues = await githubRequest<GitHubIssue[]>(
-      `/repos/${owner}/${repo}/issues?state=${state}&per_page=100`,
+      `/repos/${owner}/${repo}/issues?${query.toString()}`,
       { method: 'GET' },
       accessToken
     )

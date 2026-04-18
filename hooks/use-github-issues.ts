@@ -18,17 +18,23 @@ export function useGithubIssues({
   owner,
   repo,
   state,
+  page = 1,
+  perPage = 12,
+  label,
 }: {
   owner: string
   repo: string
   state: GitHubIssueState
+  page?: number
+  perPage?: number
+  label?: string
 }) {
   return useQuery({
-    queryKey: ['github', 'issues', owner, repo, state],
+    queryKey: ['github', 'issues', owner, repo, state, page, perPage, label],
     queryFn: async () => {
       try {
         const response = await api.get<GitHubIssuesResponse>('/github/issues', {
-          params: { owner, repo, state },
+          params: { owner, repo, state, page, perPage, label },
         })
 
         return response.data
