@@ -84,6 +84,34 @@ export function useLinkGithubPullIssue(
   })
 }
 
+export function useUnlinkGithubPullIssue(
+  owner: string,
+  repo: string,
+  pullNumber: number
+) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (issueNumbers: number[]) => {
+      try {
+        const response = await api.delete<{ remainingIssues: GitHubIssueReference[] }>(
+          `/github/pulls/${owner}/${repo}/${pullNumber}/link`,
+          { data: { issueNumbers } }
+        )
+
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'pulls', owner, repo, pullNumber],
+      })
+    },
+  })
+}
+
 export function useEditGithubPull(
   owner: string,
   repo: string,

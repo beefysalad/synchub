@@ -10,6 +10,7 @@ import {
   FilePenLine,
   GitPullRequest,
   Link2,
+  Search,
   X,
 } from 'lucide-react'
 import Image from 'next/image'
@@ -23,6 +24,7 @@ import { EditGitHubThreadForm } from '@/components/shared/edit-github-thread-for
 import { GitHubCommentForm } from '@/components/shared/github-comment-form'
 import { SectionHeader } from '@/components/shared/section-header'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Card,
   CardContent,
@@ -37,6 +39,7 @@ import {
   useEditGithubPull,
   useGithubPullDetail,
   useLinkGithubPullIssue,
+  useUnlinkGithubPullIssue,
 } from '@/hooks/use-github-pulls'
 
 interface DiffRow {
@@ -60,16 +63,16 @@ function parsePatchToSplit(patch: string): DiffRow[] {
   const flushBuffers = () => {
     const max = Math.max(deletionBuffer.length, additionBuffer.length)
     for (let i = 0; i < max; i++) {
-        const del = deletionBuffer[i]
-        const add = additionBuffer[i]
-        
-        rows.push({
-            type: del && add ? 'modification' : del ? 'deletion' : 'addition',
-            leftLineNum: del?.lineNum,
-            rightLineNum: add?.lineNum,
-            leftContent: del?.content,
-            rightContent: add?.content,
-        })
+      const del = deletionBuffer[i]
+      const add = additionBuffer[i]
+
+      rows.push({
+        type: del && add ? 'modification' : del ? 'deletion' : 'addition',
+        leftLineNum: del?.lineNum,
+        rightLineNum: add?.lineNum,
+        leftContent: del?.content,
+        rightContent: add?.content,
+      })
     }
     deletionBuffer = []
     additionBuffer = []
@@ -90,7 +93,8 @@ function parsePatchToSplit(patch: string): DiffRow[] {
       additionBuffer.push({ lineNum: rightLineNum++, content: line })
     } else if (line.startsWith('\\ No newline')) {
       // ignore
-    } else { // context
+    } else {
+      // context
       flushBuffers()
       rows.push({
         type: 'context',
@@ -121,8 +125,11 @@ function SplitDiffViewer({ patch }: { patch: string }) {
           {rows.map((row, i) => {
             if (row.type === 'header') {
               return (
-                <tr key={i} className="bg-[#f1f8ff] text-[#0366d6] dark:bg-[#1f2f45] dark:text-[#79c0ff]">
-                  <td className="select-none p-0 text-right opacity-50" />
+                <tr
+                  key={i}
+                  className="bg-[#f1f8ff] text-[#0366d6] dark:bg-[#1f2f45] dark:text-[#79c0ff]"
+                >
+                  <td className="p-0 text-right opacity-50 select-none" />
                   <td className="px-4 py-1" colSpan={3}>
                     <span className="whitespace-pre">{row.leftContent}</span>
                   </td>
@@ -134,27 +141,39 @@ function SplitDiffViewer({ patch }: { patch: string }) {
             const isAdd = row.type === 'addition' || row.type === 'modification'
 
             const leftBg = isDel ? 'bg-[#ffeef0] dark:bg-[#4e1c23]' : ''
-            const leftText = isDel ? 'text-[#cb2431] dark:text-[#ff7b72]' : 'text-slate-800 dark:text-slate-200'
+            const leftText = isDel
+              ? 'text-[#cb2431] dark:text-[#ff7b72]'
+              : 'text-slate-800 dark:text-slate-200'
             const leftNumBg = isDel ? 'bg-[#ffdce0] dark:bg-[#4e1c23]' : ''
 
             const rightBg = isAdd ? 'bg-[#e6ffed] dark:bg-[#1e4620]' : ''
-            const rightText = isAdd ? 'text-[#22863a] dark:text-[#7ee787]' : 'text-slate-800 dark:text-slate-200'
+            const rightText = isAdd
+              ? 'text-[#22863a] dark:text-[#7ee787]'
+              : 'text-slate-800 dark:text-slate-200'
             const rightNumBg = isAdd ? 'bg-[#ccffd8] dark:bg-[#1e4620]' : ''
 
             return (
               <tr key={i} className="hover:bg-slate-50 dark:hover:bg-[#161b22]">
-                <td className={`select-none border-r border-[#d0d7de] px-2 text-right opacity-50 dark:border-[#30363d] ${leftNumBg}`}>
+                <td
+                  className={`border-r border-[#d0d7de] px-2 text-right opacity-50 select-none dark:border-[#30363d] ${leftNumBg}`}
+                >
                   {row.leftLineNum}
                 </td>
                 <td className={`px-4 py-[1px] ${leftBg} ${leftText}`}>
-                  <span className="break-all whitespace-pre-wrap">{row.leftContent || ' '}</span>
+                  <span className="break-all whitespace-pre-wrap">
+                    {row.leftContent || ' '}
+                  </span>
                 </td>
-                
-                <td className={`select-none border-x border-[#d0d7de] px-2 text-right opacity-50 dark:border-[#30363d] ${rightNumBg}`}>
+
+                <td
+                  className={`border-x border-[#d0d7de] px-2 text-right opacity-50 select-none dark:border-[#30363d] ${rightNumBg}`}
+                >
                   {row.rightLineNum}
                 </td>
                 <td className={`px-4 py-[1px] ${rightBg} ${rightText}`}>
-                  <span className="break-all whitespace-pre-wrap">{row.rightContent || ' '}</span>
+                  <span className="break-all whitespace-pre-wrap">
+                    {row.rightContent || ' '}
+                  </span>
                 </td>
               </tr>
             )
@@ -184,15 +203,16 @@ function ConversationEntry({
           alt={username}
           width={40}
           height={40}
-          className="size-10 shrink-0 rounded-full border border-border/50 bg-slate-100 dark:bg-slate-800"
+          className="border-border/50 size-10 shrink-0 rounded-full border bg-slate-100 dark:bg-slate-800"
         />
       </div>
-      <div className="min-w-0 flex-1 overflow-hidden rounded-xl border border-border bg-background shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-slate-50 px-4 py-2.5 text-sm dark:bg-slate-900/50">
+      <div className="border-border bg-background min-w-0 flex-1 overflow-hidden rounded-xl border shadow-sm">
+        <div className="border-border flex flex-wrap items-center justify-between gap-2 border-b bg-slate-50 px-4 py-2.5 text-sm dark:bg-slate-900/50">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-foreground">{username}</span>
+            <span className="text-foreground font-semibold">{username}</span>
             <span className="text-muted-foreground">
-              commented {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+              commented{' '}
+              {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
             </span>
           </div>
         </div>
@@ -215,7 +235,9 @@ export function PullDetailPage({
   repo: string
   pullNumber: number
 }) {
-  const [activeTab, setActiveTab] = useState<'conversation' | 'commits' | 'changes'>('conversation')
+  const [activeTab, setActiveTab] = useState<
+    'conversation' | 'commits' | 'changes'
+  >('conversation')
   const [isEditing, setIsEditing] = useState(false)
   const [selectedFileSha, setSelectedFileSha] = useState<string | null>(null)
   const { data, isLoading, error } = useGithubPullDetail(
@@ -229,9 +251,11 @@ export function PullDetailPage({
     state: 'open',
   })
   const linkPullIssue = useLinkGithubPullIssue(owner, repo, pullNumber)
+  const unlinkPullIssue = useUnlinkGithubPullIssue(owner, repo, pullNumber)
   const createComment = useCreateGithubPullComment(owner, repo, pullNumber)
   const editPull = useEditGithubPull(owner, repo, pullNumber)
   const [selectedIssueNumbers, setSelectedIssueNumbers] = useState<number[]>([])
+  const [issueSearch, setIssueSearch] = useState('')
 
   const pull = data?.pull
   const comments = data?.comments ?? []
@@ -263,6 +287,13 @@ export function PullDetailPage({
   const selectedIssues = availableIssues.filter((issue) =>
     selectedIssueNumbers.includes(issue.number)
   )
+  const filteredAvailableIssues = availableIssues.filter((issue) => {
+    const query = issueSearch.toLowerCase()
+    return (
+      issue.title.toLowerCase().includes(query) ||
+      issue.number.toString().includes(query)
+    )
+  })
 
   function toggleSelectedIssue(issueNumber: number) {
     setSelectedIssueNumbers((current) =>
@@ -294,6 +325,14 @@ export function PullDetailPage({
       onError: (mutationError) => {
         toast.error(mutationError.message)
       },
+    })
+  }
+
+  function handleUnlink(issueNumber: number) {
+    if (unlinkPullIssue.isPending) return
+    unlinkPullIssue.mutate([issueNumber], {
+      onSuccess: () => toast.success(`Issue #${issueNumber} unlinked from pull request.`),
+      onError: (err) => toast.error(err.message)
     })
   }
 
@@ -380,7 +419,7 @@ export function PullDetailPage({
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.35fr)_320px]">
         <div className="min-w-0">
-          <div className="mb-6 flex gap-6 border-b border-border">
+          <div className="border-border mb-6 flex gap-6 border-b">
             <button
               type="button"
               onClick={() => setActiveTab('conversation')}
@@ -392,13 +431,13 @@ export function PullDetailPage({
             >
               Conversation
               {activeTab === 'conversation' && (
-                <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary rounded-t-full" />
+                <div className="bg-primary absolute right-0 bottom-0 left-0 h-0.5 rounded-t-full" />
               )}
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('commits')}
-              className={`flex relative items-center gap-2 pb-3 text-sm font-semibold transition-colors ${
+              className={`relative flex items-center gap-2 pb-3 text-sm font-semibold transition-colors ${
                 activeTab === 'commits'
                   ? 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
@@ -409,13 +448,13 @@ export function PullDetailPage({
                 {commits.length}
               </span>
               {activeTab === 'commits' && (
-                <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary rounded-t-full" />
+                <div className="bg-primary absolute right-0 bottom-0 left-0 h-0.5 rounded-t-full" />
               )}
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('changes')}
-              className={`flex relative items-center gap-2 pb-3 text-sm font-semibold transition-colors ${
+              className={`relative flex items-center gap-2 pb-3 text-sm font-semibold transition-colors ${
                 activeTab === 'changes'
                   ? 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
@@ -426,7 +465,7 @@ export function PullDetailPage({
                 {files.length}
               </span>
               {activeTab === 'changes' && (
-                <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary rounded-t-full" />
+                <div className="bg-primary absolute right-0 bottom-0 left-0 h-0.5 rounded-t-full" />
               )}
             </button>
           </div>
@@ -435,12 +474,14 @@ export function PullDetailPage({
             {activeTab === 'commits' ? (
               <div className="animate-in fade-in duration-300">
                 {commits.length ? (
-                  <div className="overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+                  <div className="border-border bg-background overflow-hidden rounded-xl border shadow-sm">
                     {commits.map((commitData, idx) => (
                       <div
                         key={commitData.sha}
                         className={`flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50 ${
-                          idx !== commits.length - 1 ? 'border-b border-border' : ''
+                          idx !== commits.length - 1
+                            ? 'border-border border-b'
+                            : ''
                         }`}
                       >
                         <div className="min-w-0 flex-1">
@@ -457,19 +498,28 @@ export function PullDetailPage({
                                 className="rounded-full"
                               />
                             ) : null}
-                            <span className="text-xs font-semibold text-muted-foreground">
-                              {commitData.author?.login ?? commitData.commit.author.name}
+                            <span className="text-muted-foreground text-xs font-semibold">
+                              {commitData.author?.login ??
+                                commitData.commit.author.name}
                             </span>
-                            <span className="text-xs text-muted-foreground">
-                              committed {formatDistanceToNow(new Date(commitData.commit.author.date), { addSuffix: true })}
+                            <span className="text-muted-foreground text-xs">
+                              committed{' '}
+                              {formatDistanceToNow(
+                                new Date(commitData.commit.author.date),
+                                { addSuffix: true }
+                              )}
                             </span>
                           </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-3">
-                          <span className="font-mono text-xs text-muted-foreground">
+                          <span className="text-muted-foreground font-mono text-xs">
                             {commitData.sha.substring(0, 7)}
                           </span>
-                          <Button asChild variant="ghost" className="h-7 px-2.5 text-xs text-muted-foreground">
+                          <Button
+                            asChild
+                            variant="ghost"
+                            className="text-muted-foreground h-7 px-2.5 text-xs"
+                          >
                             <Link href={commitData.html_url} target="_blank">
                               <ExternalLink className="mr-1.5 size-3.5" />
                               View
@@ -480,7 +530,7 @@ export function PullDetailPage({
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                  <div className="border-border text-muted-foreground rounded-xl border border-dashed px-4 py-8 text-center text-sm">
                     No commits found for this pull request.
                   </div>
                 )}
@@ -489,12 +539,13 @@ export function PullDetailPage({
               <div className="animate-in fade-in duration-300">
                 {files.length ? (
                   <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-                    <div className="flex flex-col gap-1 overflow-y-auto max-h-[70vh] rounded-xl border border-border bg-slate-50/50 p-2 dark:bg-slate-900/20">
-                      <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <div className="border-border flex max-h-[70vh] flex-col gap-1 overflow-y-auto rounded-xl border bg-slate-50/50 p-2 dark:bg-slate-900/20">
+                      <p className="text-muted-foreground px-3 py-2 text-xs font-semibold tracking-wider uppercase">
                         Files changed
                       </p>
                       {files.map((file) => {
-                        const isActive = (selectedFileSha || files[0]?.sha) === file.sha;
+                        const isActive =
+                          (selectedFileSha || files[0]?.sha) === file.sha
                         return (
                           <button
                             key={file.sha}
@@ -502,53 +553,67 @@ export function PullDetailPage({
                             className={`flex flex-col items-start gap-1 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                               isActive
                                 ? 'bg-primary/10 text-primary font-medium'
-                                : 'text-muted-foreground hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:text-foreground'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
                             }`}
                           >
-                            <span className="truncate w-full font-mono text-xs">{file.filename}</span>
+                            <span className="w-full truncate font-mono text-xs">
+                              {file.filename}
+                            </span>
                             <div className="flex items-center gap-2 text-[10px] font-medium">
-                              <span className="text-emerald-600 dark:text-emerald-400">+{file.additions}</span>
-                              <span className="text-red-600 dark:text-red-400">-{file.deletions}</span>
+                              <span className="text-emerald-600 dark:text-emerald-400">
+                                +{file.additions}
+                              </span>
+                              <span className="text-red-600 dark:text-red-400">
+                                -{file.deletions}
+                              </span>
                             </div>
                           </button>
-                        );
+                        )
                       })}
                     </div>
 
                     <div className="min-w-0">
                       {(() => {
-                        const file = files.find((f) => f.sha === (selectedFileSha || files[0]?.sha));
-                        if (!file) return null;
-                        
+                        const file = files.find(
+                          (f) => f.sha === (selectedFileSha || files[0]?.sha)
+                        )
+                        if (!file) return null
+
                         return (
                           <div
                             key={file.sha}
-                            className="overflow-hidden rounded-xl border border-border bg-background shadow-sm"
+                            className="border-border bg-background overflow-hidden rounded-xl border shadow-sm"
                           >
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-slate-50 px-4 py-2.5 dark:bg-slate-900/50">
+                            <div className="border-border flex flex-wrap items-center justify-between gap-3 border-b bg-slate-50 px-4 py-2.5 dark:bg-slate-900/50">
                               <div className="flex min-w-0 items-center gap-3">
-                                <span className="mt-0.5 text-xs font-mono text-muted-foreground">
-                                  {file.status === 'modified' ? `${file.changes} changes` : file.status}
+                                <span className="text-muted-foreground mt-0.5 font-mono text-xs">
+                                  {file.status === 'modified'
+                                    ? `${file.changes} changes`
+                                    : file.status}
                                 </span>
                                 <div className="flex min-w-0 items-center gap-2">
-                                  <FileCode2 className="size-4 shrink-0 text-muted-foreground" />
+                                  <FileCode2 className="text-muted-foreground size-4 shrink-0" />
                                   <p className="truncate font-mono text-sm font-medium">
                                     {file.filename}
                                   </p>
                                 </div>
                                 {file.previous_filename ? (
-                                  <p className="mt-0.5 text-xs text-muted-foreground">
+                                  <p className="text-muted-foreground mt-0.5 text-xs">
                                     Renamed from {file.previous_filename}
                                   </p>
                                 ) : null}
                               </div>
                               <div className="flex items-center gap-3 text-xs font-semibold">
-                                <span className="text-emerald-600 dark:text-emerald-400">+{file.additions}</span>
-                                <span className="text-red-600 dark:text-red-400">-{file.deletions}</span>
+                                <span className="text-emerald-600 dark:text-emerald-400">
+                                  +{file.additions}
+                                </span>
+                                <span className="text-red-600 dark:text-red-400">
+                                  -{file.deletions}
+                                </span>
                                 <Button
                                   asChild
                                   variant="ghost"
-                                  className="h-7 px-2.5 text-xs text-muted-foreground"
+                                  className="text-muted-foreground h-7 px-2.5 text-xs"
                                 >
                                   <Link href={file.blob_url} target="_blank">
                                     <ExternalLink className="mr-1.5 size-3.5" />
@@ -559,28 +624,29 @@ export function PullDetailPage({
                             </div>
 
                             {file.patch ? (
-                              <div className="max-h-[70vh] overflow-auto border-t border-border">
+                              <div className="border-border max-h-[70vh] overflow-auto border-t">
                                 <SplitDiffViewer patch={file.patch} />
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2 bg-white px-4 py-4 text-sm text-muted-foreground dark:bg-slate-950">
+                              <div className="text-muted-foreground flex items-center gap-2 bg-white px-4 py-4 text-sm dark:bg-slate-950">
                                 <ChevronDown className="size-4" />
-                                GitHub did not return an inline patch for this file.
+                                GitHub did not return an inline patch for this
+                                file.
                               </div>
                             )}
                           </div>
-                        );
+                        )
                       })()}
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                  <div className="border-border text-muted-foreground rounded-xl border border-dashed px-4 py-8 text-center text-sm">
                     No changed files were returned for this pull request.
                   </div>
                 )}
               </div>
             ) : (
-              <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="animate-in fade-in space-y-6 duration-300">
                 {isEditing ? (
                   <EditGitHubThreadForm
                     initialTitle={pull.title}
@@ -607,7 +673,7 @@ export function PullDetailPage({
                     username={comment.user.login}
                   />
                 ))}
-                
+
                 <GitHubCommentForm
                   isPending={createComment.isPending}
                   onSubmit={handleCreateComment}
@@ -618,43 +684,47 @@ export function PullDetailPage({
         </div>
 
         <Card className="xl:sticky xl:top-6">
-          <CardHeader>
+          <CardHeader className="pb-4">
             <CardTitle>Overview</CardTitle>
-            <CardDescription>
-              Quick context and issue linking without blocking the PR content.
-            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <span className="bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-700 capitalize dark:text-sky-300">
+          <CardContent className="space-y-6">
+            <div className="border-border flex flex-wrap gap-2 border-b pb-6">
+              <span className="rounded bg-sky-500/10 px-2 py-0.5 text-xs font-semibold text-sky-700 capitalize dark:text-sky-300">
                 {pull.state}
               </span>
-              <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold">
+              <span className="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-semibold">
                 {pull.user.login}
               </span>
-              <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold">
+              <span className="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-semibold">
                 {comments.length + 1} entries
               </span>
             </div>
 
-            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
+            <div className="border-border border-b pb-6">
+              <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wider uppercase">
                 Branch
               </p>
-              <p className="mt-2 text-lg font-semibold">{pull.head.ref}</p>
+              <div className="flex items-center gap-2">
+                <GitPullRequest className="text-muted-foreground size-4" />
+                <span className="bg-primary/10 text-primary rounded-md px-2 py-1 font-mono text-xs font-semibold">
+                  {pull.head.ref}
+                </span>
+              </div>
             </div>
 
-            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
-                Likely linked issue
-              </p>
-              {likelyLinkedIssue ? (
-                <div className="mt-3 space-y-3">
-                  <div className="rounded-2xl border border-sky-200 bg-sky-50 px-3 py-3 text-sm dark:border-sky-500/20 dark:bg-sky-500/10">
+            {likelyLinkedIssue &&
+              !linkedIssues.some(
+                (li) => li.number === likelyLinkedIssue.number
+              ) && (
+                <div className="border-border border-b pb-6">
+                  <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider text-sky-600 uppercase dark:text-sky-400">
+                    Likely linked issue
+                  </p>
+                  <div className="mb-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm dark:border-sky-500/20 dark:bg-sky-500/10">
                     <p className="font-semibold text-sky-950 dark:text-sky-100">
                       {likelyLinkedIssue.fullName} #{likelyLinkedIssue.number}
                     </p>
-                    <p className="mt-1 text-sky-900/80 dark:text-sky-100/80">
+                    <p className="mt-1 text-xs text-sky-900/80 dark:text-sky-100/80">
                       {likelyLinkedIssueDetails?.title ??
                         `Detected from branch name \`${pull.head.ref}\`.`}
                     </p>
@@ -662,135 +732,136 @@ export function PullDetailPage({
                   <Button
                     type="button"
                     variant="outline"
-                    className="rounded-full"
+                    size="sm"
+                    className="w-full rounded-full text-xs"
                     onClick={() => addSelectedIssue(likelyLinkedIssue.number)}
                   >
-                    Add this issue to linker
+                    Add issue to linker
                   </Button>
                 </div>
-              ) : (
-                <p className="text-muted-foreground mt-2 text-sm">
-                  No likely issue was inferred from the branch name.
-                </p>
               )}
-            </div>
 
-            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
+            <div className="border-border border-b pb-6">
+              <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider uppercase">
                 Linked issues
               </p>
               {linkedIssues.length ? (
-                <div className="mt-3 space-y-2">
+                <div className="space-y-2">
                   {linkedIssues.map((reference) => {
-                    const content = (
-                      <div className="group flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm transition-all duration-300 hover:border-emerald-300 hover:bg-emerald-100/50 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:hover:border-emerald-500/40 dark:hover:bg-emerald-500/20">
-                        <div className="flex min-w-0 flex-1 items-center gap-2">
-                          <span className="shrink-0 font-semibold text-emerald-950 dark:text-emerald-100">
-                            {reference.fullName} #{reference.number}
+                    const isInternal = Boolean(reference.internalHref)
+                    const href = reference.internalHref ?? reference.externalHref
+
+                    return (
+                      <div
+                        key={`${reference.fullName}#${reference.number}`}
+                        className="group flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 transition-all duration-300 hover:border-emerald-300 hover:bg-emerald-100/50 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:hover:border-emerald-500/40 dark:hover:bg-emerald-500/20"
+                      >
+                        <Link
+                          href={href}
+                          target={isInternal ? undefined : '_blank'}
+                          className="flex min-w-0 flex-1 items-center gap-2"
+                        >
+                          <span className="shrink-0 font-semibold text-xs text-emerald-950 dark:text-emerald-100">
+                            #{reference.number}
                           </span>
-                          <span className="truncate text-emerald-900/70 dark:text-emerald-100/70">
+                          <span className="truncate text-xs text-emerald-900/70 dark:text-emerald-100/70">
                             {reference.title ?? 'Linked from PR'}
                           </span>
-                        </div>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={unlinkPullIssue.isPending}
+                          className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-emerald-200/50 hover:text-emerald-900 dark:hover:bg-emerald-500/30 dark:hover:text-emerald-100 cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            handleUnlink(reference.number)
+                          }}
+                        >
+                          <X className="size-3" />
+                        </Button>
                       </div>
-                    )
-
-                    return reference.internalHref ? (
-                      <Link
-                        key={`${reference.fullName}#${reference.number}`}
-                        href={reference.internalHref}
-                        className="block"
-                      >
-                        {content}
-                      </Link>
-                    ) : (
-                      <Link
-                        key={`${reference.fullName}#${reference.number}`}
-                        href={reference.externalHref}
-                        target="_blank"
-                        className="block"
-                      >
-                        {content}
-                      </Link>
                     )
                   })}
                 </div>
               ) : (
-                <p className="text-muted-foreground mt-2 text-sm">
-                  No issue references detected in the PR title or description
-                  yet.
-                </p>
+                <p className="text-muted-foreground text-sm">None</p>
               )}
             </div>
-            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
+
+            <div>
+              <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider uppercase">
                 Link to issue
               </p>
-              <p className="text-muted-foreground mt-2 text-sm">
-                Pick one or more open issues from this repo to add native GitHub
-                closing references to the PR description.
-              </p>
-              <div className="mt-4 space-y-4">
+
+              <div className="space-y-4">
                 {selectedIssues.length ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="border-border flex flex-wrap gap-1.5 border-b pb-4">
                     {selectedIssues.map((issue) => (
                       <button
                         key={issue.number}
                         type="button"
-                        className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-900 transition-all duration-300 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-900 transition-all duration-300 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100"
                         onClick={() => toggleSelectedIssue(issue.number)}
                       >
-                        <span>
-                          #{issue.number} · {issue.title}
-                        </span>
-                        <X className="size-3.5" />
+                        <span>#{issue.number}</span>
+                        <X className="size-3" />
                       </button>
                     ))}
                   </div>
                 ) : null}
 
-                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                  {availableIssues.map((issue) => {
+                <div className="relative">
+                  <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+                  <Input
+                    placeholder="Search issues..."
+                    value={issueSearch}
+                    onChange={(e) => setIssueSearch(e.target.value)}
+                    className="h-8 rounded-lg bg-slate-50 pl-8 text-xs dark:bg-slate-900/50"
+                  />
+                </div>
+
+                <div className="max-h-60 space-y-1 overflow-y-auto pr-1">
+                  {filteredAvailableIssues.map((issue) => {
                     const isSelected = selectedIssueNumbers.includes(
                       issue.number
                     )
-
                     return (
                       <button
                         key={issue.number}
                         type="button"
-                        className={`flex w-full items-start justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-all duration-300 ${
+                        className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-1.5 text-left transition-all duration-300 ${
                           isSelected
-                            ? 'border-primary/30 bg-primary/10'
-                            : 'border-border bg-background hover:border-primary/30 hover:bg-primary/5'
+                            ? 'bg-primary/10 text-primary'
+                            : 'hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                         onClick={() => toggleSelectedIssue(issue.number)}
                       >
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold">
-                            #{issue.number} · {issue.title}
-                          </p>
-                          <p className="text-muted-foreground mt-1 text-xs">
-                            Opened by {issue.user.login}
-                          </p>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="shrink-0 text-xs font-semibold">
+                            #{issue.number}
+                          </span>
+                          <span className="text-muted-foreground truncate text-xs">
+                            {issue.title}
+                          </span>
                         </div>
-                        <div
-                          className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border ${
-                            isSelected
-                              ? 'border-primary bg-primary text-primary-foreground'
-                              : 'border-border bg-background'
-                          }`}
-                        >
-                          {isSelected ? <Check className="size-3.5" /> : null}
-                        </div>
+                        {isSelected && <Check className="size-3 shrink-0" />}
                       </button>
                     )
                   })}
+                  {filteredAvailableIssues.length === 0 && (
+                    <p className="text-muted-foreground py-4 text-center text-xs">
+                      No issues match your search.
+                    </p>
+                  )}
                 </div>
+
                 <Button
                   type="button"
+                  size="sm"
                   variant="outline"
-                  className="rounded-full"
+                  className="w-full rounded-full text-xs"
                   onClick={handleManualLink}
                   disabled={
                     linkPullIssue.isPending ||
@@ -799,9 +870,9 @@ export function PullDetailPage({
                   }
                 >
                   {linkPullIssue.isPending ? (
-                    <Spinner />
+                    <Spinner className="mr-2" />
                   ) : (
-                    <Link2 className="size-4" />
+                    <Link2 className="mr-2 size-3.5" />
                   )}
                   Link selected issues natively
                 </Button>

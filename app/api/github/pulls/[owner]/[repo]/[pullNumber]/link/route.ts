@@ -91,3 +91,73 @@ export async function POST(
     return NextResponse.json({ error: message }, { status: 400 })
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ owner: string; repo: string; pullNumber: string }> }
+) {
+  const { userId: clerkUserId } = await auth()
+
+  if (!clerkUserId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { clerkUserId },
+  })
+
+  if (!user) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  }
+
+  try {
+    const { owner, repo, pullNumber } = await params
+    const { issueNumber, issueNumbers } = linkPullIssueSchema.parse(
+      await request.json()
+    )
+    const normalizedIssueNumbers = Array.from(
+      new Set(issueNumbers ?? (issueNumber ? [issueNumber] : []))
+    )
+
+    if (!normalizedIssueNumbers.length) {
+      throw new Error('Select at least one issue to unlink.')
+    }
+
+    const validatedRepository =
+      await githubRepositoryService.resolveRepositoryContext(user.id, {
+        owner,
+        repo,
+      })
+
+    const pull = await githubPullsService.getPullRequest(
+      user.id,
+      validatedRepository.owner,
+      validatedRepository.repo,
+      parseInt(pullNumber, 10)
+    )
+
+    const remainingIssues = await githubPullIssueLinkService.unlinkPullRequestFromIssues({
+      userId: user.id,
+      pullOwner: validatedRepository.owner,
+      pullRepo: validatedRepository.repo,
+      pull,
+      issues: [],
+      issuesToUnlink: normalizedIssueNumbers.map((currentIssueNumber) => ({
+        owner: validatedRepository.owner,
+        repo: validatedRepository.repo,
+        number: currentIssueNumber,
+        fullName: `${validatedRepository.owner}/${validatedRepository.repo}`,
+      })),
+    })
+
+    return NextResponse.json({ remainingIssues })
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Unable to unlink pull request from issues'
+
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+}
+
