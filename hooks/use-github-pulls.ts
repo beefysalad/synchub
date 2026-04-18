@@ -113,3 +113,30 @@ export function useEditGithubPull(
     },
   })
 }
+
+export function useCreateGithubPullComment(
+  owner: string,
+  repo: string,
+  pullNumber: number
+) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (body: string) => {
+      try {
+        const response = await api.post(
+          `/github/pulls/${owner}/${repo}/${pullNumber}`,
+          { body }
+        )
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'pulls', owner, repo, pullNumber],
+      })
+    },
+  })
+}

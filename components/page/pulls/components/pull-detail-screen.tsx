@@ -18,6 +18,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 import { EditGitHubThreadForm } from '@/components/shared/edit-github-thread-form'
+import { GitHubCommentForm } from '@/components/shared/github-comment-form'
 import { SectionHeader } from '@/components/shared/section-header'
 import { Button } from '@/components/ui/button'
 import {
@@ -30,6 +31,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { useGithubIssues } from '@/hooks/use-github-issues'
 import {
+  useCreateGithubPullComment,
   useEditGithubPull,
   useGithubPullDetail,
   useLinkGithubPullIssue,
@@ -91,6 +93,7 @@ export function PullDetailPage({
     state: 'open',
   })
   const linkPullIssue = useLinkGithubPullIssue(owner, repo, pullNumber)
+  const createComment = useCreateGithubPullComment(owner, repo, pullNumber)
   const editPull = useEditGithubPull(owner, repo, pullNumber)
   const [selectedIssueNumbers, setSelectedIssueNumbers] = useState<number[]>([])
 
@@ -168,6 +171,18 @@ export function PullDetailPage({
     }
   }
 
+  async function handleCreateComment(body: string) {
+    try {
+      await createComment.mutateAsync(body)
+      toast.success(`Comment posted to pull request #${pullNumber}.`)
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to create comment'
+      )
+      throw error
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="text-muted-foreground flex min-h-[40vh] flex-col items-center justify-center gap-4 text-sm">
@@ -238,6 +253,10 @@ export function PullDetailPage({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            <GitHubCommentForm
+              isPending={createComment.isPending}
+              onSubmit={handleCreateComment}
+            />
             {isEditing ? (
               <EditGitHubThreadForm
                 initialTitle={pull.title}

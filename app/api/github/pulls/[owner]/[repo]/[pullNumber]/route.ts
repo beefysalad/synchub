@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma'
 import { githubPullsService } from '@/lib/github/pulls'
 import { githubIssueService } from '@/lib/github/issues'
 import { githubPullIssueLinkService } from '@/lib/github/pull-issue-links'
+import { githubCommentSchema } from '@/lib/validators/github-comment'
 import { githubThreadEditSchema } from '@/lib/validators/github-thread'
 
 export async function GET(
@@ -150,6 +151,52 @@ export async function PATCH(
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Unable to update GitHub pull request'
+
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ owner: string; repo: string; pullNumber: string }> }
+) {
+  const { userId: clerkUserId } = await auth()
+
+  if (!clerkUserId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { clerkUserId },
+  })
+
+  if (!user) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  }
+
+  const { owner, repo, pullNumber } = await params
+
+  try {
+    const validatedRepository =
+      await githubRepositoryService.resolveRepositoryContext(user.id, {
+        owner,
+        repo,
+      })
+
+    const payload = githubCommentSchema.parse(await request.json())
+
+    const comment = await githubIssueService.createIssueComment(
+      user.id,
+      validatedRepository.owner,
+      validatedRepository.repo,
+      parseInt(pullNumber, 10),
+      payload.body
+    )
+
+    return NextResponse.json({ comment }, { status: 201 })
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Unable to create GitHub comment'
 
     return NextResponse.json({ error: message }, { status: 400 })
   }

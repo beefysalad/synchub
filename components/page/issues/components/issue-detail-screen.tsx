@@ -18,6 +18,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { IssueAssigneesManager } from '@/components/page/issues/components/issue-assignees-manager'
+import { GitHubCommentForm } from '@/components/shared/github-comment-form'
 import { EditGitHubThreadForm } from '@/components/shared/edit-github-thread-form'
 import { SectionHeader } from '@/components/shared/section-header'
 import { Button } from '@/components/ui/button'
@@ -36,6 +37,7 @@ import {
   useDeleteGithubIssue,
   useEditGithubIssue,
   useGithubAssignableUsers,
+  useCreateGithubIssueComment,
   useGithubIssueDetail,
   useUpdateGithubIssueState,
 } from '@/hooks/use-github-issues'
@@ -62,6 +64,7 @@ export function IssueDetailPage({
   const updateState = useUpdateGithubIssueState(owner, repo, issueNumber)
   const editIssue = useEditGithubIssue(owner, repo, issueNumber)
   const deleteIssue = useDeleteGithubIssue(owner, repo, issueNumber)
+  const createComment = useCreateGithubIssueComment(owner, repo, issueNumber)
   const suggestBranchNames = useSuggestGithubBranchNames()
 
   const issue = data?.issue
@@ -173,6 +176,18 @@ export function IssueDetailPage({
       toast.error(
         error instanceof Error ? error.message : 'Unable to update assignees'
       )
+    }
+  }
+
+  async function handleCreateComment(body: string) {
+    try {
+      await createComment.mutateAsync(body)
+      toast.success(`Comment posted to issue #${issueNumber}.`)
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to create comment'
+      )
+      throw error
     }
   }
 
@@ -288,6 +303,10 @@ export function IssueDetailPage({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            <GitHubCommentForm
+              isPending={createComment.isPending}
+              onSubmit={handleCreateComment}
+            />
             {isEditing ? (
               <EditGitHubThreadForm
                 initialTitle={issue.title}
