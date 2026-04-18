@@ -97,4 +97,19 @@ jobs:
               }
               
               console.log(`Welcomed first-time contributor: ${author}`);
+            } else if (isIssue) {
+              const genericMessage = `👋 Hi @${author}! Thank you for creating this issue!
+
+            A moderator or dev will get back to your issue shortly after it's reviewed.
+
+            Thanks for being an active part of our community! 🎉`;
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: number,
+                body: genericMessage
+              });
+
+              console.log(`Welcomed returning contributor issue: ${author}`);
             }
