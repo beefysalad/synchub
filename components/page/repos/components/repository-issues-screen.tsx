@@ -142,9 +142,9 @@ function WorkspaceTabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex relative items-center gap-2 pb-3 text-sm font-semibold transition-colors ${
+      className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap px-1 pb-4 text-xs font-semibold transition-all duration-300 ${
         active
-          ? 'text-foreground'
+          ? 'text-primary'
           : 'text-muted-foreground hover:text-foreground'
       }`}
     >
@@ -452,7 +452,7 @@ export function RepositoryIssuesPage({
         />
       </div>
 
-      <div className="border-b border-border flex items-center gap-6 pt-2">
+      <div className="border-b border-border flex items-center gap-6 pt-2 overflow-x-auto scrollbar-hide">
         <WorkspaceTabButton
           active={activeTab === 'issues'}
           count={issues.length}

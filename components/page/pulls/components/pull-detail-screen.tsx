@@ -477,11 +477,11 @@ export function PullDetailPage({
         }`}
       >
         <div className="min-w-0">
-          <div className="border-border mb-6 flex gap-6 border-b">
+          <div className="border-border mb-6 flex gap-6 border-b overflow-x-auto scrollbar-hide">
             <button
               type="button"
               onClick={() => setActiveTab('conversation')}
-              className={`relative pb-3 text-sm font-semibold transition-colors ${
+              className={`relative shrink-0 whitespace-nowrap pb-3 text-sm font-semibold transition-colors ${
                 activeTab === 'conversation'
                   ? 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
@@ -495,7 +495,7 @@ export function PullDetailPage({
             <button
               type="button"
               onClick={() => setActiveTab('commits')}
-              className={`relative flex items-center gap-2 pb-3 text-sm font-semibold transition-colors ${
+              className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap pb-3 text-sm font-semibold transition-colors ${
                 activeTab === 'commits'
                   ? 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
@@ -512,7 +512,7 @@ export function PullDetailPage({
             <button
               type="button"
               onClick={() => setActiveTab('changes')}
-              className={`relative flex items-center gap-2 pb-3 text-sm font-semibold transition-colors ${
+              className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap pb-3 text-sm font-semibold transition-colors ${
                 activeTab === 'changes'
                   ? 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
