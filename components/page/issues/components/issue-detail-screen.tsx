@@ -303,10 +303,6 @@ export function IssueDetailPage({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <GitHubCommentForm
-              isPending={createComment.isPending}
-              onSubmit={handleCreateComment}
-            />
             {isEditing ? (
               <EditGitHubThreadForm
                 initialTitle={issue.title}
@@ -333,11 +329,19 @@ export function IssueDetailPage({
                 username={comment.user.login}
               />
             ))}
+
+            <div className="pt-6 border-t border-border">
+              <GitHubCommentForm
+                isPending={createComment.isPending}
+                onSubmit={handleCreateComment}
+              />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="xl:sticky xl:top-6">
-          <CardHeader className="pb-4">
+        <div className="flex flex-col gap-6 xl:sticky xl:top-6">
+          <Card>
+            <CardHeader className="pb-4">
             <CardTitle>Overview</CardTitle>
             <CardDescription>
               Quick context and actions without getting in the way of the issue
@@ -405,25 +409,22 @@ export function IssueDetailPage({
             </div>
 
             <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-sm font-semibold">Reminder</p>
+              <p className="text-sm font-semibold flex items-center gap-2"><BellRing className="size-4 text-primary" /> Reminder</p>
               <p className="text-muted-foreground mt-1 text-sm">
                 Set a follow-up without leaving the issue flow.
               </p>
-              <Button asChild className="mt-4 w-full rounded-full">
+              <Button asChild variant="outline" className="mt-4 w-full rounded-full">
                 <Link href={`/issues/${owner}/${repo}/${issueNumber}/reminder`}>
-                  <BellRing className="size-4" />
                   Manage reminder
                 </Link>
               </Button>
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader className="pb-4">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col gap-4">
               <div>
                 <CardTitle>Branch naming</CardTitle>
                 <CardDescription className="mt-1">
@@ -433,17 +434,17 @@ export function IssueDetailPage({
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-full"
+                className="rounded-full w-full"
                 disabled={suggestBranchNames.isPending}
                 onClick={handleSuggestBranchNames}
               >
                 {suggestBranchNames.isPending ? (
                   <>
-                    <Spinner />
+                    <Spinner className="mr-2 size-4" />
                     Thinking...
                   </>
                 ) : (
-                  <>Suggest names</>
+                  <>Suggest branch names</>
                 )}
               </Button>
             </div>
@@ -454,25 +455,26 @@ export function IssueDetailPage({
                 {suggestBranchNames.data.suggestions.map((suggestion) => (
                   <div
                     key={suggestion.name}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950"
+                    className="rounded-xl border border-border bg-slate-50/50 px-3 py-3 dark:bg-slate-900/50"
                   >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex flex-col gap-3">
                       <div className="min-w-0">
-                        <p className="text-foreground font-mono text-sm font-semibold">
+                        <p className="text-foreground font-mono text-xs font-semibold break-all">
                           {suggestion.name}
                         </p>
-                        <p className="text-muted-foreground mt-1 text-sm">
+                        <p className="text-muted-foreground mt-1 text-xs">
                           {suggestion.reason}
                         </p>
                       </div>
                       <Button
                         type="button"
-                        variant="outline"
-                        className="rounded-full"
+                        size="sm"
+                        variant="secondary"
+                        className="rounded-full w-full text-xs"
                         onClick={() => handleCopyBranchName(suggestion.name)}
                       >
-                        <Copy className="size-4" />
-                        Copy
+                        <Copy className="mr-2 size-3" />
+                        Copy branch name
                       </Button>
                     </div>
                   </div>
@@ -486,6 +488,7 @@ export function IssueDetailPage({
             )}
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   )

@@ -3,8 +3,10 @@
 import { formatDistanceToNow } from 'date-fns'
 import {
   ArrowLeft,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  CircleDot,
   ExternalLink,
   FolderGit2,
   GitCommit,
@@ -91,20 +93,18 @@ const tabMeta: Record<
 
 function getIssueLabelStyles(color: string) {
   const normalized = color.replace('#', '')
-  const red = parseInt(normalized.slice(0, 2), 16)
-  const green = parseInt(normalized.slice(2, 4), 16)
-  const blue = parseInt(normalized.slice(4, 6), 16)
-  const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255
-  const textScale = luminance > 0.8 ? 0.32 : luminance > 0.65 ? 0.46 : 1
-  const readableTextColor =
-    textScale === 1
-      ? `#${normalized}`
-      : `rgb(${Math.round(red * textScale)}, ${Math.round(green * textScale)}, ${Math.round(blue * textScale)})`
+  const r = parseInt(normalized.slice(0, 2), 16)
+  const g = parseInt(normalized.slice(2, 4), 16)
+  const b = parseInt(normalized.slice(4, 6), 16)
+  
+  // Calculate relative lightness based on YIQ equation
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000
+  const isLight = yiq >= 128
 
   return {
-    '--issue-label-color': readableTextColor,
-    '--issue-label-background': `#${normalized}20`,
-    '--issue-label-border': `#${normalized}4d`,
+    backgroundColor: `#${normalized}`,
+    color: isLight ? '#24292f' : '#ffffff',
+    borderColor: isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)',
   } as React.CSSProperties
 }
 
@@ -117,7 +117,7 @@ function WorkspaceTabButton({
 }: {
   active: boolean
   count: number
-  icon: typeof MessageSquareMore
+  icon: React.ElementType
   label: string
   onClick: () => void
 }) {
@@ -125,25 +125,20 @@ function WorkspaceTabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`group inline-flex items-center gap-3 rounded-full border px-5 py-2.5 text-sm font-bold tracking-tight transition-all duration-300 ${
+      className={`flex relative items-center gap-2 pb-3 text-sm font-semibold transition-colors ${
         active
-          ? 'border-primary/30 bg-primary/10 text-primary shadow-sm'
-          : 'border-border bg-background/50 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground'
+          ? 'text-foreground'
+          : 'text-muted-foreground hover:text-foreground'
       }`}
     >
-      <div
-        className={`flex size-8 items-center justify-center rounded-full transition-all duration-300 ${
-          active
-            ? 'bg-primary text-primary-foreground shadow-primary/20 shadow-lg'
-            : 'bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary'
-        }`}
-      >
-        <Icon className="size-4" />
-      </div>
-      <span>{label}</span>
-      <span className="rounded-full border border-current/15 bg-black/5 px-2.5 py-0.5 text-[10px] font-bold tracking-wider dark:bg-white/5">
+      <Icon className="size-4" />
+      {label}
+      <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px] font-bold">
         {count}
       </span>
+      {active && (
+        <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary rounded-t-full" />
+      )}
     </button>
   )
 }
@@ -368,52 +363,32 @@ export function RepositoryIssuesPage({
           'Browse issues, review pull requests, and follow recent commits without leaving SyncHub.'
         }
         actions={
-          <>
-            <Button
-              asChild
-              variant="outline"
-              className="rounded-full px-6 transition-all duration-300"
-            >
-              <Link href="/repos">
-                <ArrowLeft className="size-4" />
-                Back
+          <div className="flex flex-wrap items-center gap-2">
+            {!isTracked ? (
+              <Button size="sm" variant="outline" onClick={handleTrackRepository} disabled={isUpdatingPreferences}>
+                {isUpdatingPreferences ? <Spinner className="mr-2 size-3" /> : null} Track
+              </Button>
+            ) : null}
+            {!isDefault ? (
+              <Button size="sm" variant="outline" onClick={handleSetDefaultRepository} disabled={isUpdatingPreferences}>
+                {isUpdatingPreferences ? <Spinner className="mr-2 size-3" /> : null} Set default
+              </Button>
+            ) : null}
+            <Button size="sm" asChild variant="outline">
+              <Link href="/repos"><ArrowLeft className="mr-2 size-4" />Back</Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link href={`/issues/${owner}/${repo}/new`}><Plus className="mr-2 size-4" />New issue</Link>
+            </Button>
+            <Button size="sm" asChild variant="outline">
+              <Link href={repository?.html_url ?? `https://github.com/${owner}/${repo}`} target="_blank">
+                <ExternalLink className="mr-2 size-4" />GitHub
               </Link>
             </Button>
-            <Button
-              asChild
-              className="rounded-full px-6 shadow-sm transition-all duration-300"
-            >
-              <Link href={`/issues/${owner}/${repo}/new`}>
-                <Plus className="size-4" />
-                New issue
-              </Link>
+            <Button size="sm" asChild variant="ghost" className="px-2 text-muted-foreground">
+              <Link href={`/repos/${owner}/${repo}/settings`}><Settings className="size-4" /></Link>
             </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="rounded-full px-6 transition-all duration-300"
-            >
-              <Link
-                href={
-                  repository?.html_url ?? `https://github.com/${owner}/${repo}`
-                }
-                target="_blank"
-              >
-                <ExternalLink className="size-4" />
-                Open GitHub
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="ghost"
-              className="text-muted-foreground hover:bg-primary/5 hover:text-primary rounded-full px-4 transition-all duration-300"
-            >
-              <Link href={`/repos/${owner}/${repo}/settings`}>
-                <Settings className="size-4" />
-                Settings
-              </Link>
-            </Button>
-          </>
+          </div>
         }
       />
 
@@ -450,397 +425,227 @@ export function RepositoryIssuesPage({
         />
       </div>
 
-      <Card className="transition-all duration-300">
-        <CardHeader className="space-y-6">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div>
-              <CardTitle>Repository activity</CardTitle>
-              <CardDescription className="max-w-md leading-relaxed">
-                Move between issues, pull requests, and commits from one shared
-                workspace.
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              {!isTracked ? (
-                <Button
+      <div className="border-b border-border flex items-center gap-6 pt-2">
+        <WorkspaceTabButton
+          active={activeTab === 'issues'}
+          count={issuesPagination.page === 1 ? issues.length : -1}
+          icon={MessageSquareMore}
+          label="Issues"
+          onClick={() => setActiveTab('issues')}
+        />
+        <WorkspaceTabButton
+          active={activeTab === 'pulls'}
+          count={pullsPagination.page === 1 ? pulls.length : -1}
+          icon={GitPullRequest}
+          label="Pull requests"
+          onClick={() => setActiveTab('pulls')}
+        />
+        <WorkspaceTabButton
+          active={activeTab === 'commits'}
+          count={commitsPagination.page === 1 ? commits.length : -1}
+          icon={GitCommit}
+          label="Commits"
+          onClick={() => setActiveTab('commits')}
+        />
+      </div>
+
+      <div className="pt-2">
+        {activeTab === 'issues' || activeTab === 'pulls' ? (
+          <div className="overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border bg-slate-50 dark:bg-slate-900/50 px-4 py-3">
+              <div className="flex items-center gap-4 text-sm font-semibold">
+                <button
                   type="button"
-                  variant="outline"
-                  className="rounded-full px-6 transition-all duration-300"
-                  onClick={handleTrackRepository}
-                  disabled={isUpdatingPreferences}
+                  onClick={() => setIssueState('open')}
+                  className={`flex items-center gap-2 ${issueState === 'open' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                 >
-                  {isUpdatingPreferences ? (
-                    <>
-                      <Spinner />
-                      Tracking...
-                    </>
-                  ) : (
-                    'Track repository'
-                  )}
-                </Button>
-              ) : null}
-              {!isDefault ? (
-                <Button
+                  <CircleDot className="size-4" />
+                  {activeTab === 'issues' ? `${issues.length} Open` : `${pulls.length} Open`}
+                </button>
+                <button
                   type="button"
-                  variant="outline"
-                  className="rounded-full px-6 transition-all duration-300"
-                  onClick={handleSetDefaultRepository}
-                  disabled={isUpdatingPreferences}
+                  onClick={() => setIssueState('closed')}
+                  className={`flex items-center gap-2 ${issueState === 'closed' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                 >
-                  {isUpdatingPreferences ? (
-                    <>
-                      <Spinner />
-                      Saving...
-                    </>
-                  ) : (
-                    'Set default'
-                  )}
-                </Button>
-              ) : null}
-              <div
-                className={`rounded-full border px-4 py-1.5 text-[10px] font-bold tracking-wider uppercase transition-all duration-300 ${tabConfig.accentClassName}`}
-              >
-                {activeTab === 'issues' &&
-                  `${issues.length} issues on page ${issuesPagination.page}`}
-                {activeTab === 'pulls' &&
-                  `${pulls.length} pull requests on page ${pullsPagination.page}`}
-                {activeTab === 'commits' &&
-                  `${commits.length} commits on page ${commitsPagination.page}`}
+                  <CheckCircle2 className="size-4" />
+                  Closed
+                </button>
               </div>
-            </div>
-          </div>
-
-          <div className="border-border/50 flex flex-col gap-6 border-y py-6 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex flex-wrap items-center gap-3">
-              <WorkspaceTabButton
-                active={activeTab === 'issues'}
-                count={issues.length}
-                icon={MessageSquareMore}
-                label="Issues"
-                onClick={() => setActiveTab('issues')}
-              />
-              <WorkspaceTabButton
-                active={activeTab === 'pulls'}
-                count={pulls.length}
-                icon={GitPullRequest}
-                label="Pull requests"
-                onClick={() => setActiveTab('pulls')}
-              />
-              <WorkspaceTabButton
-                active={activeTab === 'commits'}
-                count={commits.length}
-                icon={GitCommit}
-                label="Commits"
-                onClick={() => setActiveTab('commits')}
-              />
-            </div>
-
-            {activeTab === 'issues' || activeTab === 'pulls' ? (
-              <div className="flex flex-col gap-3 xl:items-end">
-                <div className="glass-surface flex flex-wrap items-center gap-1.5 rounded-full p-1.5 transition-all duration-300">
-                  {issueStates.map((stateOption) => (
-                    <Button
-                      key={stateOption}
+              {activeTab === 'issues' && (
+                <div className="flex items-center gap-2 mt-3 sm:mt-0">
+                  {issueTypeFilters.map((typeOption) => (
+                    <button
+                      key={typeOption}
                       type="button"
-                      variant={issueState === stateOption ? 'default' : 'ghost'}
-                      size="sm"
-                      className="h-9 rounded-full px-6 font-bold tracking-tight capitalize transition-all duration-300"
-                      onClick={() => {
-                        setIssueState(stateOption)
-                        setIssuePaginationState({
-                          key: `${repositoryFullName}:${stateOption}:${issueTypeFilter}`,
-                          page: 1,
-                        })
-                        setPullPaginationState({
-                          key: `${repositoryFullName}:${stateOption}`,
-                          page: 1,
-                        })
-                      }}
-                      disabled={isFetchingIssues || isFetchingPulls}
+                      onClick={() => setIssueTypeFilter(typeOption)}
+                      className={`text-xs font-semibold tracking-wide capitalize px-2 py-1 rounded-md transition-colors ${issueTypeFilter === typeOption ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-foreground'}`}
                     >
-                      {issueState === stateOption &&
-                      (isFetchingIssues || isFetchingPulls) ? (
-                        <>
-                          <Spinner className="mr-2" />
-                          Loading...
-                        </>
-                      ) : (
-                        stateOption
-                      )}
-                    </Button>
+                      {typeOption}
+                    </button>
                   ))}
                 </div>
+              )}
+            </div>
 
-                {activeTab === 'issues' ? (
-                  <div className="glass-surface flex flex-wrap items-center gap-1.5 rounded-full p-1.5 transition-all duration-300">
-                    {issueTypeFilters.map((typeOption) => (
-                      <Button
-                        key={typeOption}
-                        type="button"
-                        variant={
-                          issueTypeFilter === typeOption ? 'default' : 'ghost'
-                        }
-                        size="sm"
-                        className="h-9 rounded-full px-5 font-bold tracking-tight capitalize transition-all duration-300"
-                        onClick={() => {
-                          setIssueTypeFilter(typeOption)
-                          setIssuePaginationState({
-                            key: `${repositoryFullName}:${issueState}:${typeOption}`,
-                            page: 1,
-                          })
-                        }}
-                        disabled={isFetchingIssues}
-                      >
-                        {typeOption}
-                      </Button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="animate-in slide-in-from-left-4 duration-500">
-            <CardTitle className="text-3xl font-bold tracking-tight">
-              {tabConfig.title}
-            </CardTitle>
-            <CardDescription className="mt-2 max-w-2xl text-base leading-relaxed">
-              {tabConfig.description}
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {activeTab === 'issues' &&
-            (isLoadingIssues ? (
-              <ActivityEmptyState message="Syncing issues from GitHub..." />
-            ) : issues.length ? (
-              issues.map((issue) => (
-                <div
-                  key={issue.id}
-                  className="glass-panel group hover:shadow-primary/5 relative overflow-hidden px-6 py-6 transition-all duration-300 hover:shadow-xl dark:hover:shadow-none"
-                >
-                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="flex-1 space-y-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="bg-primary text-primary-foreground rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-300">
-                          #{issue.number}
-                        </span>
-                        <span className="border-border bg-background/50 text-muted-foreground rounded-full border px-3 py-1 text-[10px] font-bold tracking-wider capitalize uppercase transition-all duration-300">
-                          {issue.state}
-                        </span>
-                        {issue.labels.slice(0, 5).map((label) => (
-                          <span
-                            key={label.id}
-                            className="rounded-full border border-[var(--issue-label-border)] bg-[var(--issue-label-background)] px-3 py-1 text-[10px] font-bold tracking-wider text-[var(--issue-label-color)] uppercase transition-all duration-300 dark:border-white/12 dark:bg-white/10 dark:text-white/90"
-                            style={getIssueLabelStyles(label.color)}
-                          >
-                            {label.name}
-                          </span>
-                        ))}
-                      </div>
-                      <div>
-                        <p className="text-foreground group-hover:text-primary text-xl font-bold tracking-tight transition-all duration-300">
-                          {issue.title}
-                        </p>
-                        <p className="text-muted-foreground/80 mt-2 text-sm leading-relaxed transition-all duration-300">
-                          Opened by{' '}
-                          <span className="text-foreground font-semibold">
-                            {issue.user.login}
-                          </span>{' '}
-                          {formatDistanceToNow(new Date(issue.created_at), {
-                            addSuffix: true,
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      asChild
-                      className="h-12 shrink-0 rounded-full px-8 font-bold tracking-tight shadow-sm"
+            <div className="divide-y divide-border">
+              {activeTab === 'issues' ? (
+                isLoadingIssues ? (
+                  <ActivityEmptyState message="Syncing issues from GitHub..." />
+                ) : issues.length ? (
+                  issues.map((issue) => (
+                    <div
+                      key={issue.id}
+                      className="group flex gap-3 p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50 items-start"
                     >
-                      <Link href={`/issues/${owner}/${repo}/${issue.number}`}>
-                        Open issue
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <ActivityEmptyState message={tabConfig.emptyMessage} />
-            ))}
-          {activeTab === 'issues' && issues.length ? (
-            <PaginationControls
-              page={issuesPagination.page}
-              hasNextPage={issuesPagination.hasNextPage}
-              isLoading={isFetchingIssues}
-              onPrevious={() =>
-                setIssuePaginationState((current) => ({
-                  key: issuePaginationKey,
-                  page:
-                    current.key === issuePaginationKey
-                      ? Math.max(1, current.page - 1)
-                      : 1,
-                }))
-              }
-              onNext={() =>
-                setIssuePaginationState((current) => ({
-                  key: issuePaginationKey,
-                  page:
-                    current.key === issuePaginationKey ? current.page + 1 : 2,
-                }))
-              }
-            />
-          ) : null}
-
-          {activeTab === 'pulls' &&
-            (isLoadingPulls ? (
-              <ActivityEmptyState message="Syncing pull requests from GitHub..." />
-            ) : pulls.length ? (
-              pulls.map((pull) => (
-                <div
-                  key={pull.id}
-                  className="glass-panel group hover:shadow-primary/5 relative overflow-hidden px-6 py-6 transition-all duration-300 hover:shadow-xl dark:hover:shadow-none"
-                >
-                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="flex-1 space-y-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-sky-500/10 px-3 py-1 text-[10px] font-bold tracking-wider text-sky-600 uppercase transition-all duration-300 dark:text-sky-400">
-                          PR #{pull.number}
-                        </span>
-                        <span className="border-border bg-background/50 text-muted-foreground rounded-full border px-3 py-1 text-[10px] font-bold tracking-wider capitalize transition-all duration-300">
-                          {pull.state}
-                        </span>
+                      <div className="shrink-0 pt-0.5">
+                        {issue.state === 'open' ? (
+                          <CircleDot className="text-[#1a7f37] dark:text-[#3fb950] size-4" />
+                        ) : (
+                          <CheckCircle2 className="text-[#8250df] dark:text-[#a371f7] size-4" />
+                        )}
                       </div>
-                      <div>
-                        <p className="text-foreground group-hover:text-primary text-xl font-bold tracking-tight transition-all duration-300">
-                          {pull.title}
-                        </p>
-                        <p className="text-muted-foreground/80 mt-2 text-sm leading-relaxed transition-all duration-300">
-                          Authored by{' '}
-                          <span className="text-foreground font-semibold">
-                            {pull.user.login}
-                          </span>{' '}
-                          {formatDistanceToNow(new Date(pull.created_at), {
-                            addSuffix: true,
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="hover:bg-primary hover:text-primary-foreground hover:border-primary h-12 shrink-0 rounded-full px-8 font-bold tracking-tight shadow-sm transition-all duration-300"
-                    >
-                      <Link href={`/pulls/${owner}/${repo}/${pull.number}`}>
-                        Review PR
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <ActivityEmptyState message={tabConfig.emptyMessage} />
-            ))}
-          {activeTab === 'pulls' && pulls.length ? (
-            <PaginationControls
-              page={pullsPagination.page}
-              hasNextPage={pullsPagination.hasNextPage}
-              isLoading={isFetchingPulls}
-              onPrevious={() =>
-                setPullPaginationState((current) => ({
-                  key: pullPaginationKey,
-                  page:
-                    current.key === pullPaginationKey
-                      ? Math.max(1, current.page - 1)
-                      : 1,
-                }))
-              }
-              onNext={() =>
-                setPullPaginationState((current) => ({
-                  key: pullPaginationKey,
-                  page:
-                    current.key === pullPaginationKey ? current.page + 1 : 2,
-                }))
-              }
-            />
-          ) : null}
-
-          {activeTab === 'commits' &&
-            (isLoadingCommits ? (
-              <ActivityEmptyState message="Syncing recent commits from GitHub..." />
-            ) : commits.length ? (
-              <div className="grid gap-3">
-                {commits.map((commit) => (
-                  <div
-                    key={commit.sha}
-                    className="glass-surface border-border/50 group hover:border-primary/40 hover:bg-primary/5 relative overflow-hidden rounded-2xl border px-5 py-5 transition-all duration-300"
-                  >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <code className="bg-primary/10 text-primary rounded-full px-3 py-1 text-[10px] font-bold tracking-widest uppercase transition-all duration-300">
-                            {commit.sha.slice(0, 7)}
-                          </code>
-                          <span className="text-muted-foreground/60 text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-300">
-                            {commit.author?.login ?? commit.commit.author.name}
-                          </span>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link href={`/issues/${owner}/${repo}/${issue.number}`} className="text-base font-semibold text-foreground hover:text-primary transition-colors">
+                            {issue.title}
+                          </Link>
+                          {issue.labels.slice(0, 5).map((label) => (
+                            <span
+                              key={label.id}
+                              className="rounded-full border px-2 py-0.5 text-[12px] font-medium"
+                              style={getIssueLabelStyles(label.color)}
+                            >
+                              {label.name}
+                            </span>
+                          ))}
                         </div>
-                        <p className="text-foreground group-hover:text-primary text-base font-bold tracking-tight transition-all duration-300">
-                          {commit.commit.message}
-                        </p>
-                        <p className="text-muted-foreground/70 text-xs transition-all duration-300">
-                          Pushed{' '}
-                          <span className="text-foreground/80 font-medium">
-                            {formatDistanceToNow(
-                              new Date(commit.commit.author.date),
-                              {
-                                addSuffix: true,
-                              }
-                            )}
-                          </span>
+                        <p className="text-xs text-muted-foreground">
+                          #{issue.number} opened {formatDistanceToNow(new Date(issue.created_at), { addSuffix: true })} by <span className="text-muted-foreground hover:text-primary transition-colors">{issue.user.login}</span>
                         </p>
                       </div>
-                      <Button
-                        asChild
-                        variant="ghost"
-                        className="hover:bg-primary/10 hover:text-primary shrink-0 rounded-full px-5 transition-all duration-300"
-                      >
-                        <Link href={commit.html_url} target="_blank">
-                          <ExternalLink className="mr-2 size-4" />
-                          Details
-                        </Link>
-                      </Button>
+                      {issue.comments > 0 && (
+                        <div className="shrink-0 text-xs text-muted-foreground flex items-center gap-1">
+                          <Link href={`/issues/${owner}/${repo}/${issue.number}`} className="flex items-center gap-1 hover:text-primary transition-colors">
+                            <MessageSquareMore className="size-3.5" />
+                            {issue.comments}
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <ActivityEmptyState message={tabConfig.emptyMessage} />
+                )
+              ) : null}
+
+              {activeTab === 'pulls' ? (
+                isLoadingPulls ? (
+                  <ActivityEmptyState message="Syncing pull requests from GitHub..." />
+                ) : pulls.length ? (
+                  pulls.map((pull) => (
+                    <div
+                      key={pull.id}
+                      className="group flex gap-3 p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50 items-start"
+                    >
+                      <div className="shrink-0 pt-0.5">
+                        {pull.state === 'open' ? (
+                          <GitPullRequest className="text-[#1a7f37] dark:text-[#3fb950] size-4" />
+                        ) : (
+                          <GitPullRequest className="text-[#8250df] dark:text-[#a371f7] size-4" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link href={`/pulls/${owner}/${repo}/${pull.number}`} className="text-base font-semibold text-foreground hover:text-primary transition-colors">
+                            {pull.title}
+                          </Link>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          #{pull.number} opened {formatDistanceToNow(new Date(pull.created_at), { addSuffix: true })} by <span className="text-muted-foreground hover:text-primary transition-colors">{pull.user.login}</span>
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <ActivityEmptyState message={tabConfig.emptyMessage} />
+                )
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        {activeTab === 'commits' ? (
+          isLoadingCommits ? (
+            <ActivityEmptyState message="Syncing recent commits from GitHub..." />
+          ) : commits.length ? (
+            <div className="overflow-hidden rounded-xl border border-border bg-background shadow-sm divide-y divide-border">
+              {commits.map((commit, idx) => (
+                <div
+                  key={commit.sha}
+                  className="group flex items-center justify-between gap-4 p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground hover:text-primary transition-colors">
+                      {commit.commit.message.split('\n')[0]}
+                    </p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground">
+                        {commit.author?.login ?? commit.commit.author.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        committed {formatDistanceToNow(new Date(commit.commit.author.date), { addSuffix: true })}
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <ActivityEmptyState message={tabConfig.emptyMessage} />
-            ))}
-          {activeTab === 'commits' && commits.length ? (
-            <PaginationControls
-              page={commitsPagination.page}
-              hasNextPage={commitsPagination.hasNextPage}
-              isLoading={isFetchingCommits}
-              onPrevious={() =>
-                setCommitPaginationState((current) => ({
-                  key: commitPaginationKey,
-                  page:
-                    current.key === commitPaginationKey
-                      ? Math.max(1, current.page - 1)
-                      : 1,
-                }))
-              }
-              onNext={() =>
-                setCommitPaginationState((current) => ({
-                  key: commitPaginationKey,
-                  page:
-                    current.key === commitPaginationKey ? current.page + 1 : 2,
-                }))
-              }
-            />
-          ) : null}
-        </CardContent>
-      </Card>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {commit.sha.substring(0, 7)}
+                    </span>
+                    <Button asChild variant="ghost" className="h-7 px-2.5 text-xs text-muted-foreground">
+                      <Link href={commit.html_url} target="_blank">
+                        <ExternalLink className="mr-1.5 size-3.5" />
+                        View
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ActivityEmptyState message={tabConfig.emptyMessage} />
+          )
+        ) : null}
+
+        {activeTab === 'issues' && issues.length ? (
+          <PaginationControls
+            page={issuesPagination.page}
+            hasNextPage={issuesPagination.hasNextPage}
+            isLoading={isFetchingIssues}
+            onPrevious={() => setIssuePaginationState(c => ({ key: issuePaginationKey, page: Math.max(1, c.page - 1) }))}
+            onNext={() => setIssuePaginationState(c => ({ key: issuePaginationKey, page: c.page + 1 }))}
+          />
+        ) : null}
+        
+        {activeTab === 'pulls' && pulls.length ? (
+          <PaginationControls
+            page={pullsPagination.page}
+            hasNextPage={pullsPagination.hasNextPage}
+            isLoading={isFetchingPulls}
+            onPrevious={() => setPullPaginationState(c => ({ key: pullPaginationKey, page: Math.max(1, c.page - 1) }))}
+            onNext={() => setPullPaginationState(c => ({ key: pullPaginationKey, page: c.page + 1 }))}
+          />
+        ) : null}
+
+        {activeTab === 'commits' && commits.length ? (
+          <PaginationControls
+            page={commitsPagination.page}
+            hasNextPage={commitsPagination.hasNextPage}
+            isLoading={isFetchingCommits}
+            onPrevious={() => setCommitPaginationState(c => ({ key: commitPaginationKey, page: Math.max(1, c.page - 1) }))}
+            onNext={() => setCommitPaginationState(c => ({ key: commitPaginationKey, page: c.page + 1 }))}
+          />
+        ) : null}
+      </div>
     </div>
   )
 }
