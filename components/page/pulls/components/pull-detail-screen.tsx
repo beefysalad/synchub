@@ -4,7 +4,9 @@ import { formatDistanceToNow } from 'date-fns'
 import {
   ArrowLeft,
   Check,
+  ChevronDown,
   ExternalLink,
+  FileCode2,
   FilePenLine,
   GitPullRequest,
   Link2,
@@ -18,6 +20,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 import { EditGitHubThreadForm } from '@/components/shared/edit-github-thread-form'
+import { GitHubCommentForm } from '@/components/shared/github-comment-form'
 import { SectionHeader } from '@/components/shared/section-header'
 import { Button } from '@/components/ui/button'
 import {
@@ -30,10 +33,137 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { useGithubIssues } from '@/hooks/use-github-issues'
 import {
+  useCreateGithubPullComment,
   useEditGithubPull,
   useGithubPullDetail,
   useLinkGithubPullIssue,
 } from '@/hooks/use-github-pulls'
+
+interface DiffRow {
+  type: 'header' | 'context' | 'addition' | 'deletion' | 'modification'
+  leftLineNum?: number
+  rightLineNum?: number
+  leftContent?: string
+  rightContent?: string
+}
+
+function parsePatchToSplit(patch: string): DiffRow[] {
+  const lines = patch.split('\n')
+  const rows: DiffRow[] = []
+
+  let leftLineNum = 0
+  let rightLineNum = 0
+
+  let deletionBuffer: { lineNum: number; content: string }[] = []
+  let additionBuffer: { lineNum: number; content: string }[] = []
+
+  const flushBuffers = () => {
+    const max = Math.max(deletionBuffer.length, additionBuffer.length)
+    for (let i = 0; i < max; i++) {
+        const del = deletionBuffer[i]
+        const add = additionBuffer[i]
+        
+        rows.push({
+            type: del && add ? 'modification' : del ? 'deletion' : 'addition',
+            leftLineNum: del?.lineNum,
+            rightLineNum: add?.lineNum,
+            leftContent: del?.content,
+            rightContent: add?.content,
+        })
+    }
+    deletionBuffer = []
+    additionBuffer = []
+  }
+
+  for (const line of lines) {
+    if (line.startsWith('@@')) {
+      flushBuffers()
+      const match = line.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/)
+      if (match) {
+        leftLineNum = parseInt(match[1], 10)
+        rightLineNum = parseInt(match[2], 10)
+      }
+      rows.push({ type: 'header', leftContent: line, rightContent: line })
+    } else if (line.startsWith('-')) {
+      deletionBuffer.push({ lineNum: leftLineNum++, content: line })
+    } else if (line.startsWith('+')) {
+      additionBuffer.push({ lineNum: rightLineNum++, content: line })
+    } else if (line.startsWith('\\ No newline')) {
+      // ignore
+    } else { // context
+      flushBuffers()
+      rows.push({
+        type: 'context',
+        leftLineNum: leftLineNum++,
+        rightLineNum: rightLineNum++,
+        leftContent: line,
+        rightContent: line,
+      })
+    }
+  }
+  flushBuffers()
+  return rows
+}
+
+function SplitDiffViewer({ patch }: { patch: string }) {
+  const rows = parsePatchToSplit(patch)
+
+  return (
+    <div className="w-full overflow-x-auto bg-white dark:bg-[#0d1117]">
+      <table className="w-full min-w-[700px] border-collapse font-mono text-[13px] leading-[20px]">
+        <colgroup>
+          <col className="w-12 min-w-[48px]" />
+          <col className="w-[50%]" />
+          <col className="w-12 min-w-[48px]" />
+          <col className="w-[50%]" />
+        </colgroup>
+        <tbody>
+          {rows.map((row, i) => {
+            if (row.type === 'header') {
+              return (
+                <tr key={i} className="bg-[#f1f8ff] text-[#0366d6] dark:bg-[#1f2f45] dark:text-[#79c0ff]">
+                  <td className="select-none p-0 text-right opacity-50" />
+                  <td className="px-4 py-1" colSpan={3}>
+                    <span className="whitespace-pre">{row.leftContent}</span>
+                  </td>
+                </tr>
+              )
+            }
+
+            const isDel = row.type === 'deletion' || row.type === 'modification'
+            const isAdd = row.type === 'addition' || row.type === 'modification'
+
+            const leftBg = isDel ? 'bg-[#ffeef0] dark:bg-[#4e1c23]' : ''
+            const leftText = isDel ? 'text-[#cb2431] dark:text-[#ff7b72]' : 'text-slate-800 dark:text-slate-200'
+            const leftNumBg = isDel ? 'bg-[#ffdce0] dark:bg-[#4e1c23]' : ''
+
+            const rightBg = isAdd ? 'bg-[#e6ffed] dark:bg-[#1e4620]' : ''
+            const rightText = isAdd ? 'text-[#22863a] dark:text-[#7ee787]' : 'text-slate-800 dark:text-slate-200'
+            const rightNumBg = isAdd ? 'bg-[#ccffd8] dark:bg-[#1e4620]' : ''
+
+            return (
+              <tr key={i} className="hover:bg-slate-50 dark:hover:bg-[#161b22]">
+                <td className={`select-none border-r border-[#d0d7de] px-2 text-right opacity-50 dark:border-[#30363d] ${leftNumBg}`}>
+                  {row.leftLineNum}
+                </td>
+                <td className={`px-4 py-[1px] ${leftBg} ${leftText}`}>
+                  <span className="break-all whitespace-pre-wrap">{row.leftContent || ' '}</span>
+                </td>
+                
+                <td className={`select-none border-x border-[#d0d7de] px-2 text-right opacity-50 dark:border-[#30363d] ${rightNumBg}`}>
+                  {row.rightLineNum}
+                </td>
+                <td className={`px-4 py-[1px] ${rightBg} ${rightText}`}>
+                  <span className="break-all whitespace-pre-wrap">{row.rightContent || ' '}</span>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 
 function ConversationEntry({
   avatarUrl,
@@ -48,19 +178,25 @@ function ConversationEntry({
 }) {
   return (
     <div className="flex gap-4">
-      <Image
-        src={avatarUrl ?? `https://github.com/${username}.png`}
-        alt={username}
-        width={40}
-        height={40}
-        className="size-10 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800"
-      />
-      <div className="glass-panel border-border/50 min-w-0 flex-1 shadow-sm transition-all duration-300">
-        <div className="glass-surface border-border/40 rounded-t-3xl border-b px-5 py-3 text-sm transition-all duration-300">
-          <span className="font-semibold">{username}</span> commented{' '}
-          {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+      <div className="mt-1 hidden sm:block">
+        <Image
+          src={avatarUrl ?? `https://github.com/${username}.png`}
+          alt={username}
+          width={40}
+          height={40}
+          className="size-10 shrink-0 rounded-full border border-border/50 bg-slate-100 dark:bg-slate-800"
+        />
+      </div>
+      <div className="min-w-0 flex-1 overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-slate-50 px-4 py-2.5 text-sm dark:bg-slate-900/50">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-foreground">{username}</span>
+            <span className="text-muted-foreground">
+              commented {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+            </span>
+          </div>
         </div>
-        <div className="prose prose-slate prose-sm dark:prose-invert max-w-none px-5 py-5">
+        <div className="prose prose-slate prose-sm dark:prose-invert max-w-none px-4 py-4">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {body || '*No description provided.*'}
           </ReactMarkdown>
@@ -79,7 +215,9 @@ export function PullDetailPage({
   repo: string
   pullNumber: number
 }) {
+  const [activeTab, setActiveTab] = useState<'conversation' | 'commits' | 'changes'>('conversation')
   const [isEditing, setIsEditing] = useState(false)
+  const [selectedFileSha, setSelectedFileSha] = useState<string | null>(null)
   const { data, isLoading, error } = useGithubPullDetail(
     owner,
     repo,
@@ -91,11 +229,14 @@ export function PullDetailPage({
     state: 'open',
   })
   const linkPullIssue = useLinkGithubPullIssue(owner, repo, pullNumber)
+  const createComment = useCreateGithubPullComment(owner, repo, pullNumber)
   const editPull = useEditGithubPull(owner, repo, pullNumber)
   const [selectedIssueNumbers, setSelectedIssueNumbers] = useState<number[]>([])
 
   const pull = data?.pull
   const comments = data?.comments ?? []
+  const files = data?.files ?? []
+  const commits = data?.commits ?? []
   const detectedIssueReferences = data?.detectedIssueReferences ?? []
   const likelyLinkedIssue = data?.likelyLinkedIssue ?? null
   const availableIssues =
@@ -168,6 +309,18 @@ export function PullDetailPage({
     }
   }
 
+  async function handleCreateComment(body: string) {
+    try {
+      await createComment.mutateAsync(body)
+      toast.success(`Comment posted to pull request #${pullNumber}.`)
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to create comment'
+      )
+      throw error
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="text-muted-foreground flex min-h-[40vh] flex-col items-center justify-center gap-4 text-sm">
@@ -226,46 +379,243 @@ export function PullDetailPage({
       />
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.35fr)_320px]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <GitPullRequest className="size-5 text-sky-600 dark:text-sky-300" />
-              Pull request details
-            </CardTitle>
-            <CardDescription>
-              Review the PR description and discussion first, then use the side
-              panel for linked issue controls and quick context.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {isEditing ? (
-              <EditGitHubThreadForm
-                initialTitle={pull.title}
-                initialBody={pull.body ?? ''}
-                isPending={editPull.isPending}
-                onCancel={() => setIsEditing(false)}
-                onSubmit={handleEditSubmit}
-              />
-            ) : (
-              <ConversationEntry
-                avatarUrl={pull.user.avatar_url}
-                body={pull.body ?? '*No description provided.*'}
-                createdAt={pull.created_at}
-                username={pull.user.login}
-              />
-            )}
+        <div className="min-w-0">
+          <div className="mb-6 flex gap-6 border-b border-border">
+            <button
+              type="button"
+              onClick={() => setActiveTab('conversation')}
+              className={`relative pb-3 text-sm font-semibold transition-colors ${
+                activeTab === 'conversation'
+                  ? 'text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Conversation
+              {activeTab === 'conversation' && (
+                <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary rounded-t-full" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('commits')}
+              className={`flex relative items-center gap-2 pb-3 text-sm font-semibold transition-colors ${
+                activeTab === 'commits'
+                  ? 'text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Commits
+              <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px] font-bold">
+                {commits.length}
+              </span>
+              {activeTab === 'commits' && (
+                <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary rounded-t-full" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('changes')}
+              className={`flex relative items-center gap-2 pb-3 text-sm font-semibold transition-colors ${
+                activeTab === 'changes'
+                  ? 'text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Files changed
+              <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px] font-bold">
+                {files.length}
+              </span>
+              {activeTab === 'changes' && (
+                <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary rounded-t-full" />
+              )}
+            </button>
+          </div>
 
-            {comments.map((comment) => (
-              <ConversationEntry
-                key={comment.id}
-                avatarUrl={comment.user.avatar_url}
-                body={comment.body}
-                createdAt={comment.created_at}
-                username={comment.user.login}
-              />
-            ))}
-          </CardContent>
-        </Card>
+          <div className="pt-2">
+            {activeTab === 'commits' ? (
+              <div className="animate-in fade-in duration-300">
+                {commits.length ? (
+                  <div className="overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+                    {commits.map((commitData, idx) => (
+                      <div
+                        key={commitData.sha}
+                        className={`flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50 ${
+                          idx !== commits.length - 1 ? 'border-b border-border' : ''
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold">
+                            {commitData.commit.message.split('\n')[0]}
+                          </p>
+                          <div className="mt-1 flex items-center gap-2">
+                            {commitData.author?.avatar_url ? (
+                              <Image
+                                src={commitData.author.avatar_url}
+                                alt={commitData.author.login ?? 'Author'}
+                                width={16}
+                                height={16}
+                                className="rounded-full"
+                              />
+                            ) : null}
+                            <span className="text-xs font-semibold text-muted-foreground">
+                              {commitData.author?.login ?? commitData.commit.author.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              committed {formatDistanceToNow(new Date(commitData.commit.author.date), { addSuffix: true })}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-3">
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {commitData.sha.substring(0, 7)}
+                          </span>
+                          <Button asChild variant="ghost" className="h-7 px-2.5 text-xs text-muted-foreground">
+                            <Link href={commitData.html_url} target="_blank">
+                              <ExternalLink className="mr-1.5 size-3.5" />
+                              View
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                    No commits found for this pull request.
+                  </div>
+                )}
+              </div>
+            ) : activeTab === 'changes' ? (
+              <div className="animate-in fade-in duration-300">
+                {files.length ? (
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+                    <div className="flex flex-col gap-1 overflow-y-auto max-h-[70vh] rounded-xl border border-border bg-slate-50/50 p-2 dark:bg-slate-900/20">
+                      <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Files changed
+                      </p>
+                      {files.map((file) => {
+                        const isActive = (selectedFileSha || files[0]?.sha) === file.sha;
+                        return (
+                          <button
+                            key={file.sha}
+                            onClick={() => setSelectedFileSha(file.sha)}
+                            className={`flex flex-col items-start gap-1 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                              isActive
+                                ? 'bg-primary/10 text-primary font-medium'
+                                : 'text-muted-foreground hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:text-foreground'
+                            }`}
+                          >
+                            <span className="truncate w-full font-mono text-xs">{file.filename}</span>
+                            <div className="flex items-center gap-2 text-[10px] font-medium">
+                              <span className="text-emerald-600 dark:text-emerald-400">+{file.additions}</span>
+                              <span className="text-red-600 dark:text-red-400">-{file.deletions}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="min-w-0">
+                      {(() => {
+                        const file = files.find((f) => f.sha === (selectedFileSha || files[0]?.sha));
+                        if (!file) return null;
+                        
+                        return (
+                          <div
+                            key={file.sha}
+                            className="overflow-hidden rounded-xl border border-border bg-background shadow-sm"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-slate-50 px-4 py-2.5 dark:bg-slate-900/50">
+                              <div className="flex min-w-0 items-center gap-3">
+                                <span className="mt-0.5 text-xs font-mono text-muted-foreground">
+                                  {file.status === 'modified' ? `${file.changes} changes` : file.status}
+                                </span>
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <FileCode2 className="size-4 shrink-0 text-muted-foreground" />
+                                  <p className="truncate font-mono text-sm font-medium">
+                                    {file.filename}
+                                  </p>
+                                </div>
+                                {file.previous_filename ? (
+                                  <p className="mt-0.5 text-xs text-muted-foreground">
+                                    Renamed from {file.previous_filename}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <div className="flex items-center gap-3 text-xs font-semibold">
+                                <span className="text-emerald-600 dark:text-emerald-400">+{file.additions}</span>
+                                <span className="text-red-600 dark:text-red-400">-{file.deletions}</span>
+                                <Button
+                                  asChild
+                                  variant="ghost"
+                                  className="h-7 px-2.5 text-xs text-muted-foreground"
+                                >
+                                  <Link href={file.blob_url} target="_blank">
+                                    <ExternalLink className="mr-1.5 size-3.5" />
+                                    View
+                                  </Link>
+                                </Button>
+                              </div>
+                            </div>
+
+                            {file.patch ? (
+                              <div className="max-h-[70vh] overflow-auto border-t border-border">
+                                <SplitDiffViewer patch={file.patch} />
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 bg-white px-4 py-4 text-sm text-muted-foreground dark:bg-slate-950">
+                                <ChevronDown className="size-4" />
+                                GitHub did not return an inline patch for this file.
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                    No changed files were returned for this pull request.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-6 animate-in fade-in duration-300">
+                {isEditing ? (
+                  <EditGitHubThreadForm
+                    initialTitle={pull.title}
+                    initialBody={pull.body ?? ''}
+                    isPending={editPull.isPending}
+                    onCancel={() => setIsEditing(false)}
+                    onSubmit={handleEditSubmit}
+                  />
+                ) : (
+                  <ConversationEntry
+                    avatarUrl={pull.user.avatar_url}
+                    body={pull.body ?? '*No description provided.*'}
+                    createdAt={pull.created_at}
+                    username={pull.user.login}
+                  />
+                )}
+
+                {comments.map((comment) => (
+                  <ConversationEntry
+                    key={comment.id}
+                    avatarUrl={comment.user.avatar_url}
+                    body={comment.body}
+                    createdAt={comment.created_at}
+                    username={comment.user.login}
+                  />
+                ))}
+                
+                <GitHubCommentForm
+                  isPending={createComment.isPending}
+                  onSubmit={handleCreateComment}
+                />
+              </div>
+            )}
+          </div>
+        </div>
 
         <Card className="xl:sticky xl:top-6">
           <CardHeader>

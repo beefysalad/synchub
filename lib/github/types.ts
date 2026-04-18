@@ -133,6 +133,18 @@ export type GitHubPullRequest = {
   }
 }
 
+export type GitHubPullFile = {
+  sha: string
+  filename: string
+  status: 'added' | 'removed' | 'modified' | 'renamed' | string
+  additions: number
+  deletions: number
+  changes: number
+  blob_url: string
+  patch?: string
+  previous_filename?: string
+}
+
 export type GitHubIssueReference = {
   owner: string
   repo: string
@@ -164,6 +176,8 @@ export type GitHubPullRequestsResponse = {
 export type GitHubPullDetailResponse = {
   pull: GitHubPullRequest
   comments: GitHubIssueComment[]
+  files: GitHubPullFile[]
+  commits: GitHubCommit[]
   detectedIssueReferences: GitHubIssueReference[]
   likelyLinkedIssue: GitHubIssueReference | null
 }

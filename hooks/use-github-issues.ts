@@ -164,6 +164,33 @@ export function useEditGithubIssue(owner: string, repo: string, issueNumber: num
   })
 }
 
+export function useCreateGithubIssueComment(
+  owner: string,
+  repo: string,
+  issueNumber: number
+) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (body: string) => {
+      try {
+        const response = await api.post(
+          `/github/issues/${owner}/${repo}/${issueNumber}`,
+          { body }
+        )
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'issues', owner, repo, issueNumber],
+      })
+    },
+  })
+}
+
 export function useCreateGithubIssue() {
   const queryClient = useQueryClient()
 
