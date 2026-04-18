@@ -14,8 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { githubIssueService } from '@/lib/github/issues'
-import type { GitHubIssue } from '@/lib/github/types'
 import prisma from '@/lib/prisma'
 import { dailySummaryService } from '@/lib/services/daily-summary-service'
 
@@ -30,8 +28,7 @@ export default async function DashboardPage() {
     where: { clerkUserId },
     include: {
       trackedRepos: {
-        where: { isDefault: true },
-        take: 1,
+        orderBy: { updatedAt: 'desc' },
       },
     },
   })
@@ -65,28 +62,8 @@ export default async function DashboardPage() {
     },
   })
 
-  const defaultRepo = user.trackedRepos[0]
-  let recentIssues: GitHubIssue[] = []
-  let defaultOwner = ''
-  let defaultRepoName = ''
-
-  if (defaultRepo) {
-    const [owner, repo] = defaultRepo.fullName.split('/')
-    defaultOwner = owner
-    defaultRepoName = repo
-    try {
-      const issues = await githubIssueService.listRepositoryIssues({
-        userId: user.id,
-        owner,
-        repo,
-        state: 'open',
-      })
-      recentIssues = issues.slice(0, 3)
-    } catch (error) {
-      // Gracefully handle integration errors or missing tokens without breaking the layout
-      console.error('Failed to fetch dashboard issues:', error)
-    }
-  }
+  const defaultRepo = user.trackedRepos.find(r => r.isDefault)
+  const recentRepos = user.trackedRepos.slice(0, 5)
 
   const integrationNames = linkedAccounts.map((a) =>
     a.provider === 'GITHUB'
@@ -190,68 +167,53 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle>Recent issues</CardTitle>
+              <CardTitle>Recent repositories</CardTitle>
               <CardDescription>
-                {defaultRepo
-                  ? `Recent open work from ${defaultRepo.fullName}.`
-                  : 'Set a default repository to keep recent work visible here.'}
+                A quick overview of the tracked repositories in your workspace.
               </CardDescription>
             </div>
             {defaultRepo ? (
-              <Button asChild variant="outline">
-                <Link href={`/issues/${defaultOwner}/${defaultRepoName}/new`}>
-                  <Plus className="size-4" />
-                  New issue
+              <Button asChild variant="outline" className="rounded-full">
+                <Link href={`/repos/${defaultRepo.fullName}`}>
+                  <FolderGit2 className="size-4 mr-2" />
+                  View default repo
                 </Link>
               </Button>
             ) : null}
           </CardHeader>
           <CardContent className="space-y-4">
-            {!defaultRepo ? (
+            {!recentRepos.length ? (
               <div className="text-muted-foreground rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-center text-sm dark:border-slate-700">
-                You haven&apos;t designated a default repository yet. Head over
-                to your tracked repositories and set one to display its recent
-                activity here.
+                You haven&apos;t tracked any repositories yet. Head over to workspace controls to track repositories and view them here.
               </div>
-            ) : recentIssues.length ? (
-              recentIssues.map((issue) => (
-                <div
-                  key={issue.id}
-                  className="glass-surface rounded-3xl px-5 py-5 transition-all duration-300"
-                >
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="space-y-2">
+            ) : (
+              <div className="grid gap-3">
+                {recentRepos.map((repo) => (
+                  <div
+                    key={repo.id}
+                    className="glass-surface rounded-2xl px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:bg-slate-50 dark:hover:bg-slate-900/50"
+                  >
+                    <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
-                        <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs font-bold tracking-wider transition-all duration-300">
-                          #{issue.number}
-                        </span>
-                        <p className="font-semibold">{issue.title}</p>
+                        <span className="font-semibold text-sm">{repo.fullName}</span>
+                        {repo.isDefault && <Star className="size-3.5 text-primary fill-current" />}
                       </div>
-                      <p className="text-muted-foreground text-sm">
-                        Opened by {issue.user.login}{' '}
-                        {formatDistanceToNow(new Date(issue.created_at), {
-                          addSuffix: true,
-                        })}
+                      <p className="text-muted-foreground text-xs">
+                        Last tracked {formatDistanceToNow(new Date(repo.updatedAt), { addSuffix: true })}
                       </p>
                     </div>
-
+                    
                     <Button
                       asChild
-                      variant="outline"
-                      className="shrink-0 rounded-full"
+                      variant="secondary"
+                      className="shrink-0 rounded-full shadow-sm text-xs h-8"
                     >
-                      <Link
-                        href={`/issues/${defaultOwner}/${defaultRepoName}/${issue.number}`}
-                      >
-                        Open issue
+                      <Link href={`/repos/${repo.fullName}`}>
+                        Open workspace
                       </Link>
                     </Button>
                   </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-muted-foreground rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm dark:border-slate-700">
-                No recent open issues found in this repository.
+                ))}
               </div>
             )}
           </CardContent>
