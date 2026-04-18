@@ -64,8 +64,17 @@ export const reminderDeliveryService = {
               })
             }
 
+            const metadata =
+              account.metadata && typeof account.metadata === 'object'
+                ? (account.metadata as Record<string, unknown>)
+                : {}
+            const preferredChannelId =
+              typeof metadata.reminderChannelId === 'string'
+                ? metadata.reminderChannelId
+                : null
+
             return sendDiscordMessage({
-              channelId: account.chatId,
+              channelId: preferredChannelId || account.chatId,
               content: message.discordContent,
               embeds: message.discordEmbeds,
             })

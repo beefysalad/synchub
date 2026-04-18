@@ -91,14 +91,17 @@ export function useUpdateDailySummarySettings() {
   return useMutation({
     mutationFn: async ({
       discordChannelId,
+      reminderChannelId,
       aiModel,
     }: {
       discordChannelId: string
+      reminderChannelId: string
       aiModel: GeminiModelOption
     }) => {
       try {
         const response = await api.post('/settings/daily-summary', {
           discordChannelId,
+          reminderChannelId,
           aiModel,
         })
         return response.data

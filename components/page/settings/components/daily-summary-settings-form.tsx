@@ -17,12 +17,17 @@ import {
 
 export function DailySummarySettingsForm({
   initialChannelId,
+  initialReminderChannelId,
   initialAiModel,
 }: {
   initialChannelId?: string
+  initialReminderChannelId?: string
   initialAiModel: GeminiModelOption
 }) {
   const [selectedChannel, setSelectedChannel] = useState(initialChannelId ?? '')
+  const [selectedReminderChannel, setSelectedReminderChannel] = useState(
+    initialReminderChannelId ?? ''
+  )
   const [selectedAiModel, setSelectedAiModel] =
     useState<GeminiModelOption>(initialAiModel)
   const { data: channels, isLoading: isLoadingChannels } = useDiscordChannels()
@@ -39,9 +44,10 @@ export function DailySummarySettingsForm({
     try {
       await updateSettings.mutateAsync({
         discordChannelId: selectedChannel,
+        reminderChannelId: selectedReminderChannel,
         aiModel: selectedAiModel,
       })
-      toast.success('AI and summary preferences saved')
+      toast.success('AI and delivery preferences saved')
     } catch {
       toast.error('Failed to save preferences')
     }
@@ -112,7 +118,7 @@ export function DailySummarySettingsForm({
 
           <div>
             <p className="text-muted-foreground text-xs font-medium tracking-[0.16em] uppercase">
-              Channel routing
+              Daily summary routing
             </p>
             <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
               Choose which Discord channel should receive your automated daily
@@ -147,6 +153,31 @@ export function DailySummarySettingsForm({
               Save preference
             </Button>
           </div>
+
+          <div>
+            <p className="text-muted-foreground text-xs font-medium tracking-[0.16em] uppercase">
+              Reminder routing
+            </p>
+            <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+              Choose which Discord channel should receive reminder deliveries so
+              they don&apos;t get mixed into your recap channel.
+            </p>
+          </div>
+
+          <select
+            value={selectedReminderChannel}
+            onChange={(e) => setSelectedReminderChannel(e.target.value)}
+            disabled={isSaving || isLoadingChannels}
+            className="border-border bg-background focus:border-primary/50 focus:ring-primary/20 w-full rounded-2xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2"
+          >
+            <option value="">Use linked default channel</option>
+            {channels?.map((channel) => (
+              <option key={channel.id} value={channel.id}>
+                #{channel.name}
+              </option>
+            ))}
+          </select>
+
           {!channels?.length && !isLoadingChannels ? (
             <p className="text-muted-foreground text-xs">
               No Discord channels are available right now. You can still save

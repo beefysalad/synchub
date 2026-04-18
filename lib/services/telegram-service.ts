@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma'
 import { sendTelegramMessage } from '@/lib/telegram/api'
 import { accountLinkService } from '@/lib/services/account-link-service'
+import { chatGithubOverviewService } from '@/lib/services/chat-github-overview-service'
 import { pendingLinkService } from '@/lib/services/pending-link-service'
 
 type TelegramMessage = {
@@ -38,6 +39,15 @@ function getCommand(text?: string) {
 
   const [command] = text.trim().split(/\s+/, 1)
   return command ?? null
+}
+
+function getCommandArgument(text?: string) {
+  if (!text) {
+    return null
+  }
+
+  const [, argument] = text.trim().split(/\s+/, 2)
+  return argument ?? null
 }
 
 function getTelegramDisplayName(message: TelegramMessage) {
@@ -131,6 +141,8 @@ async function handleHelpCommand(message: TelegramMessage) {
       '/help - Show available commands',
       '/whoami - Show the linked SyncHub identity for this Telegram account',
       '/status - Show which integrations are connected for this user',
+      '/issues [owner/repo] - Show active issues for a repository',
+      '/pulls [owner/repo] - Show active pull requests for a repository',
     ].join('\n'),
   })
 }
@@ -211,6 +223,86 @@ async function handleUnknownCommand(message: TelegramMessage) {
   })
 }
 
+async function handleIssuesCommand(message: TelegramMessage) {
+  const chatId = message.chat?.id
+  const telegramUserId = message.from?.id
+
+  if (!chatId || !telegramUserId) {
+    return
+  }
+
+  const account = await findTelegramAccount(String(telegramUserId))
+
+  if (!account) {
+    await sendTelegramMessage({
+      chatId,
+      text:
+        'This Telegram account is not linked yet. Open SyncHub and click "Connect Telegram" first.',
+    })
+    return
+  }
+
+  try {
+    const summary = await chatGithubOverviewService.getOpenIssuesSummary({
+      userId: account.userId,
+      repository: getCommandArgument(message.text),
+    })
+
+    await sendTelegramMessage({
+      chatId,
+      text: summary,
+    })
+  } catch (error) {
+    await sendTelegramMessage({
+      chatId,
+      text:
+        error instanceof Error
+          ? error.message
+          : 'Unable to load open issues right now.',
+    })
+  }
+}
+
+async function handlePullsCommand(message: TelegramMessage) {
+  const chatId = message.chat?.id
+  const telegramUserId = message.from?.id
+
+  if (!chatId || !telegramUserId) {
+    return
+  }
+
+  const account = await findTelegramAccount(String(telegramUserId))
+
+  if (!account) {
+    await sendTelegramMessage({
+      chatId,
+      text:
+        'This Telegram account is not linked yet. Open SyncHub and click "Connect Telegram" first.',
+    })
+    return
+  }
+
+  try {
+    const summary = await chatGithubOverviewService.getOpenPullsSummary({
+      userId: account.userId,
+      repository: getCommandArgument(message.text),
+    })
+
+    await sendTelegramMessage({
+      chatId,
+      text: summary,
+    })
+  } catch (error) {
+    await sendTelegramMessage({
+      chatId,
+      text:
+        error instanceof Error
+          ? error.message
+          : 'Unable to load open pull requests right now.',
+    })
+  }
+}
+
 export const telegramService = {
   async handleIncomingMessage(message: TelegramMessage) {
     const command = getCommand(message.text)
@@ -227,6 +319,13 @@ export const telegramService = {
         return
       case '/status':
         await handleStatusCommand(message)
+        return
+      case '/issues':
+        await handleIssuesCommand(message)
+        return
+      case '/pulls':
+      case '/prs':
+        await handlePullsCommand(message)
         return
       default:
         await handleUnknownCommand(message)

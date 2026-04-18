@@ -181,6 +181,14 @@ export default async function SettingsPage() {
                   >
                 )?.dailySummaryChannelId as string
               }
+              initialReminderChannelId={
+                (
+                  accountsByProvider.get('DISCORD')?.metadata as Record<
+                    string,
+                    unknown
+                  >
+                )?.reminderChannelId as string
+              }
               initialAiModel={
                 currentUser.aiModel === 'gemini-2.5-flash'
                   ? 'gemini-2.5-flash'

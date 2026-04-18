@@ -69,6 +69,32 @@ const syncHubCommands = [
     description: 'Show your connected SyncHub integrations',
     type: 1,
   },
+  {
+    name: 'issues',
+    description: 'Show active issues for a repository',
+    type: 1,
+    options: [
+      {
+        type: 3,
+        name: 'repo',
+        description: 'Repository in owner/repo format',
+        required: false,
+      },
+    ],
+  },
+  {
+    name: 'pulls',
+    description: 'Show active pull requests for a repository',
+    type: 1,
+    options: [
+      {
+        type: 3,
+        name: 'repo',
+        description: 'Repository in owner/repo format',
+        required: false,
+      },
+    ],
+  },
 ] as const
 
 export async function registerDiscordCommands() {
