@@ -50,7 +50,7 @@ export function useGithubWorkflowRuns({
     queryFn: async () => {
       try {
         const response = await api.get<GitHubWorkflowRunsResponse>(
-          '/github/workflow-runs',
+          '/github/workflows/runs',
           {
             params: { owner, repo, page, perPage },
           }

@@ -24,17 +24,11 @@ import { toast } from 'sonner'
 import { SectionHeader } from '@/components/shared/section-header'
 import { StatusCard } from '@/components/shared/status-card'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
 import { useGithubCommits } from '@/hooks/use-github-commits'
 import { useGithubIssues } from '@/hooks/use-github-issues'
 import { useGithubPulls } from '@/hooks/use-github-pulls'
+import { useGithubWorkflows } from '@/hooks/use-github-workflows'
 import {
   useGithubRepositories,
   useUpdateGithubPreferences,
@@ -43,7 +37,6 @@ import type { GitHubIssueState } from '@/lib/github/types'
 
 import { RepositoryWorkflowsTab } from './repository-workflows-tab'
 
-const issueStates: GitHubIssueState[] = ['open', 'all', 'closed']
 const issueTypeFilters = ['all', 'bug', 'task', 'feature'] as const
 
 type ActivityTab = 'issues' | 'pulls' | 'commits' | 'workflows'
@@ -293,6 +286,10 @@ export function RepositoryIssuesPage({
     page: commitPage,
     perPage: 10,
   })
+  const { data: workflowsData } = useGithubWorkflows({
+    owner,
+    repo,
+  })
 
   const repository =
     repositoryData?.repositories.find(
@@ -306,6 +303,7 @@ export function RepositoryIssuesPage({
   const issues = issuesData?.issues ?? []
   const pulls = pullsData?.pulls ?? []
   const commits = commitsData?.commits ?? []
+  const workflows = workflowsData?.workflows ?? []
   const issuesPagination = issuesData?.pagination ?? {
     page: issuePage,
     perPage: 12,
@@ -440,28 +438,28 @@ export function RepositoryIssuesPage({
       <div className="border-b border-border flex items-center gap-6 pt-2">
         <WorkspaceTabButton
           active={activeTab === 'issues'}
-          count={issuesPagination.page === 1 ? issues.length : -1}
+          count={issues.length}
           icon={MessageSquareMore}
           label="Issues"
           onClick={() => setActiveTab('issues')}
         />
         <WorkspaceTabButton
           active={activeTab === 'pulls'}
-          count={pullsPagination.page === 1 ? pulls.length : -1}
+          count={pulls.length}
           icon={GitPullRequest}
           label="Pull requests"
           onClick={() => setActiveTab('pulls')}
         />
         <WorkspaceTabButton
           active={activeTab === 'commits'}
-          count={commitsPagination.page === 1 ? commits.length : -1}
+          count={commits.length}
           icon={GitCommit}
           label="Commits"
           onClick={() => setActiveTab('commits')}
         />
         <WorkspaceTabButton
           active={activeTab === 'workflows'}
-          count={-1}
+          count={workflows.length}
           icon={PlayCircle}
           label="Workflows"
           onClick={() => setActiveTab('workflows')}
@@ -598,7 +596,7 @@ export function RepositoryIssuesPage({
             <ActivityEmptyState message="Syncing recent commits from GitHub..." />
           ) : commits.length ? (
             <div className="overflow-hidden rounded-xl border border-border bg-background shadow-sm divide-y divide-border">
-              {commits.map((commit, idx) => (
+              {commits.map((commit) => (
                 <div
                   key={commit.sha}
                   className="group flex items-center justify-between gap-4 p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50"
