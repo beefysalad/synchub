@@ -272,20 +272,20 @@ export function IssuesWorkspace({
                             </Link>
                           </Button>
                           <div className="pointer-events-none flex items-center opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100">
-                            {!isDefault && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() =>
-                                  handleSetDefaultRepository(
-                                    repository.full_name
-                                  )
-                                }
-                                className="hover:text-primary hover:bg-primary/10 size-8 rounded-lg transition-colors"
-                              >
-                                <Star className="size-4" />
-                              </Button>
-                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                !isDefault && handleSetDefaultRepository(
+                                  repository.full_name
+                                )
+                              }
+                              className={`hover:text-primary hover:bg-primary/10 size-8 rounded-lg transition-colors ${
+                                isDefault ? 'invisible' : ''
+                              }`}
+                            >
+                              <Star className="size-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"

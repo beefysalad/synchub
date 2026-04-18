@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { githubRepositoryService } from '@/lib/github/repositories'
 import prisma from '@/lib/prisma'
 import { githubIssueService } from '@/lib/github/issues'
+import { buildIssueLabels } from '@/lib/github/issue-templates'
 import { githubIssueFormSchema } from '@/lib/validators/github-issue'
 
 function getValidatedIssueState(state?: string | null): 'open' | 'closed' | 'all' {
@@ -17,6 +18,7 @@ function getValidatedIssueState(state?: string | null): 'open' | 'closed' | 'all
 
 const createGithubIssueRequestSchema = githubIssueFormSchema
   .pick({
+    template: true,
     title: true,
     body: true,
   })
@@ -127,7 +129,7 @@ export async function POST(request: NextRequest) {
       repo: validatedRepository.repo,
       title: body.title,
       body: body.body,
-      labels: body.labels,
+      labels: buildIssueLabels(body.template, body.labels),
     })
 
     return NextResponse.json({ issue }, { status: 201 })

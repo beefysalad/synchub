@@ -75,3 +75,38 @@ What needs to get done?
 export type GitHubIssueTemplate = keyof typeof issueTemplates
 
 export const defaultGitHubIssueTemplate: GitHubIssueTemplate = 'feature'
+
+export const issueTypeLabels = [
+  'feature',
+  'bug',
+  'task',
+] as const satisfies readonly GitHubIssueTemplate[]
+
+export function buildIssueLabels(
+  template: GitHubIssueTemplate,
+  labels: string[] = []
+) {
+  const canonicalTypeLabel = template.toLowerCase()
+  const seen = new Set<string>()
+
+  return [canonicalTypeLabel, ...labels]
+    .map((label) => label.trim())
+    .filter(Boolean)
+    .filter((label) => {
+      const normalizedLabel = label.toLowerCase()
+
+      if (
+        issueTypeLabels.includes(normalizedLabel as GitHubIssueTemplate) &&
+        normalizedLabel !== canonicalTypeLabel
+      ) {
+        return false
+      }
+
+      if (seen.has(normalizedLabel)) {
+        return false
+      }
+
+      seen.add(normalizedLabel)
+      return true
+    })
+}

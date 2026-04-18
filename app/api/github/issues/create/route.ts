@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+import { buildIssueLabels, defaultGitHubIssueTemplate } from '@/lib/github/issue-templates'
 import { githubIssueService } from '@/lib/github/issues'
 import prisma from '@/lib/prisma'
 
@@ -34,6 +35,8 @@ export async function POST(request: NextRequest) {
   const repo = String(formData.get('repo') ?? '')
   const title = String(formData.get('title') ?? '')
   const body = String(formData.get('body') ?? '')
+  const template =
+    String(formData.get('template') ?? '').trim() || defaultGitHubIssueTemplate
   const labels = formData
     .getAll('labels')
     .map((value) => String(value).trim())
@@ -54,7 +57,10 @@ export async function POST(request: NextRequest) {
       repo,
       title: title.trim(),
       body: body.trim() || undefined,
-      labels,
+      labels: buildIssueLabels(
+        template === 'bug' || template === 'task' ? template : 'feature',
+        labels
+      ),
     })
 
     redirectUrl.searchParams.set('created', String(issue.number))

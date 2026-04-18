@@ -26,6 +26,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { useCreateGithubIssue } from '@/hooks/use-github-issues'
 import { useGithubRepositories } from '@/hooks/use-github-repositories'
 import {
+  buildIssueLabels,
   defaultGitHubIssueTemplate,
   issueTemplates,
 } from '@/lib/github/issue-templates'
@@ -113,9 +114,10 @@ export function CreateGithubIssuePage({
       const response = await createIssue.mutateAsync({
         owner,
         repo,
+        template: values.template,
         title: values.title,
         body: values.body,
-        labels: selectedLabels,
+        labels: buildIssueLabels(values.template, selectedLabels),
       })
 
       toast.success(`Issue #${response.issue.number} created successfully.`)
@@ -141,7 +143,10 @@ export function CreateGithubIssuePage({
 
       setLabelSuggestions(response.suggestions)
       setSelectedLabels(
-        response.suggestions.map((suggestion) => suggestion.label)
+        buildIssueLabels(
+          values.template,
+          response.suggestions.map((suggestion) => suggestion.label)
+        )
       )
 
       if (response.suggestions.length) {

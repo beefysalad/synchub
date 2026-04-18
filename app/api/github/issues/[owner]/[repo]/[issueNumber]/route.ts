@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { githubRepositoryService } from '@/lib/github/repositories'
 import prisma from '@/lib/prisma'
 import { githubIssueService } from '@/lib/github/issues'
+import { githubPullIssueLinkService } from '@/lib/github/pull-issue-links'
+import { githubPullsService } from '@/lib/github/pulls'
 import { githubIssueAssigneesSchema } from '@/lib/validators/github-issue'
 import { githubThreadEditSchema } from '@/lib/validators/github-thread'
 
@@ -48,7 +50,33 @@ export async function GET(
       parseInt(issueNumber, 10)
     )
 
-    return NextResponse.json({ issue, comments })
+    const pulls = await githubPullsService.listRepositoryPulls({
+      userId: user.id,
+      owner: validatedRepository.owner,
+      repo: validatedRepository.repo,
+      state: 'all',
+      page: 1,
+      perPage: 50,
+    })
+
+    const linkedPulls = pulls.filter((pull) =>
+      githubPullIssueLinkService
+        .extractIssueReferencesFromPullRequest({
+          owner: validatedRepository.owner,
+          repo: validatedRepository.repo,
+          title: pull.title,
+          body: pull.body,
+          pullNumber: pull.number,
+        })
+        .some(
+          (reference) =>
+            reference.owner === validatedRepository.owner &&
+            reference.repo === validatedRepository.repo &&
+            reference.number === parseInt(issueNumber, 10)
+        )
+    )
+
+    return NextResponse.json({ issue, comments, linkedPulls })
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Unable to fetch GitHub issue'

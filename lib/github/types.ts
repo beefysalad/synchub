@@ -1,3 +1,5 @@
+import type { GitHubIssueTemplate } from '@/lib/github/issue-templates'
+
 export type GitHubRepository = {
   id: number
   name: string
@@ -80,6 +82,7 @@ export type UpdateGitHubPreferencesPayload = {
 export type CreateGitHubIssuePayload = {
   owner: string
   repo: string
+  template: GitHubIssueTemplate
   title: string
   body?: string
   labels?: string[]
@@ -99,6 +102,7 @@ export type CreateGitHubIssueResponse = {
 export type GitHubIssueDetailResponse = {
   issue: GitHubIssue
   comments: GitHubIssueComment[]
+  linkedPulls: GitHubPullRequest[]
 }
 
 export type GitHubAssignableUser = {
