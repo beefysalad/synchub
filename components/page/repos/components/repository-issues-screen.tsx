@@ -12,6 +12,7 @@ import {
   GitCommit,
   GitPullRequest,
   MessageSquareMore,
+  PlayCircle,
   Plus,
   Settings,
   Star,
@@ -40,10 +41,12 @@ import {
 } from '@/hooks/use-github-repositories'
 import type { GitHubIssueState } from '@/lib/github/types'
 
+import { RepositoryWorkflowsTab } from './repository-workflows-tab'
+
 const issueStates: GitHubIssueState[] = ['open', 'all', 'closed']
 const issueTypeFilters = ['all', 'bug', 'task', 'feature'] as const
 
-type ActivityTab = 'issues' | 'pulls' | 'commits'
+type ActivityTab = 'issues' | 'pulls' | 'commits' | 'workflows'
 type IssueTypeFilter = (typeof issueTypeFilters)[number]
 type PaginationState = {
   key: string
@@ -88,6 +91,15 @@ const tabMeta: Record<
     emptyMessage: 'No recent commits found on the default branch.',
     accentClassName:
       'border-violet-500/20 bg-violet-500/5 text-violet-600 dark:text-violet-400',
+  },
+  workflows: {
+    label: 'Workflows',
+    icon: PlayCircle,
+    title: 'Automations & CI/CD',
+    description: 'Monitor your configured default workflows and recent runs.',
+    emptyMessage: 'No workflows configured for this repository.',
+    accentClassName:
+      'border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400',
   },
 }
 
@@ -447,6 +459,13 @@ export function RepositoryIssuesPage({
           label="Commits"
           onClick={() => setActiveTab('commits')}
         />
+        <WorkspaceTabButton
+          active={activeTab === 'workflows'}
+          count={-1}
+          icon={PlayCircle}
+          label="Workflows"
+          onClick={() => setActiveTab('workflows')}
+        />
       </div>
 
       <div className="pt-2">
@@ -614,6 +633,10 @@ export function RepositoryIssuesPage({
           ) : (
             <ActivityEmptyState message={tabConfig.emptyMessage} />
           )
+        ) : null}
+
+        {activeTab === 'workflows' ? (
+          <RepositoryWorkflowsTab owner={owner} repo={repo} />
         ) : null}
 
         {activeTab === 'issues' && issues.length ? (

@@ -62,9 +62,50 @@ export type GitHubRepositoryPreferences = {
   selectedRepositories: string[]
 }
 
+export type GitHubWorkflow = {
+  id: number
+  name: string
+  state: string
+  path: string
+  htmlUrl: string
+  createdAt: string
+  updatedAt: string
+  badgeUrl: string | null
+}
+
+export type GitHubWorkflowRun = {
+  id: number
+  workflowId: number
+  workflowName: string
+  status: string
+  conclusion: string | null
+  branch: string | null
+  actor: {
+    login: string
+    avatarUrl: string
+  } | null
+  headSha: string
+  headMessage: string | null
+  event: string
+  runNumber: number
+  runAttempt: number
+  createdAt: string
+  updatedAt: string
+  htmlUrl: string
+}
+
 export type GitHubRepositoriesResponse = {
   repositories: GitHubRepository[]
   preferences: GitHubRepositoryPreferences
+}
+
+export type GitHubWorkflowsResponse = {
+  workflows: GitHubWorkflow[]
+}
+
+export type GitHubWorkflowRunsResponse = {
+  runs: GitHubWorkflowRun[]
+  pagination: GitHubPaginationMeta
 }
 
 export type GitHubIssuesResponse = {
