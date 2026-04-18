@@ -92,9 +92,7 @@ export function PullDetailPage({
   })
   const linkPullIssue = useLinkGithubPullIssue(owner, repo, pullNumber)
   const editPull = useEditGithubPull(owner, repo, pullNumber)
-  const [selectedIssueNumbers, setSelectedIssueNumbers] = useState<number[]>(
-    []
-  )
+  const [selectedIssueNumbers, setSelectedIssueNumbers] = useState<number[]>([])
 
   const pull = data?.pull
   const comments = data?.comments ?? []
@@ -274,7 +272,7 @@ export function PullDetailPage({
             </div>
             <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
               <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
-                Detected references
+                Issues Linked
               </p>
               {detectedIssueReferences.length ? (
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -299,8 +297,8 @@ export function PullDetailPage({
                 Link to issue
               </p>
               <p className="text-muted-foreground mt-2 text-sm">
-                Pick one or more open issues from this repo to add native
-                GitHub closing references to the PR description.
+                Pick one or more open issues from this repo to add native GitHub
+                closing references to the PR description.
               </p>
               <div className="mt-4 space-y-4">
                 {selectedIssues.length ? (

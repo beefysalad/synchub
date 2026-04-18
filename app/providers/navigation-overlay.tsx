@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
 import { Spinner } from '@/components/ui/spinner'
@@ -17,7 +17,6 @@ function isSameRoute(url: URL) {
 
 export function NavigationOverlay() {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const [isVisible, setIsVisible] = useState(false)
   const visibleAtRef = useRef<number | null>(null)
   const showTimeoutRef = useRef<number | null>(null)
@@ -128,7 +127,7 @@ export function NavigationOverlay() {
     }, remaining)
 
     return () => window.clearTimeout(timeout)
-  }, [pathname, searchParams, isVisible])
+  }, [pathname, isVisible])
 
   if (!isVisible) {
     return null
