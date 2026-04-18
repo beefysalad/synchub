@@ -51,9 +51,10 @@ export default async function IntegrationsPage({
   const discordCommands = process.env.DISCORD_BOT_TOKEN
     ? await getDiscordCommands().catch(() => null)
     : null
+  const requiredDiscordCommands = ['link', 'whoami', 'status', 'issues', 'pulls']
   const discordCommandsRegistered =
     Boolean(discordCommands?.length) &&
-    ['link', 'whoami', 'status'].every((commandName) =>
+    requiredDiscordCommands.every((commandName) =>
       discordCommands?.some((command) => command.name === commandName)
     )
   const connectedCount = getConnectedIntegrationCount(accountsByProvider)
@@ -90,7 +91,7 @@ export default async function IntegrationsPage({
       {resolvedSearchParams?.discordCommands === 'registered' ? (
         <div className="border-primary/20 bg-primary/10 text-primary rounded-2xl border px-5 py-4 text-sm transition-all duration-300">
           Discord slash commands registered successfully. Your server should now
-          expose `/link`, `/whoami`, and `/status`.
+          expose `/link`, `/whoami`, `/status`, `/issues`, and `/pulls`.
         </div>
       ) : null}
 

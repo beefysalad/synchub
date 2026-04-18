@@ -30,9 +30,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
-import {
-  useSuggestGithubBranchNames,
-} from '@/hooks/use-github-ai'
+import { useSuggestGithubBranchNames } from '@/hooks/use-github-ai'
 import {
   useDeleteGithubIssue,
   useEditGithubIssue,
@@ -222,7 +220,6 @@ export function IssueDetailPage({
             <Button asChild variant="outline" className="rounded-full">
               <Link href={`/repos/${owner}/${repo}`}>
                 <ArrowLeft className="size-4" />
-                Back
               </Link>
             </Button>
             {issue.state === 'open' ? (
@@ -265,7 +262,7 @@ export function IssueDetailPage({
               ) : (
                 <Trash2 className="size-4" />
               )}
-              Delete via API
+              Delete
             </Button>
             <Button asChild className="rounded-full">
               <Link href={issue.html_url} target="_blank">
@@ -330,7 +327,7 @@ export function IssueDetailPage({
               />
             ))}
 
-            <div className="pt-6 border-t border-border">
+            <div className="border-border border-t pt-6">
               <GitHubCommentForm
                 isPending={createComment.isPending}
                 onSubmit={handleCreateComment}
@@ -342,153 +339,162 @@ export function IssueDetailPage({
         <div className="flex flex-col gap-6 xl:sticky xl:top-6">
           <Card>
             <CardHeader className="pb-4">
-            <CardTitle>Overview</CardTitle>
-            <CardDescription>
-              Quick context and actions without getting in the way of the issue
-              body.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <span className="bg-primary/10 text-primary rounded-full px-3 py-1 text-xs font-semibold capitalize">
-                {issue.state}
-              </span>
-              <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold">
-                {issue.user.login}
-              </span>
-              <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold">
-                {comments.length + 1} entries
-              </span>
-              {linkedPulls.length ? (
-                <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold">
-                  {linkedPulls.length} linked PR{linkedPulls.length === 1 ? '' : 's'}
+              <CardTitle>Overview</CardTitle>
+              <CardDescription>
+                Quick context and actions without getting in the way of the
+                issue body.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-primary/10 text-primary rounded-full px-3 py-1 text-xs font-semibold capitalize">
+                  {issue.state}
                 </span>
-              ) : null}
-            </div>
+                <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold">
+                  {issue.user.login}
+                </span>
+                <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold">
+                  {comments.length + 1} entries
+                </span>
+                {linkedPulls.length ? (
+                  <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold">
+                    {linkedPulls.length} linked PR
+                    {linkedPulls.length === 1 ? '' : 's'}
+                  </span>
+                ) : null}
+              </div>
 
-            <IssueAssigneesManager
-              issue={issue}
-              availableUsers={assignableUsers}
-              isLoadingUsers={isLoadingAssignableUsers}
-              isSaving={editIssue.isPending}
-              onChange={handleAssigneesChange}
-            />
+              <IssueAssigneesManager
+                issue={issue}
+                availableUsers={assignableUsers}
+                isLoadingUsers={isLoadingAssignableUsers}
+                isSaving={editIssue.isPending}
+                onChange={handleAssigneesChange}
+              />
 
-            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-sm font-semibold">Linked pull requests</p>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Jump into the pull requests that already reference this issue.
-              </p>
-              {linkedPulls.length ? (
-                <div className="mt-4 space-y-2">
-                  {linkedPulls.map((pull) => (
-                    <Link
-                      key={pull.id}
-                      href={`/pulls/${owner}/${repo}/${pull.number}`}
-                      className="block"
-                    >
-                      <div className="group flex items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm transition-all duration-300 hover:border-sky-300 hover:bg-sky-100/50 dark:border-sky-500/20 dark:bg-sky-500/10 dark:hover:border-sky-500/40 dark:hover:bg-sky-500/20">
-                        <div className="flex min-w-0 flex-1 items-center gap-2">
-                          <span className="shrink-0 font-semibold text-sky-950 dark:text-sky-100">
-                            PR #{pull.number}
-                          </span>
-                          <span className="truncate text-sky-900/70 dark:text-sky-100/70">
-                            {pull.title}
-                          </span>
+              <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
+                <p className="text-sm font-semibold">Linked pull requests</p>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Jump into the pull requests that already reference this issue.
+                </p>
+                {linkedPulls.length ? (
+                  <div className="mt-4 space-y-2">
+                    {linkedPulls.map((pull) => (
+                      <Link
+                        key={pull.id}
+                        href={`/pulls/${owner}/${repo}/${pull.number}`}
+                        className="block"
+                      >
+                        <div className="group flex items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm transition-all duration-300 hover:border-sky-300 hover:bg-sky-100/50 dark:border-sky-500/20 dark:bg-sky-500/10 dark:hover:border-sky-500/40 dark:hover:bg-sky-500/20">
+                          <div className="flex min-w-0 flex-1 items-center gap-2">
+                            <span className="shrink-0 font-semibold text-sky-950 dark:text-sky-100">
+                              PR #{pull.number}
+                            </span>
+                            <span className="truncate text-sky-900/70 dark:text-sky-100/70">
+                              {pull.title}
+                            </span>
+                          </div>
+                          <GitPullRequest className="size-4 shrink-0 text-sky-700/50 transition-colors group-hover:text-sky-700 dark:text-sky-300/50 dark:group-hover:text-sky-300" />
                         </div>
-                        <GitPullRequest className="size-4 shrink-0 text-sky-700/50 transition-colors group-hover:text-sky-700 dark:text-sky-300/50 dark:group-hover:text-sky-300" />
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground mt-4 text-sm">
+                    No linked pull requests detected yet.
+                  </p>
+                )}
+              </div>
+
+              <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                  <BellRing className="text-primary size-4" /> Reminder
+                </p>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Set a follow-up without leaving the issue flow.
+                </p>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="mt-4 w-full rounded-full"
+                >
+                  <Link
+                    href={`/issues/${owner}/${repo}/${issueNumber}/reminder`}
+                  >
+                    Manage reminder
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-4">
+              <div className="flex flex-col gap-4">
+                <div>
+                  <CardTitle>Branch naming</CardTitle>
+                  <CardDescription className="mt-1">
+                    Generate consistent git branch suggestions for this issue.
+                  </CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full rounded-full"
+                  disabled={suggestBranchNames.isPending}
+                  onClick={handleSuggestBranchNames}
+                >
+                  {suggestBranchNames.isPending ? (
+                    <>
+                      <Spinner className="mr-2 size-4" />
+                      Thinking...
+                    </>
+                  ) : (
+                    <>Suggest branch names</>
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {suggestBranchNames.data?.suggestions.length ? (
+                <div className="space-y-3">
+                  {suggestBranchNames.data.suggestions.map((suggestion) => (
+                    <div
+                      key={suggestion.name}
+                      className="border-border rounded-xl border bg-slate-50/50 px-3 py-3 dark:bg-slate-900/50"
+                    >
+                      <div className="flex flex-col gap-3">
+                        <div className="min-w-0">
+                          <p className="text-foreground font-mono text-xs font-semibold break-all">
+                            {suggestion.name}
+                          </p>
+                          <p className="text-muted-foreground mt-1 text-xs">
+                            {suggestion.reason}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="w-full rounded-full text-xs"
+                          onClick={() => handleCopyBranchName(suggestion.name)}
+                        >
+                          <Copy className="mr-2 size-3" />
+                          Copy branch name
+                        </Button>
                       </div>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground mt-4 text-sm">
-                  No linked pull requests detected yet.
+                <p className="text-muted-foreground text-sm">
+                  Let Gemini propose a few consistent branch names for this
+                  issue so the team follows the same naming pattern.
                 </p>
               )}
-            </div>
-
-            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
-              <p className="text-sm font-semibold flex items-center gap-2"><BellRing className="size-4 text-primary" /> Reminder</p>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Set a follow-up without leaving the issue flow.
-              </p>
-              <Button asChild variant="outline" className="mt-4 w-full rounded-full">
-                <Link href={`/issues/${owner}/${repo}/${issueNumber}/reminder`}>
-                  Manage reminder
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex flex-col gap-4">
-              <div>
-                <CardTitle>Branch naming</CardTitle>
-                <CardDescription className="mt-1">
-                  Generate consistent git branch suggestions for this issue.
-                </CardDescription>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-full w-full"
-                disabled={suggestBranchNames.isPending}
-                onClick={handleSuggestBranchNames}
-              >
-                {suggestBranchNames.isPending ? (
-                  <>
-                    <Spinner className="mr-2 size-4" />
-                    Thinking...
-                  </>
-                ) : (
-                  <>Suggest branch names</>
-                )}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {suggestBranchNames.data?.suggestions.length ? (
-              <div className="space-y-3">
-                {suggestBranchNames.data.suggestions.map((suggestion) => (
-                  <div
-                    key={suggestion.name}
-                    className="rounded-xl border border-border bg-slate-50/50 px-3 py-3 dark:bg-slate-900/50"
-                  >
-                    <div className="flex flex-col gap-3">
-                      <div className="min-w-0">
-                        <p className="text-foreground font-mono text-xs font-semibold break-all">
-                          {suggestion.name}
-                        </p>
-                        <p className="text-muted-foreground mt-1 text-xs">
-                          {suggestion.reason}
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        className="rounded-full w-full text-xs"
-                        onClick={() => handleCopyBranchName(suggestion.name)}
-                      >
-                        <Copy className="mr-2 size-3" />
-                        Copy branch name
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">
-                Let Gemini propose a few consistent branch names for this issue
-                so the team follows the same naming pattern.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

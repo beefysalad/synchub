@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma'
 import { accountLinkService } from '@/lib/services/account-link-service'
+import { chatGithubOverviewService } from '@/lib/services/chat-github-overview-service'
 import { pendingLinkService } from '@/lib/services/pending-link-service'
 
 type DiscordInteraction = {
@@ -154,9 +155,71 @@ export const discordService = {
         )
       }
 
+      case 'issues': {
+        const discordUser = getInteractionUser(interaction)
+
+        if (!discordUser?.id) {
+          return messageResponse('Could not determine the Discord user for this request.')
+        }
+
+        const account = await findDiscordAccount(discordUser.id)
+
+        if (!account) {
+          return messageResponse(
+            'This Discord account is not linked yet. Open SyncHub and click "Connect Discord" first.'
+          )
+        }
+
+        try {
+          const summary = await chatGithubOverviewService.getOpenIssuesSummary({
+            userId: account.userId,
+            repository: getOptionValue(interaction, 'repo'),
+          })
+
+          return messageResponse(summary)
+        } catch (error) {
+          return messageResponse(
+            error instanceof Error
+              ? error.message
+              : 'Unable to load open issues right now.'
+          )
+        }
+      }
+
+      case 'pulls': {
+        const discordUser = getInteractionUser(interaction)
+
+        if (!discordUser?.id) {
+          return messageResponse('Could not determine the Discord user for this request.')
+        }
+
+        const account = await findDiscordAccount(discordUser.id)
+
+        if (!account) {
+          return messageResponse(
+            'This Discord account is not linked yet. Open SyncHub and click "Connect Discord" first.'
+          )
+        }
+
+        try {
+          const summary = await chatGithubOverviewService.getOpenPullsSummary({
+            userId: account.userId,
+            repository: getOptionValue(interaction, 'repo'),
+          })
+
+          return messageResponse(summary)
+        } catch (error) {
+          return messageResponse(
+            error instanceof Error
+              ? error.message
+              : 'Unable to load open pull requests right now.'
+          )
+        }
+      }
+
       default:
         return messageResponse(
-          'SyncHub received the interaction, but only `/link`, `/whoami`, and `/status` are wired in this MVP route.'
+          'SyncHub received the interaction, but only `/link`, `/whoami`, `/status`, `/issues`, and `/pulls` are wired in this MVP route.'
         )
     }
   },
