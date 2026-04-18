@@ -50,10 +50,7 @@ export function createExternalApi(config?: {
   })
 }
 
-export function getAxiosErrorMessage(
-  error: unknown,
-  fallbackMessage: string
-) {
+export function getAxiosErrorMessage(error: unknown, fallbackMessage: string) {
   if (axios.isAxiosError(error)) {
     const responseData = error.response?.data
 
@@ -68,6 +65,30 @@ export function getAxiosErrorMessage(
       typeof responseData.error === 'string'
     ) {
       return responseData.error
+    }
+
+    if (
+      responseData &&
+      typeof responseData === 'object' &&
+      'message' in responseData &&
+      typeof responseData.message === 'string'
+    ) {
+      const details =
+        'errors' in responseData && Array.isArray(responseData.errors)
+          ? responseData.errors
+              //eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .map((item: any) =>
+                item && typeof item === 'object' && 'message' in item
+                  ? String(item.message)
+                  : JSON.stringify(item)
+              )
+              .filter(Boolean)
+              .join(', ')
+          : ''
+
+      return details
+        ? `${responseData.message}: ${details}`
+        : responseData.message
     }
 
     return `${fallbackMessage}: ${error.message}`

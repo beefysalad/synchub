@@ -9,6 +9,7 @@ import {
   CircleDot,
   ExternalLink,
   FolderGit2,
+  GitBranch,
   GitCommit,
   GitPullRequest,
   MessageSquareMore,
@@ -25,6 +26,7 @@ import { SectionHeader } from '@/components/shared/section-header'
 import { StatusCard } from '@/components/shared/status-card'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { useGithubBranches } from '@/hooks/use-github-branches'
 import { useGithubCommits } from '@/hooks/use-github-commits'
 import { useGithubIssues } from '@/hooks/use-github-issues'
 import { useGithubPulls } from '@/hooks/use-github-pulls'
@@ -36,10 +38,11 @@ import {
 import type { GitHubIssueState } from '@/lib/github/types'
 
 import { RepositoryWorkflowsTab } from './repository-workflows-tab'
+import { RepositoryBranchesTab } from './repository-branches-tab'
 
 const issueTypeFilters = ['all', 'bug', 'task', 'feature'] as const
 
-type ActivityTab = 'issues' | 'pulls' | 'commits' | 'workflows'
+type ActivityTab = 'issues' | 'pulls' | 'commits' | 'workflows' | 'branches'
 type IssueTypeFilter = (typeof issueTypeFilters)[number]
 type PaginationState = {
   key: string
@@ -93,6 +96,15 @@ const tabMeta: Record<
     emptyMessage: 'No workflows configured for this repository.',
     accentClassName:
       'border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400',
+  },
+  branches: {
+    label: 'Branches',
+    icon: GitBranch,
+    title: 'Branch activity',
+    description: 'Browse repository branches and open pull requests directly from SyncHub.',
+    emptyMessage: 'No branches found for this repository.',
+    accentClassName:
+      'border-amber-500/20 bg-amber-500/5 text-amber-600 dark:text-amber-400',
   },
 }
 
@@ -290,6 +302,10 @@ export function RepositoryIssuesPage({
     owner,
     repo,
   })
+  const { data: branchesData } = useGithubBranches({
+    owner,
+    repo,
+  })
 
   const repository =
     repositoryData?.repositories.find(
@@ -304,6 +320,7 @@ export function RepositoryIssuesPage({
   const pulls = pullsData?.pulls ?? []
   const commits = commitsData?.commits ?? []
   const workflows = workflowsData?.workflows ?? []
+  const branches = branchesData?.branches ?? []
   const issuesPagination = issuesData?.pagination ?? {
     page: issuePage,
     perPage: 12,
@@ -463,6 +480,13 @@ export function RepositoryIssuesPage({
           icon={PlayCircle}
           label="Workflows"
           onClick={() => setActiveTab('workflows')}
+        />
+        <WorkspaceTabButton
+          active={activeTab === 'branches'}
+          count={branches.length}
+          icon={GitBranch}
+          label="Branches"
+          onClick={() => setActiveTab('branches')}
         />
       </div>
 
@@ -635,6 +659,10 @@ export function RepositoryIssuesPage({
 
         {activeTab === 'workflows' ? (
           <RepositoryWorkflowsTab owner={owner} repo={repo} />
+        ) : null}
+
+        {activeTab === 'branches' ? (
+          <RepositoryBranchesTab owner={owner} repo={repo} />
         ) : null}
 
         {activeTab === 'issues' && issues.length ? (

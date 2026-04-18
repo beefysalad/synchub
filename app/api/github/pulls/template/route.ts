@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-import { githubBranchesService } from '@/lib/github/branches'
+import { githubPullsService } from '@/lib/github/pulls'
 import { githubRepositoryService } from '@/lib/github/repositories'
 import prisma from '@/lib/prisma'
 
@@ -31,16 +31,18 @@ export async function GET(request: NextRequest) {
         repo,
       })
 
-    const branchData = await githubBranchesService.listRepositoryBranches(
+    const template = await githubPullsService.getPullRequestTemplate(
       user.id,
       validatedRepository.owner,
       validatedRepository.repo
     )
 
-    return NextResponse.json(branchData)
+    return NextResponse.json(template)
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : 'Unable to list GitHub branches'
+      error instanceof Error
+        ? error.message
+        : 'Unable to fetch pull request template'
 
     return NextResponse.json({ error: message }, { status: 400 })
   }

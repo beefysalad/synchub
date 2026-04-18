@@ -215,3 +215,46 @@ export async function POST(
     return NextResponse.json({ error: message }, { status: 400 })
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ owner: string; repo: string; pullNumber: string }> }
+) {
+  const { userId: clerkUserId } = await auth()
+
+  if (!clerkUserId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { clerkUserId },
+  })
+
+  if (!user) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  }
+
+  const { owner, repo, pullNumber } = await params
+
+  try {
+    const validatedRepository =
+      await githubRepositoryService.resolveRepositoryContext(user.id, {
+        owner,
+        repo,
+      })
+
+    const pull = await githubPullsService.closePullRequest(
+      user.id,
+      validatedRepository.owner,
+      validatedRepository.repo,
+      parseInt(pullNumber, 10)
+    )
+
+    return NextResponse.json({ pull })
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Unable to close GitHub pull request'
+
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+}

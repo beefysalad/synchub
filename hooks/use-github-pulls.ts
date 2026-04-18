@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import api from '@/lib/axios'
 import type {
+  CreateGitHubPullPayload,
+  CreateGitHubPullResponse,
+  GitHubPullTemplateResponse,
   GitHubIssueReference,
   GitHubPullDetailResponse,
   GitHubPullRequestsResponse,
@@ -36,6 +39,27 @@ export function useGithubPulls({
       }
     },
     enabled: Boolean(owner && repo),
+  })
+}
+
+export function useGithubPullTemplate(owner: string, repo: string) {
+  return useQuery({
+    queryKey: ['github', 'pull-template', owner, repo],
+    queryFn: async () => {
+      try {
+        const response = await api.get<GitHubPullTemplateResponse>(
+          '/github/pulls/template',
+          {
+            params: { owner, repo },
+          }
+        )
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    enabled: Boolean(owner && repo),
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -164,6 +188,64 @@ export function useCreateGithubPullComment(
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['github', 'pulls', owner, repo, pullNumber],
+      })
+    },
+  })
+}
+
+export function useCreateGithubPull() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payload: CreateGitHubPullPayload) => {
+      try {
+        const response = await api.post<CreateGitHubPullResponse>(
+          '/github/pulls',
+          payload
+        )
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'pulls', variables.owner, variables.repo],
+      })
+      queryClient.setQueryData(
+        ['github', 'pulls', variables.owner, variables.repo, data.pull.number],
+        {
+          pull: data.pull,
+        }
+      )
+    },
+  })
+}
+
+export function useCloseGithubPull(
+  owner: string,
+  repo: string,
+  pullNumber: number
+) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async () => {
+      try {
+        const response = await api.delete(
+          `/github/pulls/${owner}/${repo}/${pullNumber}`
+        )
+        return response.data
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'pulls', owner, repo, pullNumber],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['github', 'pulls', owner, repo],
       })
     },
   })

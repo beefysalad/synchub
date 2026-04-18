@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { githubRepositoryService } from '@/lib/github/repositories'
 import prisma from '@/lib/prisma'
+import { githubPullIssueLinkService } from '@/lib/github/pull-issue-links'
 import { githubPullsService } from '@/lib/github/pulls'
+import { createGithubPullSchema } from '@/lib/validators/github-pull'
 
 function getValidatedState(state?: string | null): 'open' | 'closed' | 'all' {
   if (state === 'closed' || state === 'all') {
@@ -77,6 +79,69 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Unable to list GitHub pulls'
+
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const { userId: clerkUserId } = await auth()
+
+  if (!clerkUserId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { clerkUserId },
+  })
+
+  if (!user) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  }
+
+  try {
+    const body = createGithubPullSchema.parse(await request.json())
+
+    const validatedRepository =
+      await githubRepositoryService.resolveRepositoryContext(user.id, {
+        owner: body.owner,
+        repo: body.repo,
+      })
+
+    const pull = await githubPullsService.createPullRequest({
+      userId: user.id,
+      owner: validatedRepository.owner,
+      repo: validatedRepository.repo,
+      title: body.title,
+      body: body.body || undefined,
+      head: body.head,
+      base: body.base,
+      draft: body.draft,
+    })
+
+    const detectedIssueReferences =
+      githubPullIssueLinkService.extractIssueReferencesFromPullRequest({
+        owner: validatedRepository.owner,
+        repo: validatedRepository.repo,
+        title: pull.title,
+        body: pull.body,
+        pullNumber: pull.number,
+      })
+
+    if (detectedIssueReferences.length) {
+      await githubPullIssueLinkService.linkPullRequestToIssues({
+        userId: user.id,
+        pullOwner: validatedRepository.owner,
+        pullRepo: validatedRepository.repo,
+        pull,
+        issues: detectedIssueReferences,
+      })
+    }
+
+    return NextResponse.json({ pull }, { status: 201 })
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Unable to create GitHub pull request'
 
     return NextResponse.json({ error: message }, { status: 400 })
   }

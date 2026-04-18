@@ -1,6 +1,7 @@
 import { getGitHubAccessTokenForUser, githubRequest } from '@/lib/github/client'
 
 export const SUPPORTED_GITHUB_WEBHOOK_EVENTS = [
+  'create',
   'push',
   'pull_request',
   'issues',

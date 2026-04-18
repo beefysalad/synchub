@@ -11,6 +11,7 @@ import {
   GitPullRequest,
   Link2,
   Search,
+  Trash2,
   X,
 } from 'lucide-react'
 import Image from 'next/image'
@@ -40,6 +41,7 @@ import {
   useGithubPullDetail,
   useLinkGithubPullIssue,
   useUnlinkGithubPullIssue,
+  useCloseGithubPull,
 } from '@/hooks/use-github-pulls'
 
 interface DiffRow {
@@ -254,6 +256,7 @@ export function PullDetailPage({
   const unlinkPullIssue = useUnlinkGithubPullIssue(owner, repo, pullNumber)
   const createComment = useCreateGithubPullComment(owner, repo, pullNumber)
   const editPull = useEditGithubPull(owner, repo, pullNumber)
+  const closePull = useCloseGithubPull(owner, repo, pullNumber)
   const [selectedIssueNumbers, setSelectedIssueNumbers] = useState<number[]>([])
   const [issueSearch, setIssueSearch] = useState('')
 
@@ -360,6 +363,23 @@ export function PullDetailPage({
     }
   }
 
+  async function handleClosePull() {
+    const confirmed = window.confirm(
+      'Are you sure you want to close this pull request? This will "delete" it from the active SyncHub view and mark it as closed on GitHub.'
+    )
+
+    if (!confirmed) return
+
+    try {
+      await closePull.mutateAsync()
+      toast.success(`Pull request #${pullNumber} closed.`)
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to close pull request'
+      )
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="text-muted-foreground flex min-h-[40vh] flex-col items-center justify-center gap-4 text-sm">
@@ -412,6 +432,19 @@ export function PullDetailPage({
                 <FilePenLine className="size-4" />
               )}
               {isEditing ? 'Stop editing' : 'Edit details'}
+            </Button>
+            <Button
+              variant="outline"
+              className="rounded-full text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              onClick={handleClosePull}
+              disabled={closePull.isPending || pull.state === 'closed'}
+            >
+              {closePull.isPending ? (
+                <Spinner />
+              ) : (
+                <Trash2 className="size-4" />
+              )}
+              {pull.state === 'closed' ? 'Closed' : 'Delete from SyncHub'}
             </Button>
           </>
         }

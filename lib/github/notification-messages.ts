@@ -18,6 +18,7 @@ function summarizeCommitMessage(message: string) {
 }
 
 function createDiscordColor(eventName: string) {
+  if (eventName === 'create') return 0xea580c
   if (eventName === 'issues') return 0x2563eb
   if (eventName === 'pull_request') return 0x7c3aed
   if (eventName === 'push') return 0x059669
@@ -68,6 +69,7 @@ export function buildGithubNotificationMessage({
   const compareUrl =
     typeof payload.compare === 'string' ? payload.compare : undefined
   const ref = typeof payload.ref === 'string' ? payload.ref : undefined
+  const refType = typeof payload.ref_type === 'string' ? payload.ref_type : undefined
   const branchName = ref?.split('/').pop()
   const action =
     typeof payload.action === 'string' ? payload.action : undefined
@@ -268,6 +270,45 @@ export function buildGithubNotificationMessage({
           description: topCommit?.message
             ? `Latest commit: ${summarizeCommitMessage(topCommit.message)}`
             : undefined,
+        },
+      ],
+    }
+  }
+
+  if (eventName === 'create' && refType === 'branch') {
+    const sender = payload.sender as
+      | { login?: string; avatar_url?: string }
+      | undefined
+    const createdBranchName =
+      typeof payload.ref === 'string' ? payload.ref : branchName ?? 'unknown'
+    const compareBranchUrl = `https://github.com/${repositoryFullName}/tree/${createdBranchName}`
+    const actor = sender?.login ?? 'Someone'
+
+    return {
+      telegramText: [
+        `<b>New branch created</b>`,
+        `<b>Repository:</b> ${escapeTelegramHtml(repositoryFullName)}`,
+        `<b>Branch:</b> ${escapeTelegramHtml(createdBranchName)}`,
+        `<b>Author:</b> ${escapeTelegramHtml(actor)}`,
+        `<a href="${compareBranchUrl}">Open branch on GitHub</a>`,
+      ].join('\n'),
+      discordContent: [
+        `**New branch created** in \`${repositoryFullName}\``,
+        `**${actor}** created \`${createdBranchName}\``,
+      ].join('\n'),
+      discordEmbeds: [
+        {
+          title: createdBranchName,
+          url: compareBranchUrl,
+          color: createDiscordColor(eventName),
+          author: {
+            name: actor,
+            ...(sender?.avatar_url ? { icon_url: sender.avatar_url } : {}),
+          },
+          fields: [
+            { name: 'Repository', value: repositoryFullName, inline: true },
+            { name: 'Type', value: 'Branch', inline: true },
+          ],
         },
       ],
     }
