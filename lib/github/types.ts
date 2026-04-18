@@ -62,6 +62,13 @@ export type GitHubRepositoryPreferences = {
   selectedRepositories: string[]
 }
 
+export type GitHubBranch = {
+  name: string
+  protected: boolean
+  sha: string
+  htmlUrl: string
+}
+
 export type GitHubWorkflow = {
   id: number
   name: string
@@ -99,6 +106,11 @@ export type GitHubRepositoriesResponse = {
   preferences: GitHubRepositoryPreferences
 }
 
+export type GitHubBranchesResponse = {
+  branches: GitHubBranch[]
+  defaultBranch: string | null
+}
+
 export type GitHubWorkflowsResponse = {
   workflows: GitHubWorkflow[]
 }
@@ -120,6 +132,16 @@ export type UpdateGitHubPreferencesPayload = {
   selectedRepositories?: string[]
 }
 
+export type CreateGitHubPullPayload = {
+  owner: string
+  repo: string
+  title: string
+  body?: string
+  head: string
+  base: string
+  draft?: boolean
+}
+
 export type CreateGitHubIssuePayload = {
   owner: string
   repo: string
@@ -138,6 +160,15 @@ export type UpdateGitHubIssuePayload = {
 
 export type CreateGitHubIssueResponse = {
   issue: GitHubIssue
+}
+
+export type CreateGitHubPullResponse = {
+  pull: GitHubPullRequest
+}
+
+export type GitHubPullTemplateResponse = {
+  template: string | null
+  path: string | null
 }
 
 export type GitHubIssueDetailResponse = {
