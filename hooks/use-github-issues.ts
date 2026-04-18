@@ -184,16 +184,46 @@ export function useCreateGithubIssue() {
       // Because GitHub's search API takes a moment to index new issues, 
       // invalidating immediately often returns the old list. 
       // Instead, we manually inject the returned issue directly into the cache!
+      const createdIssueLabelNames = data.issue.labels.map((label) => label.name)
+
       const updateData = (oldData: GitHubIssuesResponse | undefined) => {
         if (!oldData) return oldData
+
+        const nextIssues = [
+          data.issue,
+          ...oldData.issues.filter((issue) => issue.id !== data.issue.id),
+        ].slice(0, oldData.pagination.perPage)
+
         return {
           ...oldData,
-          issues: [data.issue, ...oldData.issues],
+          issues: nextIssues,
         }
       }
 
-      queryClient.setQueryData(['github', 'issues', variables.owner, variables.repo, 'open'], updateData)
-      queryClient.setQueryData(['github', 'issues', variables.owner, variables.repo, 'all'], updateData)
+      for (const [queryKey, cachedData] of queryClient.getQueriesData<GitHubIssuesResponse>({
+        queryKey: ['github', 'issues', variables.owner, variables.repo],
+      })) {
+        if (!cachedData || !Array.isArray(queryKey)) {
+          continue
+        }
+
+        const state = queryKey[4]
+        const page = queryKey[5]
+        const label = queryKey[7]
+
+        if ((state !== 'open' && state !== 'all') || page !== 1) {
+          continue
+        }
+
+        if (
+          typeof label === 'string' &&
+          !createdIssueLabelNames.includes(label)
+        ) {
+          continue
+        }
+
+        queryClient.setQueryData(queryKey, updateData)
+      }
     },
   })
 }

@@ -7,6 +7,7 @@ import {
   Copy,
   ExternalLink,
   FilePenLine,
+  GitPullRequest,
   Lock,
   MessageSquareMore,
   Trash2,
@@ -30,7 +31,6 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import {
   useSuggestGithubBranchNames,
-  useSummarizeGithubIssue,
 } from '@/hooks/use-github-ai'
 import {
   useDeleteGithubIssue,
@@ -62,11 +62,11 @@ export function IssueDetailPage({
   const updateState = useUpdateGithubIssueState(owner, repo, issueNumber)
   const editIssue = useEditGithubIssue(owner, repo, issueNumber)
   const deleteIssue = useDeleteGithubIssue(owner, repo, issueNumber)
-  const summarizeIssue = useSummarizeGithubIssue()
   const suggestBranchNames = useSuggestGithubBranchNames()
 
   const issue = data?.issue
   const comments = data?.comments ?? []
+  const linkedPulls = data?.linkedPulls ?? []
   const assignableUsers = assignableUsersData?.users ?? []
 
   function handleClose() {
@@ -110,30 +110,6 @@ export function IssueDetailPage({
         toast.error(err.message)
       },
     })
-  }
-
-  async function handleGenerateSummary() {
-    if (!issue) {
-      return
-    }
-
-    try {
-      await summarizeIssue.mutateAsync({
-        repository: `${owner}/${repo}`,
-        issueNumber,
-        title: issue.title,
-        body: issue.body ?? '',
-        comments: comments.map((comment) => ({
-          author: comment.user.login,
-          body: comment.body,
-          createdAt: comment.created_at,
-        })),
-      })
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : 'Unable to summarize issue'
-      )
-    }
   }
 
   async function handleSuggestBranchNames() {
@@ -360,6 +336,11 @@ export function IssueDetailPage({
               <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold">
                 {comments.length + 1} entries
               </span>
+              {linkedPulls.length ? (
+                <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold">
+                  {linkedPulls.length} linked PR{linkedPulls.length === 1 ? '' : 's'}
+                </span>
+              ) : null}
             </div>
 
             <IssueAssigneesManager
@@ -369,6 +350,40 @@ export function IssueDetailPage({
               isSaving={editIssue.isPending}
               onChange={handleAssigneesChange}
             />
+
+            <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
+              <p className="text-sm font-semibold">Linked pull requests</p>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Jump into the pull requests that already reference this issue.
+              </p>
+              {linkedPulls.length ? (
+                <div className="mt-4 space-y-2">
+                  {linkedPulls.map((pull) => (
+                    <Link
+                      key={pull.id}
+                      href={`/pulls/${owner}/${repo}/${pull.number}`}
+                      className="block"
+                    >
+                      <div className="group flex items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm transition-all duration-300 hover:border-sky-300 hover:bg-sky-100/50 dark:border-sky-500/20 dark:bg-sky-500/10 dark:hover:border-sky-500/40 dark:hover:bg-sky-500/20">
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                          <span className="shrink-0 font-semibold text-sky-950 dark:text-sky-100">
+                            PR #{pull.number}
+                          </span>
+                          <span className="truncate text-sky-900/70 dark:text-sky-100/70">
+                            {pull.title}
+                          </span>
+                        </div>
+                        <GitPullRequest className="size-4 shrink-0 text-sky-700/50 transition-colors group-hover:text-sky-700 dark:text-sky-300/50 dark:group-hover:text-sky-300" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground mt-4 text-sm">
+                  No linked pull requests detected yet.
+                </p>
+              )}
+            </div>
 
             <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
               <p className="text-sm font-semibold">Reminder</p>

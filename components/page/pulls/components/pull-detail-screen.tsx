@@ -333,13 +333,15 @@ export function PullDetailPage({
                 <div className="mt-3 space-y-2">
                   {linkedIssues.map((reference) => {
                     const content = (
-                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm transition-all duration-300 dark:border-emerald-500/20 dark:bg-emerald-500/10">
-                        <p className="font-semibold text-emerald-950 dark:text-emerald-100">
-                          {reference.fullName} #{reference.number}
-                        </p>
-                        <p className="mt-1 text-emerald-900/80 dark:text-emerald-100/80">
-                          {reference.title ?? 'Linked from the PR title or description.'}
-                        </p>
+                      <div className="group flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm transition-all duration-300 hover:border-emerald-300 hover:bg-emerald-100/50 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:hover:border-emerald-500/40 dark:hover:bg-emerald-500/20">
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                          <span className="shrink-0 font-semibold text-emerald-950 dark:text-emerald-100">
+                            {reference.fullName} #{reference.number}
+                          </span>
+                          <span className="truncate text-emerald-900/70 dark:text-emerald-100/70">
+                            {reference.title ?? 'Linked from PR'}
+                          </span>
+                        </div>
                       </div>
                     )
 
