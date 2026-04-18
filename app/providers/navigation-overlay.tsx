@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@/components/ui/spinner'
 
 const OVERLAY_MIN_DURATION_MS = 220
+const OVERLAY_MAX_DURATION_MS = 10000
 
 function isSameRoute(url: URL) {
   return (
@@ -20,18 +21,37 @@ export function NavigationOverlay() {
   const [isVisible, setIsVisible] = useState(false)
   const visibleAtRef = useRef<number | null>(null)
   const showTimeoutRef = useRef<number | null>(null)
+  const hideTimeoutRef = useRef<number | null>(null)
+  const sourcePathnameRef = useRef(pathname)
+  const isVisibleRef = useRef(false)
+
+  useEffect(() => {
+    isVisibleRef.current = isVisible
+  }, [isVisible])
 
   useEffect(() => {
     function showOverlay() {
-      visibleAtRef.current = Date.now()
-      if (showTimeoutRef.current !== null) {
-        window.clearTimeout(showTimeoutRef.current)
+      if (isVisibleRef.current || showTimeoutRef.current !== null) {
+        return
       }
+
+      sourcePathnameRef.current = pathname
+      visibleAtRef.current = Date.now()
 
       showTimeoutRef.current = window.setTimeout(() => {
         setIsVisible(true)
         showTimeoutRef.current = null
       }, 0)
+
+      if (hideTimeoutRef.current !== null) {
+        window.clearTimeout(hideTimeoutRef.current)
+      }
+
+      hideTimeoutRef.current = window.setTimeout(() => {
+        setIsVisible(false)
+        visibleAtRef.current = null
+        hideTimeoutRef.current = null
+      }, OVERLAY_MAX_DURATION_MS)
     }
 
     function handleDocumentClick(event: MouseEvent) {
@@ -110,20 +130,30 @@ export function NavigationOverlay() {
       if (showTimeoutRef.current !== null) {
         window.clearTimeout(showTimeoutRef.current)
       }
+      if (hideTimeoutRef.current !== null) {
+        window.clearTimeout(hideTimeoutRef.current)
+      }
     }
-  }, [])
+  }, [pathname])
 
   useEffect(() => {
-    if (!isVisible) {
+    if (!isVisible || pathname === sourcePathnameRef.current) {
       return
     }
 
     const elapsed =
-      visibleAtRef.current === null ? OVERLAY_MIN_DURATION_MS : Date.now() - visibleAtRef.current
+      visibleAtRef.current === null
+        ? OVERLAY_MIN_DURATION_MS
+        : Date.now() - visibleAtRef.current
     const remaining = Math.max(0, OVERLAY_MIN_DURATION_MS - elapsed)
     const timeout = window.setTimeout(() => {
       setIsVisible(false)
       visibleAtRef.current = null
+      sourcePathnameRef.current = pathname
+      if (hideTimeoutRef.current !== null) {
+        window.clearTimeout(hideTimeoutRef.current)
+        hideTimeoutRef.current = null
+      }
     }, remaining)
 
     return () => window.clearTimeout(timeout)
