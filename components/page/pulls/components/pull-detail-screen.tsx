@@ -340,8 +340,9 @@ export function PullDetailPage({
   function handleUnlink(issueNumber: number) {
     if (unlinkPullIssue.isPending) return
     unlinkPullIssue.mutate([issueNumber], {
-      onSuccess: () => toast.success(`Issue #${issueNumber} unlinked from pull request.`),
-      onError: (err) => toast.error(err.message)
+      onSuccess: () =>
+        toast.success(`Issue #${issueNumber} unlinked from pull request.`),
+      onError: (err) => toast.error(err.message),
     })
   }
 
@@ -417,7 +418,6 @@ export function PullDetailPage({
             <Button asChild variant="outline" className="rounded-full">
               <Link href={`/repos/${owner}/${repo}`}>
                 <ArrowLeft className="size-4" />
-                Back
               </Link>
             </Button>
             <Button asChild className="rounded-full">
@@ -441,7 +441,7 @@ export function PullDetailPage({
             </Button>
             <Button
               variant="outline"
-              className="rounded-full text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              className="text-destructive hover:bg-destructive hover:text-destructive-foreground rounded-full"
               onClick={handleClosePull}
               disabled={closePull.isPending || pull.state === 'closed'}
             >
@@ -450,7 +450,7 @@ export function PullDetailPage({
               ) : (
                 <Trash2 className="size-4" />
               )}
-              {pull.state === 'closed' ? 'Closed' : 'Delete from SyncHub'}
+              {pull.state === 'closed' ? 'Closed' : 'Delete'}
             </Button>
             <Button
               variant="outline"
@@ -477,11 +477,11 @@ export function PullDetailPage({
         }`}
       >
         <div className="min-w-0">
-          <div className="border-border mb-6 flex gap-6 border-b overflow-x-auto scrollbar-hide">
+          <div className="border-border scrollbar-hide mb-6 flex gap-6 overflow-x-auto border-b">
             <button
               type="button"
               onClick={() => setActiveTab('conversation')}
-              className={`relative shrink-0 whitespace-nowrap pb-3 text-sm font-semibold transition-colors ${
+              className={`relative shrink-0 pb-3 text-sm font-semibold whitespace-nowrap transition-colors ${
                 activeTab === 'conversation'
                   ? 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
@@ -495,7 +495,7 @@ export function PullDetailPage({
             <button
               type="button"
               onClick={() => setActiveTab('commits')}
-              className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap pb-3 text-sm font-semibold transition-colors ${
+              className={`relative flex shrink-0 items-center gap-2 pb-3 text-sm font-semibold whitespace-nowrap transition-colors ${
                 activeTab === 'commits'
                   ? 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
@@ -512,7 +512,7 @@ export function PullDetailPage({
             <button
               type="button"
               onClick={() => setActiveTab('changes')}
-              className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap pb-3 text-sm font-semibold transition-colors ${
+              className={`relative flex shrink-0 items-center gap-2 pb-3 text-sm font-semibold whitespace-nowrap transition-colors ${
                 activeTab === 'changes'
                   ? 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
@@ -612,7 +612,7 @@ export function PullDetailPage({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-6 text-muted-foreground hover:text-foreground"
+                            className="text-muted-foreground hover:text-foreground size-6"
                             onClick={() => setShowFileList(false)}
                             title="Hide file list"
                           >
@@ -667,7 +667,7 @@ export function PullDetailPage({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="mr-1 size-7 text-muted-foreground hover:text-foreground"
+                                    className="text-muted-foreground hover:text-foreground mr-1 size-7"
                                     onClick={() => setShowFileList(true)}
                                     title="Show file list"
                                   >
@@ -777,199 +777,200 @@ export function PullDetailPage({
               <CardTitle>Overview</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-            <div className="border-border flex flex-wrap gap-2 border-b pb-6">
-              <span className="rounded bg-sky-500/10 px-2 py-0.5 text-xs font-semibold text-sky-700 capitalize dark:text-sky-300">
-                {pull.state}
-              </span>
-              <span className="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-semibold">
-                {pull.user.login}
-              </span>
-              <span className="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-semibold">
-                {comments.length + 1} entries
-              </span>
-            </div>
-
-            <div className="border-border border-b pb-6">
-              <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wider uppercase">
-                Branch
-              </p>
-              <div className="flex items-center gap-2">
-                <GitPullRequest className="text-muted-foreground size-4" />
-                <span className="bg-primary/10 text-primary rounded-md px-2 py-1 font-mono text-xs font-semibold">
-                  {pull.head.ref}
+              <div className="border-border flex flex-wrap gap-2 border-b pb-6">
+                <span className="rounded bg-sky-500/10 px-2 py-0.5 text-xs font-semibold text-sky-700 capitalize dark:text-sky-300">
+                  {pull.state}
+                </span>
+                <span className="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-semibold">
+                  {pull.user.login}
+                </span>
+                <span className="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-semibold">
+                  {comments.length + 1} entries
                 </span>
               </div>
-            </div>
 
-            {likelyLinkedIssue &&
-              !linkedIssues.some(
-                (li) => li.number === likelyLinkedIssue.number
-              ) && (
-                <div className="border-border border-b pb-6">
-                  <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider text-sky-600 uppercase dark:text-sky-400">
-                    Likely linked issue
-                  </p>
-                  <div className="mb-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm dark:border-sky-500/20 dark:bg-sky-500/10">
-                    <p className="font-semibold text-sky-950 dark:text-sky-100">
-                      {likelyLinkedIssue.fullName} #{likelyLinkedIssue.number}
+              <div className="border-border border-b pb-6">
+                <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wider uppercase">
+                  Branch
+                </p>
+                <div className="flex items-center gap-2">
+                  <GitPullRequest className="text-muted-foreground size-4" />
+                  <span className="bg-primary/10 text-primary rounded-md px-2 py-1 font-mono text-xs font-semibold">
+                    {pull.head.ref}
+                  </span>
+                </div>
+              </div>
+
+              {likelyLinkedIssue &&
+                !linkedIssues.some(
+                  (li) => li.number === likelyLinkedIssue.number
+                ) && (
+                  <div className="border-border border-b pb-6">
+                    <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider text-sky-600 uppercase dark:text-sky-400">
+                      Likely linked issue
                     </p>
-                    <p className="mt-1 text-xs text-sky-900/80 dark:text-sky-100/80">
-                      {likelyLinkedIssueDetails?.title ??
-                        `Detected from branch name \`${pull.head.ref}\`.`}
-                    </p>
+                    <div className="mb-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm dark:border-sky-500/20 dark:bg-sky-500/10">
+                      <p className="font-semibold text-sky-950 dark:text-sky-100">
+                        {likelyLinkedIssue.fullName} #{likelyLinkedIssue.number}
+                      </p>
+                      <p className="mt-1 text-xs text-sky-900/80 dark:text-sky-100/80">
+                        {likelyLinkedIssueDetails?.title ??
+                          `Detected from branch name \`${pull.head.ref}\`.`}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full rounded-full text-xs"
+                      onClick={() => addSelectedIssue(likelyLinkedIssue.number)}
+                    >
+                      Add issue to linker
+                    </Button>
                   </div>
+                )}
+
+              <div className="border-border border-b pb-6">
+                <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider uppercase">
+                  Linked issues
+                </p>
+                {linkedIssues.length ? (
+                  <div className="space-y-2">
+                    {linkedIssues.map((reference) => {
+                      const isInternal = Boolean(reference.internalHref)
+                      const href =
+                        reference.internalHref ?? reference.externalHref
+
+                      return (
+                        <div
+                          key={`${reference.fullName}#${reference.number}`}
+                          className="group flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 transition-all duration-300 hover:border-emerald-300 hover:bg-emerald-100/50 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:hover:border-emerald-500/40 dark:hover:bg-emerald-500/20"
+                        >
+                          <Link
+                            href={href}
+                            target={isInternal ? undefined : '_blank'}
+                            className="flex min-w-0 flex-1 items-center gap-2"
+                          >
+                            <span className="shrink-0 text-xs font-semibold text-emerald-950 dark:text-emerald-100">
+                              #{reference.number}
+                            </span>
+                            <span className="truncate text-xs text-emerald-900/70 dark:text-emerald-100/70">
+                              {reference.title ?? 'Linked from PR'}
+                            </span>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={unlinkPullIssue.isPending}
+                            className="h-6 w-6 shrink-0 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100 hover:bg-emerald-200/50 hover:text-emerald-900 dark:hover:bg-emerald-500/30 dark:hover:text-emerald-100"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              handleUnlink(reference.number)
+                            }}
+                          >
+                            <X className="size-3" />
+                          </Button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">None</p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider uppercase">
+                  Link to issue
+                </p>
+
+                <div className="space-y-4">
+                  {selectedIssues.length ? (
+                    <div className="border-border flex flex-wrap gap-1.5 border-b pb-4">
+                      {selectedIssues.map((issue) => (
+                        <button
+                          key={issue.number}
+                          type="button"
+                          className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-900 transition-all duration-300 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100"
+                          onClick={() => toggleSelectedIssue(issue.number)}
+                        >
+                          <span>#{issue.number}</span>
+                          <X className="size-3" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <div className="relative">
+                    <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+                    <Input
+                      placeholder="Search issues..."
+                      value={issueSearch}
+                      onChange={(e) => setIssueSearch(e.target.value)}
+                      className="h-8 rounded-lg bg-slate-50 pl-8 text-xs dark:bg-slate-900/50"
+                    />
+                  </div>
+
+                  <div className="max-h-60 space-y-1 overflow-y-auto pr-1">
+                    {filteredAvailableIssues.map((issue) => {
+                      const isSelected = selectedIssueNumbers.includes(
+                        issue.number
+                      )
+                      return (
+                        <button
+                          key={issue.number}
+                          type="button"
+                          className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-1.5 text-left transition-all duration-300 ${
+                            isSelected
+                              ? 'bg-primary/10 text-primary'
+                              : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                          onClick={() => toggleSelectedIssue(issue.number)}
+                        >
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="shrink-0 text-xs font-semibold">
+                              #{issue.number}
+                            </span>
+                            <span className="text-muted-foreground truncate text-xs">
+                              {issue.title}
+                            </span>
+                          </div>
+                          {isSelected && <Check className="size-3 shrink-0" />}
+                        </button>
+                      )
+                    })}
+                    {filteredAvailableIssues.length === 0 && (
+                      <p className="text-muted-foreground py-4 text-center text-xs">
+                        No issues match your search.
+                      </p>
+                    )}
+                  </div>
+
                   <Button
                     type="button"
-                    variant="outline"
                     size="sm"
+                    variant="outline"
                     className="w-full rounded-full text-xs"
-                    onClick={() => addSelectedIssue(likelyLinkedIssue.number)}
+                    onClick={handleManualLink}
+                    disabled={
+                      linkPullIssue.isPending ||
+                      !availableIssues.length ||
+                      !selectedIssueNumbers.length
+                    }
                   >
-                    Add issue to linker
+                    {linkPullIssue.isPending ? (
+                      <Spinner className="mr-2" />
+                    ) : (
+                      <Link2 className="mr-2 size-3.5" />
+                    )}
+                    Link selected issues natively
                   </Button>
                 </div>
-              )}
-
-            <div className="border-border border-b pb-6">
-              <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider uppercase">
-                Linked issues
-              </p>
-              {linkedIssues.length ? (
-                <div className="space-y-2">
-                  {linkedIssues.map((reference) => {
-                    const isInternal = Boolean(reference.internalHref)
-                    const href = reference.internalHref ?? reference.externalHref
-
-                    return (
-                      <div
-                        key={`${reference.fullName}#${reference.number}`}
-                        className="group flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 transition-all duration-300 hover:border-emerald-300 hover:bg-emerald-100/50 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:hover:border-emerald-500/40 dark:hover:bg-emerald-500/20"
-                      >
-                        <Link
-                          href={href}
-                          target={isInternal ? undefined : '_blank'}
-                          className="flex min-w-0 flex-1 items-center gap-2"
-                        >
-                          <span className="shrink-0 font-semibold text-xs text-emerald-950 dark:text-emerald-100">
-                            #{reference.number}
-                          </span>
-                          <span className="truncate text-xs text-emerald-900/70 dark:text-emerald-100/70">
-                            {reference.title ?? 'Linked from PR'}
-                          </span>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={unlinkPullIssue.isPending}
-                          className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-emerald-200/50 hover:text-emerald-900 dark:hover:bg-emerald-500/30 dark:hover:text-emerald-100 cursor-pointer"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            handleUnlink(reference.number)
-                          }}
-                        >
-                          <X className="size-3" />
-                        </Button>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-sm">None</p>
-              )}
-            </div>
-
-            <div>
-              <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider uppercase">
-                Link to issue
-              </p>
-
-              <div className="space-y-4">
-                {selectedIssues.length ? (
-                  <div className="border-border flex flex-wrap gap-1.5 border-b pb-4">
-                    {selectedIssues.map((issue) => (
-                      <button
-                        key={issue.number}
-                        type="button"
-                        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-900 transition-all duration-300 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100"
-                        onClick={() => toggleSelectedIssue(issue.number)}
-                      >
-                        <span>#{issue.number}</span>
-                        <X className="size-3" />
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className="relative">
-                  <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
-                  <Input
-                    placeholder="Search issues..."
-                    value={issueSearch}
-                    onChange={(e) => setIssueSearch(e.target.value)}
-                    className="h-8 rounded-lg bg-slate-50 pl-8 text-xs dark:bg-slate-900/50"
-                  />
-                </div>
-
-                <div className="max-h-60 space-y-1 overflow-y-auto pr-1">
-                  {filteredAvailableIssues.map((issue) => {
-                    const isSelected = selectedIssueNumbers.includes(
-                      issue.number
-                    )
-                    return (
-                      <button
-                        key={issue.number}
-                        type="button"
-                        className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-1.5 text-left transition-all duration-300 ${
-                          isSelected
-                            ? 'bg-primary/10 text-primary'
-                            : 'hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`}
-                        onClick={() => toggleSelectedIssue(issue.number)}
-                      >
-                        <div className="flex min-w-0 items-center gap-2">
-                          <span className="shrink-0 text-xs font-semibold">
-                            #{issue.number}
-                          </span>
-                          <span className="text-muted-foreground truncate text-xs">
-                            {issue.title}
-                          </span>
-                        </div>
-                        {isSelected && <Check className="size-3 shrink-0" />}
-                      </button>
-                    )
-                  })}
-                  {filteredAvailableIssues.length === 0 && (
-                    <p className="text-muted-foreground py-4 text-center text-xs">
-                      No issues match your search.
-                    </p>
-                  )}
-                </div>
-
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="w-full rounded-full text-xs"
-                  onClick={handleManualLink}
-                  disabled={
-                    linkPullIssue.isPending ||
-                    !availableIssues.length ||
-                    !selectedIssueNumbers.length
-                  }
-                >
-                  {linkPullIssue.isPending ? (
-                    <Spinner className="mr-2" />
-                  ) : (
-                    <Link2 className="mr-2 size-3.5" />
-                  )}
-                  Link selected issues natively
-                </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )

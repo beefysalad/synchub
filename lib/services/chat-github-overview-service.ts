@@ -29,7 +29,7 @@ export const chatGithubOverviewService = {
     const explicitRepository = parseRepositoryInput(repository)
     const resolved = await githubRepositoryService.resolveRepositoryContext(
       userId,
-      explicitRepository
+      explicitRepository ?? undefined
     )
     const issues = await githubIssueService.listRepositoryIssues({
       userId,
@@ -62,7 +62,7 @@ export const chatGithubOverviewService = {
     const explicitRepository = parseRepositoryInput(repository)
     const resolved = await githubRepositoryService.resolveRepositoryContext(
       userId,
-      explicitRepository
+      explicitRepository ?? undefined
     )
     const pulls = await githubPullsService.listRepositoryPulls({
       userId,
