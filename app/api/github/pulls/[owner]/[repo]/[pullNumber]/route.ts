@@ -50,6 +50,18 @@ export async function GET(
       validatedRepository.repo,
       parseInt(pullNumber, 10)
     )
+    const files = await githubPullsService.listPullRequestFiles(
+      user.id,
+      validatedRepository.owner,
+      validatedRepository.repo,
+      parseInt(pullNumber, 10)
+    )
+    const commits = await githubPullsService.listPullRequestCommits(
+      user.id,
+      validatedRepository.owner,
+      validatedRepository.repo,
+      parseInt(pullNumber, 10)
+    )
 
     const detectedIssueReferences =
       githubPullIssueLinkService.extractIssueReferencesFromPullRequest({
@@ -70,6 +82,8 @@ export async function GET(
     return NextResponse.json({
       pull,
       comments,
+      files,
+      commits,
       detectedIssueReferences,
       likelyLinkedIssue,
     })

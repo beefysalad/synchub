@@ -1,5 +1,5 @@
 import { getGitHubAccessTokenForUser, githubRequest } from '@/lib/github/client'
-import type { GitHubPullRequest } from '@/lib/github/types'
+import type { GitHubCommit, GitHubPullFile, GitHubPullRequest } from '@/lib/github/types'
 
 type PullListParams = {
   userId: string
@@ -56,6 +56,44 @@ export const githubPullsService = {
 
     return githubRequest<GitHubPullRequest>(
       `/repos/${owner}/${repo}/pulls/${pullNumber}`,
+      { method: 'GET' },
+      accessToken
+    )
+  },
+
+  async listPullRequestFiles(
+    userId: string,
+    owner: string,
+    repo: string,
+    pullNumber: number
+  ) {
+    const accessToken = await getGitHubAccessTokenForUser(userId)
+
+    if (!accessToken) {
+      throw new Error('No GitHub access token is linked to this user yet.')
+    }
+
+    return githubRequest<GitHubPullFile[]>(
+      `/repos/${owner}/${repo}/pulls/${pullNumber}/files?per_page=100`,
+      { method: 'GET' },
+      accessToken
+    )
+  },
+
+  async listPullRequestCommits(
+    userId: string,
+    owner: string,
+    repo: string,
+    pullNumber: number
+  ) {
+    const accessToken = await getGitHubAccessTokenForUser(userId)
+
+    if (!accessToken) {
+      throw new Error('No GitHub access token is linked to this user yet.')
+    }
+
+    return githubRequest<GitHubCommit[]>(
+      `/repos/${owner}/${repo}/pulls/${pullNumber}/commits?per_page=100`,
       { method: 'GET' },
       accessToken
     )
