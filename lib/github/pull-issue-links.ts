@@ -212,13 +212,29 @@ export const githubPullIssueLinkService = {
       return []
     }
 
+    const pullBody = pull.body ?? ''
+    let existingManagedIssues: GitHubIssueReference[] = []
+    const blockStartIdx = pullBody.indexOf(MANAGED_LINK_BLOCK_START)
+    const blockEndIdx = pullBody.indexOf(MANAGED_LINK_BLOCK_END)
+    
+    if (blockStartIdx !== -1 && blockEndIdx !== -1 && blockStartIdx < blockEndIdx) {
+      const managedBlockContent = pullBody.slice(blockStartIdx, blockEndIdx)
+      existingManagedIssues = extractIssueReferencesFromPullRequest({
+        owner: pullOwner,
+        repo: pullRepo,
+        body: managedBlockContent,
+        pullNumber: pull.number
+      })
+    }
+
+    const combinedIssues = [...existingManagedIssues, ...issues]
+
     const uniqueIssues = Array.from(
       new Map(
-        issues.map((issue) => [`${issue.fullName}#${issue.number}`, issue])
+        combinedIssues.map((issue) => [`${issue.fullName}#${issue.number}`, issue])
       ).values()
     )
 
-    const pullBody = pull.body ?? ''
     const bodyWithoutManagedLinks = stripManagedLinkBlock(pullBody)
     const managedReferences = uniqueIssues
       .filter(
@@ -246,5 +262,65 @@ export const githubPullIssueLinkService = {
     }
 
     return uniqueIssues
+  },
+
+  async unlinkPullRequestFromIssues({
+    userId,
+    pullOwner,
+    pullRepo,
+    pull,
+    issuesToUnlink,
+  }: LinkPullRequestToIssuesInput & { issuesToUnlink: GitHubIssueReference[] }) {
+    if (!issuesToUnlink.length) {
+      return []
+    }
+
+    const pullBody = pull.body ?? ''
+    const blockStartIdx = pullBody.indexOf(MANAGED_LINK_BLOCK_START)
+    const blockEndIdx = pullBody.indexOf(MANAGED_LINK_BLOCK_END)
+    
+    if (blockStartIdx === -1 || blockEndIdx === -1 || blockStartIdx >= blockEndIdx) {
+      return []
+    }
+
+    const managedBlockContent = pullBody.slice(blockStartIdx, blockEndIdx)
+    const existingManagedIssues = extractIssueReferencesFromPullRequest({
+      owner: pullOwner,
+      repo: pullRepo,
+      body: managedBlockContent,
+      pullNumber: pull.number
+    })
+
+    const remainingIssues = existingManagedIssues.filter(
+      (ref) => !issuesToUnlink.some((u) => u.fullName === ref.fullName && u.number === ref.number)
+    )
+
+    const bodyWithoutManagedLinks = stripManagedLinkBlock(pullBody)
+    const managedReferences = remainingIssues
+      .filter(
+        (issue) =>
+          !hasClosingReference({
+            body: bodyWithoutManagedLinks,
+            pullOwner,
+            pullRepo,
+            issue,
+          })
+      )
+      .map((issue) => buildClosingReference(pullOwner, pullRepo, issue))
+
+    const nextBody = withManagedLinkBlock(pull.body, managedReferences)
+
+    if (nextBody !== pullBody) {
+      await githubPullsService.updatePullRequest({
+        userId,
+        owner: pullOwner,
+        repo: pullRepo,
+        pullNumber: pull.number,
+        title: pull.title,
+        body: nextBody,
+      })
+    }
+
+    return remainingIssues
   },
 }
