@@ -10,6 +10,10 @@ import {
   FilePenLine,
   GitPullRequest,
   Link2,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   Search,
   Trash2,
   X,
@@ -259,6 +263,8 @@ export function PullDetailPage({
   const closePull = useCloseGithubPull(owner, repo, pullNumber)
   const [selectedIssueNumbers, setSelectedIssueNumbers] = useState<number[]>([])
   const [issueSearch, setIssueSearch] = useState('')
+  const [showOverview, setShowOverview] = useState(true)
+  const [showFileList, setShowFileList] = useState(true)
 
   const pull = data?.pull
   const comments = data?.comments ?? []
@@ -446,11 +452,30 @@ export function PullDetailPage({
               )}
               {pull.state === 'closed' ? 'Closed' : 'Delete from SyncHub'}
             </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              onClick={() => setShowOverview((prev) => !prev)}
+              title={showOverview ? 'Hide overview' : 'Show overview'}
+            >
+              {showOverview ? (
+                <PanelRightClose className="size-4" />
+              ) : (
+                <PanelRightOpen className="size-4" />
+              )}
+            </Button>
           </>
         }
       />
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.35fr)_320px]">
+      <div
+        className={`grid items-start gap-6 transition-all duration-300 ${
+          showOverview
+            ? 'xl:grid-cols-[minmax(0,1.35fr)_320px]'
+            : 'xl:grid-cols-1'
+        }`}
+      >
         <div className="min-w-0">
           <div className="border-border mb-6 flex gap-6 border-b">
             <button
@@ -571,39 +596,58 @@ export function PullDetailPage({
             ) : activeTab === 'changes' ? (
               <div className="animate-in fade-in duration-300">
                 {files.length ? (
-                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-                    <div className="border-border flex max-h-[70vh] flex-col gap-1 overflow-y-auto rounded-xl border bg-slate-50/50 p-2 dark:bg-slate-900/20">
-                      <p className="text-muted-foreground px-3 py-2 text-xs font-semibold tracking-wider uppercase">
-                        Files changed
-                      </p>
-                      {files.map((file) => {
-                        const isActive =
-                          (selectedFileSha || files[0]?.sha) === file.sha
-                        return (
-                          <button
-                            key={file.sha}
-                            onClick={() => setSelectedFileSha(file.sha)}
-                            className={`flex flex-col items-start gap-1 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                              isActive
-                                ? 'bg-primary/10 text-primary font-medium'
-                                : 'text-muted-foreground hover:text-foreground hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
-                            }`}
+                  <div
+                    className={`grid grid-cols-1 gap-6 transition-all duration-300 ${
+                      showFileList
+                        ? 'lg:grid-cols-[280px_minmax(0,1fr)]'
+                        : 'lg:grid-cols-1'
+                    }`}
+                  >
+                    {showFileList ? (
+                      <div className="border-border relative flex max-h-[70vh] flex-col gap-1 overflow-y-auto rounded-xl border bg-slate-50/50 p-2 dark:bg-slate-900/20">
+                        <div className="flex items-center justify-between px-3 py-2">
+                          <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                            Files changed
+                          </p>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-6 text-muted-foreground hover:text-foreground"
+                            onClick={() => setShowFileList(false)}
+                            title="Hide file list"
                           >
-                            <span className="w-full truncate font-mono text-xs">
-                              {file.filename}
-                            </span>
-                            <div className="flex items-center gap-2 text-[10px] font-medium">
-                              <span className="text-emerald-600 dark:text-emerald-400">
-                                +{file.additions}
+                            <PanelLeftClose className="size-3.5" />
+                          </Button>
+                        </div>
+                        {files.map((file) => {
+                          const isActive =
+                            (selectedFileSha || files[0]?.sha) === file.sha
+                          return (
+                            <button
+                              key={file.sha}
+                              onClick={() => setSelectedFileSha(file.sha)}
+                              className={`flex flex-col items-start gap-1 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                                isActive
+                                  ? 'bg-primary/10 text-primary font-medium'
+                                  : 'text-muted-foreground hover:text-foreground hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
+                              }`}
+                            >
+                              <span className="w-full truncate font-mono text-xs">
+                                {file.filename}
                               </span>
-                              <span className="text-red-600 dark:text-red-400">
-                                -{file.deletions}
-                              </span>
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
+                              <div className="flex items-center gap-2 text-[10px] font-medium">
+                                <span className="text-emerald-600 dark:text-emerald-400">
+                                  +{file.additions}
+                                </span>
+                                <span className="text-red-600 dark:text-red-400">
+                                  -{file.deletions}
+                                </span>
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    ) : null}
 
                     <div className="min-w-0">
                       {(() => {
@@ -619,6 +663,17 @@ export function PullDetailPage({
                           >
                             <div className="border-border flex flex-wrap items-center justify-between gap-3 border-b bg-slate-50 px-4 py-2.5 dark:bg-slate-900/50">
                               <div className="flex min-w-0 items-center gap-3">
+                                {!showFileList && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="mr-1 size-7 text-muted-foreground hover:text-foreground"
+                                    onClick={() => setShowFileList(true)}
+                                    title="Show file list"
+                                  >
+                                    <PanelLeftOpen className="size-4" />
+                                  </Button>
+                                )}
                                 <span className="text-muted-foreground mt-0.5 font-mono text-xs">
                                   {file.status === 'modified'
                                     ? `${file.changes} changes`
@@ -716,11 +771,12 @@ export function PullDetailPage({
           </div>
         </div>
 
-        <Card className="xl:sticky xl:top-6">
-          <CardHeader className="pb-4">
-            <CardTitle>Overview</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+        {showOverview && (
+          <Card className="xl:sticky xl:top-6">
+            <CardHeader className="pb-4">
+              <CardTitle>Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
             <div className="border-border flex flex-wrap gap-2 border-b pb-6">
               <span className="rounded bg-sky-500/10 px-2 py-0.5 text-xs font-semibold text-sky-700 capitalize dark:text-sky-300">
                 {pull.state}
@@ -913,6 +969,7 @@ export function PullDetailPage({
             </div>
           </CardContent>
         </Card>
+      )}
       </div>
     </div>
   )
