@@ -202,7 +202,7 @@ export function IssuesWorkspace({
 
       <div className="grid items-start gap-8 lg:grid-cols-[1fr_360px]">
         <div className="space-y-4">
-          <div className="app-panel overflow-hidden border-none shadow-xl shadow-black/5 dark:shadow-none">
+          <div className="app-panel overflow-hidden">
             {isLoading ? (
               <div className="text-muted-foreground flex flex-col items-center justify-center gap-3 py-24">
                 <Spinner className="size-6" />
@@ -331,7 +331,7 @@ export function IssuesWorkspace({
         </div>
 
         <aside className="space-y-6 lg:sticky lg:top-8">
-          <div className="glass-panel flex flex-col space-y-5 border-none p-6 shadow-xl shadow-black/5 dark:shadow-none">
+          <div className="glass-panel flex flex-col space-y-5 p-6">
             <div className="space-y-1">
               <h3 className="text-lg font-bold tracking-tight">
                 Control Panel
@@ -393,7 +393,7 @@ export function IssuesWorkspace({
             </div>
 
             {selectedRepository && (
-              <div className="app-panel bg-muted/30 animate-in zoom-in-95 rounded-2xl border-none p-4 duration-300">
+              <div className="app-panel bg-muted/30 animate-in zoom-in-95 rounded-2xl p-4 duration-300">
                 <div className="mb-3 space-y-1">
                   <p className="text-primary text-[10px] leading-none font-bold tracking-widest uppercase">
                     {selectedRepository.owner.login}

@@ -145,22 +145,21 @@
   }
 
   .app-panel {
-    @apply rounded-3xl border border-white/65 bg-white/82 shadow-[0_8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/72 dark:shadow-none;
+    @apply rounded-3xl border border-border bg-white shadow-none backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/72;
   }
 
   .glass-surface {
-    @apply border-white/60 bg-white/80 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60;
+    @apply border border-border bg-white shadow-none backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60;
   }
 
   .glass-panel {
-    @apply rounded-3xl border border-white/70 bg-white/95 shadow-md backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/75;
+    @apply rounded-3xl border border-border bg-white shadow-none backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/75;
   }
 
   .app-sidebar-surface {
     @apply bg-sidebar/94 text-sidebar-foreground backdrop-blur-2xl transition-all duration-300;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55);
+    box-shadow: 0 0 0 1px var(--color-border);
   }
-
 
   .dark .app-sidebar-surface {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
