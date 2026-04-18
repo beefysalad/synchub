@@ -6,6 +6,8 @@ type CommitListParams = {
   owner: string
   repo: string
   since?: string
+  page?: number
+  perPage?: number
 }
 
 export const githubCommitsService = {
@@ -14,6 +16,8 @@ export const githubCommitsService = {
     owner,
     repo,
     since,
+    page = 1,
+    perPage = 10,
   }: CommitListParams) {
     const accessToken = await getGitHubAccessTokenForUser(userId)
 
@@ -22,7 +26,8 @@ export const githubCommitsService = {
     }
 
     const query = new URLSearchParams({
-      per_page: '100',
+      page: String(page),
+      per_page: String(perPage),
       ...(since ? { since } : {}),
     })
 

@@ -26,6 +26,20 @@ const createGithubIssueRequestSchema = githubIssueFormSchema
   labels: z.array(z.string().trim().min(1)).max(5).optional(),
   })
 
+function getValidatedPage(value?: string | null) {
+  const page = Number(value)
+  return Number.isInteger(page) && page > 0 ? page : 1
+}
+
+function getValidatedPerPage(value?: string | null, fallback = 12, max = 50) {
+  const perPage = Number(value)
+  if (!Number.isInteger(perPage) || perPage <= 0) {
+    return fallback
+  }
+
+  return Math.min(perPage, max)
+}
+
 export async function GET(request: NextRequest) {
   const { userId: clerkUserId } = await auth()
 
@@ -45,6 +59,9 @@ export async function GET(request: NextRequest) {
   const owner = searchParams.get('owner')
   const repo = searchParams.get('repo')
   const state = searchParams.get('state')
+  const page = getValidatedPage(searchParams.get('page'))
+  const perPage = getValidatedPerPage(searchParams.get('perPage'))
+  const label = searchParams.get('label')?.trim() || undefined
 
   try {
     const validatedRepository =
@@ -59,9 +76,19 @@ export async function GET(request: NextRequest) {
       owner: validatedRepository.owner,
       repo: validatedRepository.repo,
       state: validatedState,
+      page,
+      perPage,
+      label,
     })
 
-    return NextResponse.json({ issues })
+    return NextResponse.json({
+      issues,
+      pagination: {
+        page,
+        perPage,
+        hasNextPage: issues.length === perPage,
+      },
+    })
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Unable to list GitHub issues'

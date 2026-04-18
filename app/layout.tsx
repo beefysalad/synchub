@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
+import { NavigationOverlay } from './providers/navigation-overlay'
 import { QueryProvider } from './providers/query-provider'
 import { ThemeProvider } from './providers/theme-provider'
 
@@ -29,6 +30,7 @@ export default function RootLayout({
           >
             <QueryProvider>
               {children}
+              <NavigationOverlay />
               <Toaster richColors position="bottom-center" />
             </QueryProvider>
           </ThemeProvider>

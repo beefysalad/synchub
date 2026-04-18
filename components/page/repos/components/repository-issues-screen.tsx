@@ -3,6 +3,8 @@
 import { formatDistanceToNow } from 'date-fns'
 import {
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   ExternalLink,
   FolderGit2,
   GitCommit,
@@ -37,8 +39,14 @@ import {
 import type { GitHubIssueState } from '@/lib/github/types'
 
 const issueStates: GitHubIssueState[] = ['open', 'all', 'closed']
+const issueTypeFilters = ['all', 'bug', 'task', 'feature'] as const
 
 type ActivityTab = 'issues' | 'pulls' | 'commits'
+type IssueTypeFilter = (typeof issueTypeFilters)[number]
+type PaginationState = {
+  key: string
+  page: number
+}
 
 const tabMeta: Record<
   ActivityTab,
@@ -151,6 +159,51 @@ function ActivityEmptyState({ message }: { message: string }) {
   )
 }
 
+function PaginationControls({
+  page,
+  hasNextPage,
+  isLoading,
+  onPrevious,
+  onNext,
+}: {
+  page: number
+  hasNextPage: boolean
+  isLoading: boolean
+  onPrevious: () => void
+  onNext: () => void
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/50 pt-5">
+      <p className="text-muted-foreground text-sm">
+        Page {page}
+        {isLoading ? ' • Updating...' : ''}
+      </p>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-full"
+          disabled={page <= 1 || isLoading}
+          onClick={onPrevious}
+        >
+          <ChevronLeft className="size-4" />
+          Previous
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-full"
+          disabled={!hasNextPage || isLoading}
+          onClick={onNext}
+        >
+          Next
+          <ChevronRight className="size-4" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export function RepositoryIssuesPage({
   owner,
   repo,
@@ -160,6 +213,38 @@ export function RepositoryIssuesPage({
 }) {
   const [activeTab, setActiveTab] = useState<ActivityTab>('issues')
   const [issueState, setIssueState] = useState<GitHubIssueState>('open')
+  const [issueTypeFilter, setIssueTypeFilter] =
+    useState<IssueTypeFilter>('all')
+  const repositoryFullName = `${owner}/${repo}`
+  const issuePaginationKey = `${repositoryFullName}:${issueState}:${issueTypeFilter}`
+  const pullPaginationKey = `${repositoryFullName}:${issueState}`
+  const commitPaginationKey = repositoryFullName
+  const [issuePaginationState, setIssuePaginationState] =
+    useState<PaginationState>({
+      key: issuePaginationKey,
+      page: 1,
+    })
+  const [pullPaginationState, setPullPaginationState] = useState<PaginationState>(
+    {
+      key: pullPaginationKey,
+      page: 1,
+    }
+  )
+  const [commitPaginationState, setCommitPaginationState] =
+    useState<PaginationState>({
+      key: commitPaginationKey,
+      page: 1,
+    })
+  const issuePage =
+    issuePaginationState.key === issuePaginationKey
+      ? issuePaginationState.page
+      : 1
+  const pullPage =
+    pullPaginationState.key === pullPaginationKey ? pullPaginationState.page : 1
+  const commitPage =
+    commitPaginationState.key === commitPaginationKey
+      ? commitPaginationState.page
+      : 1
 
   const { data: repositoryData } = useGithubRepositories()
   const { mutate: updatePreferences, isPending: isUpdatingPreferences } =
@@ -174,20 +259,34 @@ export function RepositoryIssuesPage({
     owner,
     repo,
     state: issueState,
+    page: issuePage,
+    perPage: 12,
+    label: issueTypeFilter === 'all' ? undefined : issueTypeFilter,
   })
 
-  const { data: pullsData, isLoading: isLoadingPulls } = useGithubPulls({
+  const {
+    data: pullsData,
+    isLoading: isLoadingPulls,
+    isFetching: isFetchingPulls,
+  } = useGithubPulls({
     owner,
     repo,
     state: issueState as 'open' | 'closed' | 'all',
+    page: pullPage,
+    perPage: 10,
   })
 
-  const { data: commitsData, isLoading: isLoadingCommits } = useGithubCommits({
+  const {
+    data: commitsData,
+    isLoading: isLoadingCommits,
+    isFetching: isFetchingCommits,
+  } = useGithubCommits({
     owner,
     repo,
+    page: commitPage,
+    perPage: 10,
   })
 
-  const repositoryFullName = `${owner}/${repo}`
   const repository =
     repositoryData?.repositories.find(
       (candidate) => candidate.full_name === repositoryFullName
@@ -200,6 +299,21 @@ export function RepositoryIssuesPage({
   const issues = issuesData?.issues ?? []
   const pulls = pullsData?.pulls ?? []
   const commits = commitsData?.commits ?? []
+  const issuesPagination = issuesData?.pagination ?? {
+    page: issuePage,
+    perPage: 12,
+    hasNextPage: false,
+  }
+  const pullsPagination = pullsData?.pagination ?? {
+    page: pullPage,
+    perPage: 10,
+    hasNextPage: false,
+  }
+  const commitsPagination = commitsData?.pagination ?? {
+    page: commitPage,
+    perPage: 10,
+    hasNextPage: false,
+  }
   const isTracked =
     preferences.selectedRepositories.includes(repositoryFullName)
   const isDefault = preferences.defaultRepository === repositoryFullName
@@ -386,9 +500,12 @@ export function RepositoryIssuesPage({
               <div
                 className={`rounded-full border px-4 py-1.5 text-[10px] font-bold tracking-wider uppercase transition-all duration-300 ${tabConfig.accentClassName}`}
               >
-                {activeTab === 'issues' && `${issues.length} active issues`}
-                {activeTab === 'pulls' && `${pulls.length} pull requests`}
-                {activeTab === 'commits' && `${commits.length} recent commits`}
+                {activeTab === 'issues' &&
+                  `${issues.length} issues on page ${issuesPagination.page}`}
+                {activeTab === 'pulls' &&
+                  `${pulls.length} pull requests on page ${pullsPagination.page}`}
+                {activeTab === 'commits' &&
+                  `${commits.length} commits on page ${commitsPagination.page}`}
               </div>
             </div>
           </div>
@@ -419,27 +536,66 @@ export function RepositoryIssuesPage({
             </div>
 
             {activeTab === 'issues' || activeTab === 'pulls' ? (
-              <div className="glass-surface flex flex-wrap items-center gap-1.5 rounded-full p-1.5 transition-all duration-300">
-                {issueStates.map((stateOption) => (
-                  <Button
-                    key={stateOption}
-                    type="button"
-                    variant={issueState === stateOption ? 'default' : 'ghost'}
-                    size="sm"
-                    className="h-9 rounded-full px-6 font-bold tracking-tight capitalize transition-all duration-300"
-                    onClick={() => setIssueState(stateOption)}
-                    disabled={isFetchingIssues}
-                  >
-                    {issueState === stateOption && isFetchingIssues ? (
-                      <>
-                        <Spinner className="mr-2" />
-                        Loading...
-                      </>
-                    ) : (
-                      stateOption
-                    )}
-                  </Button>
-                ))}
+              <div className="flex flex-col gap-3 xl:items-end">
+                <div className="glass-surface flex flex-wrap items-center gap-1.5 rounded-full p-1.5 transition-all duration-300">
+                  {issueStates.map((stateOption) => (
+                    <Button
+                      key={stateOption}
+                      type="button"
+                      variant={issueState === stateOption ? 'default' : 'ghost'}
+                      size="sm"
+                      className="h-9 rounded-full px-6 font-bold tracking-tight capitalize transition-all duration-300"
+                      onClick={() => {
+                        setIssueState(stateOption)
+                        setIssuePaginationState({
+                          key: `${repositoryFullName}:${stateOption}:${issueTypeFilter}`,
+                          page: 1,
+                        })
+                        setPullPaginationState({
+                          key: `${repositoryFullName}:${stateOption}`,
+                          page: 1,
+                        })
+                      }}
+                      disabled={isFetchingIssues || isFetchingPulls}
+                    >
+                      {issueState === stateOption &&
+                      (isFetchingIssues || isFetchingPulls) ? (
+                        <>
+                          <Spinner className="mr-2" />
+                          Loading...
+                        </>
+                      ) : (
+                        stateOption
+                      )}
+                    </Button>
+                  ))}
+                </div>
+
+                {activeTab === 'issues' ? (
+                  <div className="glass-surface flex flex-wrap items-center gap-1.5 rounded-full p-1.5 transition-all duration-300">
+                    {issueTypeFilters.map((typeOption) => (
+                      <Button
+                        key={typeOption}
+                        type="button"
+                        variant={
+                          issueTypeFilter === typeOption ? 'default' : 'ghost'
+                        }
+                        size="sm"
+                        className="h-9 rounded-full px-5 font-bold tracking-tight capitalize transition-all duration-300"
+                        onClick={() => {
+                          setIssueTypeFilter(typeOption)
+                          setIssuePaginationState({
+                            key: `${repositoryFullName}:${issueState}:${typeOption}`,
+                            page: 1,
+                          })
+                        }}
+                        disabled={isFetchingIssues}
+                      >
+                        {typeOption}
+                      </Button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -511,6 +667,29 @@ export function RepositoryIssuesPage({
             ) : (
               <ActivityEmptyState message={tabConfig.emptyMessage} />
             ))}
+          {activeTab === 'issues' && issues.length ? (
+            <PaginationControls
+              page={issuesPagination.page}
+              hasNextPage={issuesPagination.hasNextPage}
+              isLoading={isFetchingIssues}
+              onPrevious={() =>
+                setIssuePaginationState((current) => ({
+                  key: issuePaginationKey,
+                  page:
+                    current.key === issuePaginationKey
+                      ? Math.max(1, current.page - 1)
+                      : 1,
+                }))
+              }
+              onNext={() =>
+                setIssuePaginationState((current) => ({
+                  key: issuePaginationKey,
+                  page:
+                    current.key === issuePaginationKey ? current.page + 1 : 2,
+                }))
+              }
+            />
+          ) : null}
 
           {activeTab === 'pulls' &&
             (isLoadingPulls ? (
@@ -561,6 +740,29 @@ export function RepositoryIssuesPage({
             ) : (
               <ActivityEmptyState message={tabConfig.emptyMessage} />
             ))}
+          {activeTab === 'pulls' && pulls.length ? (
+            <PaginationControls
+              page={pullsPagination.page}
+              hasNextPage={pullsPagination.hasNextPage}
+              isLoading={isFetchingPulls}
+              onPrevious={() =>
+                setPullPaginationState((current) => ({
+                  key: pullPaginationKey,
+                  page:
+                    current.key === pullPaginationKey
+                      ? Math.max(1, current.page - 1)
+                      : 1,
+                }))
+              }
+              onNext={() =>
+                setPullPaginationState((current) => ({
+                  key: pullPaginationKey,
+                  page:
+                    current.key === pullPaginationKey ? current.page + 1 : 2,
+                }))
+              }
+            />
+          ) : null}
 
           {activeTab === 'commits' &&
             (isLoadingCommits ? (
@@ -614,6 +816,29 @@ export function RepositoryIssuesPage({
             ) : (
               <ActivityEmptyState message={tabConfig.emptyMessage} />
             ))}
+          {activeTab === 'commits' && commits.length ? (
+            <PaginationControls
+              page={commitsPagination.page}
+              hasNextPage={commitsPagination.hasNextPage}
+              isLoading={isFetchingCommits}
+              onPrevious={() =>
+                setCommitPaginationState((current) => ({
+                  key: commitPaginationKey,
+                  page:
+                    current.key === commitPaginationKey
+                      ? Math.max(1, current.page - 1)
+                      : 1,
+                }))
+              }
+              onNext={() =>
+                setCommitPaginationState((current) => ({
+                  key: commitPaginationKey,
+                  page:
+                    current.key === commitPaginationKey ? current.page + 1 : 2,
+                }))
+              }
+            />
+          ) : null}
         </CardContent>
       </Card>
     </div>

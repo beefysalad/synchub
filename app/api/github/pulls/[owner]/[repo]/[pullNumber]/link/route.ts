@@ -9,7 +9,8 @@ import { githubRepositoryService } from '@/lib/github/repositories'
 import prisma from '@/lib/prisma'
 
 const linkPullIssueSchema = z.object({
-  issueNumber: z.number().int().positive(),
+  issueNumber: z.number().int().positive().optional(),
+  issueNumbers: z.array(z.number().int().positive()).min(1).optional(),
 })
 
 export async function POST(
@@ -32,7 +33,16 @@ export async function POST(
 
   try {
     const { owner, repo, pullNumber } = await params
-    const { issueNumber } = linkPullIssueSchema.parse(await request.json())
+    const { issueNumber, issueNumbers } = linkPullIssueSchema.parse(
+      await request.json()
+    )
+    const normalizedIssueNumbers = Array.from(
+      new Set(issueNumbers ?? (issueNumber ? [issueNumber] : []))
+    )
+
+    if (!normalizedIssueNumbers.length) {
+      throw new Error('Select at least one issue to link.')
+    }
 
     const validatedRepository =
       await githubRepositoryService.resolveRepositoryContext(user.id, {
@@ -47,11 +57,15 @@ export async function POST(
       parseInt(pullNumber, 10)
     )
 
-    await githubIssueService.getIssue(
-      user.id,
-      validatedRepository.owner,
-      validatedRepository.repo,
-      issueNumber
+    await Promise.all(
+      normalizedIssueNumbers.map((currentIssueNumber) =>
+        githubIssueService.getIssue(
+          user.id,
+          validatedRepository.owner,
+          validatedRepository.repo,
+          currentIssueNumber
+        )
+      )
     )
 
     const linkedIssues = await githubPullIssueLinkService.linkPullRequestToIssues({
@@ -59,20 +73,20 @@ export async function POST(
       pullOwner: validatedRepository.owner,
       pullRepo: validatedRepository.repo,
       pull,
-      issues: [
-        {
-          owner: validatedRepository.owner,
-          repo: validatedRepository.repo,
-          number: issueNumber,
-          fullName: `${validatedRepository.owner}/${validatedRepository.repo}`,
-        },
-      ],
+      issues: normalizedIssueNumbers.map((currentIssueNumber) => ({
+        owner: validatedRepository.owner,
+        repo: validatedRepository.repo,
+        number: currentIssueNumber,
+        fullName: `${validatedRepository.owner}/${validatedRepository.repo}`,
+      })),
     })
 
     return NextResponse.json({ linkedIssues })
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : 'Unable to link pull request to issue'
+      error instanceof Error
+        ? error.message
+        : 'Unable to link pull request to issues'
 
     return NextResponse.json({ error: message }, { status: 400 })
   }

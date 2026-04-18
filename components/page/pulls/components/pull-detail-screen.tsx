@@ -3,10 +3,12 @@
 import { formatDistanceToNow } from 'date-fns'
 import {
   ArrowLeft,
+  Check,
   ExternalLink,
   FilePenLine,
   GitPullRequest,
   Link2,
+  X,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -90,7 +92,7 @@ export function PullDetailPage({
   })
   const linkPullIssue = useLinkGithubPullIssue(owner, repo, pullNumber)
   const editPull = useEditGithubPull(owner, repo, pullNumber)
-  const [selectedIssueNumber, setSelectedIssueNumber] = useState('')
+  const [selectedIssueNumbers, setSelectedIssueNumbers] = useState<number[]>([])
 
   const pull = data?.pull
   const comments = data?.comments ?? []
@@ -101,19 +103,35 @@ export function PullDetailPage({
   const likelyLinkedIssueDetails = likelyLinkedIssue
     ? availableIssues.find((issue) => issue.number === likelyLinkedIssue.number)
     : null
+  const selectedIssues = availableIssues.filter((issue) =>
+    selectedIssueNumbers.includes(issue.number)
+  )
+
+  function toggleSelectedIssue(issueNumber: number) {
+    setSelectedIssueNumbers((current) =>
+      current.includes(issueNumber)
+        ? current.filter((value) => value !== issueNumber)
+        : [...current, issueNumber]
+    )
+  }
+
+  function addSelectedIssue(issueNumber: number) {
+    setSelectedIssueNumbers((current) =>
+      current.includes(issueNumber) ? current : [...current, issueNumber]
+    )
+  }
 
   function handleManualLink() {
-    const issueNumber = Number(selectedIssueNumber)
-
-    if (!issueNumber) {
-      toast.error('Select an issue to link first.')
+    if (!selectedIssueNumbers.length) {
+      toast.error('Select at least one issue to link first.')
       return
     }
 
-    linkPullIssue.mutate(issueNumber, {
+    linkPullIssue.mutate(selectedIssueNumbers, {
       onSuccess: () => {
+        setSelectedIssueNumbers([])
         toast.success(
-          `Pull request #${pullNumber} linked to issue #${issueNumber}.`
+          `Pull request #${pullNumber} linked to ${selectedIssueNumbers.length} issue${selectedIssueNumbers.length === 1 ? '' : 's'}.`
         )
       },
       onError: (mutationError) => {
@@ -241,11 +259,9 @@ export function PullDetailPage({
                     type="button"
                     variant="outline"
                     className="rounded-full"
-                    onClick={() =>
-                      setSelectedIssueNumber(String(likelyLinkedIssue.number))
-                    }
+                    onClick={() => addSelectedIssue(likelyLinkedIssue.number)}
                   >
-                    Use this issue in linker
+                    Add this issue to linker
                   </Button>
                 </div>
               ) : (
@@ -256,7 +272,7 @@ export function PullDetailPage({
             </div>
             <div className="glass-surface rounded-3xl px-4 py-4 transition-all duration-300">
               <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
-                Detected references
+                Issues Linked
               </p>
               {detectedIssueReferences.length ? (
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -281,37 +297,83 @@ export function PullDetailPage({
                 Link to issue
               </p>
               <p className="text-muted-foreground mt-2 text-sm">
-                Pick an open issue from this repo to add a native GitHub closing
-                reference to the PR description.
+                Pick one or more open issues from this repo to add native GitHub
+                closing references to the PR description.
               </p>
-              <div className="mt-4 flex flex-col gap-3">
-                <select
-                  value={selectedIssueNumber}
-                  onChange={(event) =>
-                    setSelectedIssueNumber(event.target.value)
-                  }
-                  className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm shadow-sm transition outline-none focus:border-emerald-400 dark:border-slate-800 dark:bg-slate-950"
-                >
-                  <option value="">Select an issue</option>
-                  {availableIssues.map((issue) => (
-                    <option key={issue.number} value={issue.number}>
-                      #{issue.number} · {issue.title}
-                    </option>
-                  ))}
-                </select>
+              <div className="mt-4 space-y-4">
+                {selectedIssues.length ? (
+                  <div className="flex flex-wrap gap-2">
+                    {selectedIssues.map((issue) => (
+                      <button
+                        key={issue.number}
+                        type="button"
+                        className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-900 transition-all duration-300 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100"
+                        onClick={() => toggleSelectedIssue(issue.number)}
+                      >
+                        <span>
+                          #{issue.number} · {issue.title}
+                        </span>
+                        <X className="size-3.5" />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                  {availableIssues.map((issue) => {
+                    const isSelected = selectedIssueNumbers.includes(
+                      issue.number
+                    )
+
+                    return (
+                      <button
+                        key={issue.number}
+                        type="button"
+                        className={`flex w-full items-start justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-all duration-300 ${
+                          isSelected
+                            ? 'border-primary/30 bg-primary/10'
+                            : 'border-border bg-background hover:border-primary/30 hover:bg-primary/5'
+                        }`}
+                        onClick={() => toggleSelectedIssue(issue.number)}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold">
+                            #{issue.number} · {issue.title}
+                          </p>
+                          <p className="text-muted-foreground mt-1 text-xs">
+                            Opened by {issue.user.login}
+                          </p>
+                        </div>
+                        <div
+                          className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border ${
+                            isSelected
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'border-border bg-background'
+                          }`}
+                        >
+                          {isSelected ? <Check className="size-3.5" /> : null}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
                 <Button
                   type="button"
                   variant="outline"
                   className="rounded-full"
                   onClick={handleManualLink}
-                  disabled={linkPullIssue.isPending || !availableIssues.length}
+                  disabled={
+                    linkPullIssue.isPending ||
+                    !availableIssues.length ||
+                    !selectedIssueNumbers.length
+                  }
                 >
                   {linkPullIssue.isPending ? (
                     <Spinner />
                   ) : (
                     <Link2 className="size-4" />
                   )}
-                  Link issue natively
+                  Link selected issues natively
                 </Button>
               </div>
             </div>

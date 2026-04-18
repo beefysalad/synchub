@@ -6,6 +6,8 @@ type PullListParams = {
   owner: string
   repo: string
   state?: 'open' | 'closed' | 'all'
+  page?: number
+  perPage?: number
 }
 
 type UpdatePullRequestParams = {
@@ -23,6 +25,8 @@ export const githubPullsService = {
     owner,
     repo,
     state = 'open',
+    page = 1,
+    perPage = 10,
   }: PullListParams) {
     const accessToken = await getGitHubAccessTokenForUser(userId)
 
@@ -30,8 +34,14 @@ export const githubPullsService = {
       throw new Error('No GitHub access token is linked to this user yet.')
     }
 
+    const query = new URLSearchParams({
+      state,
+      page: String(page),
+      per_page: String(perPage),
+    })
+
     return githubRequest<GitHubPullRequest[]>(
-      `/repos/${owner}/${repo}/pulls?state=${state}&per_page=100`,
+      `/repos/${owner}/${repo}/pulls?${query.toString()}`,
       { method: 'GET' },
       accessToken
     )
