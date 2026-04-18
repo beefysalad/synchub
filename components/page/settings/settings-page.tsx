@@ -172,23 +172,21 @@ export default async function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {discordLinked ? (
-              <DailySummarySettingsForm
-                initialChannelId={
-                  (
-                    accountsByProvider.get('DISCORD')?.metadata as Record<
-                      string,
-                      unknown
-                    >
-                  )?.dailySummaryChannelId as string
-                }
-              />
-            ) : (
-              <div className="text-muted-foreground rounded-3xl border border-dashed px-5 py-6 text-sm">
-                Link a Discord account to configure specific delivery channels
-                for your daily summaries.
-              </div>
-            )}
+            <DailySummarySettingsForm
+              initialChannelId={
+                (
+                  accountsByProvider.get('DISCORD')?.metadata as Record<
+                    string,
+                    unknown
+                  >
+                )?.dailySummaryChannelId as string
+              }
+              initialAiModel={
+                currentUser.aiModel === 'gemini-2.5-flash'
+                  ? 'gemini-2.5-flash'
+                  : 'gemini-2.5-flash-lite'
+              }
+            />
           </CardContent>
         </Card>
 

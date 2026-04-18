@@ -1,4 +1,6 @@
 import { createExternalApi, getAxiosErrorMessage } from '@/lib/axios'
+import prisma from '@/lib/prisma'
+import type { GeminiModelOption } from '@/lib/github/types'
 
 type GeminiPart = {
   text: string
@@ -13,6 +15,7 @@ type GeminiGenerateJsonOptions = {
   prompt: string
   schemaDescription: string
   temperature?: number
+  userId?: string
 }
 
 function getGeminiApiKey() {
@@ -25,17 +28,41 @@ function getGeminiApiKey() {
   return apiKey
 }
 
-function getGeminiModel() {
-  return process.env.GEMINI_MODEL || 'gemini-2.0-flash'
+const DEFAULT_GEMINI_MODEL: GeminiModelOption = 'gemini-2.5-flash-lite'
+
+async function getGeminiModel(userId?: string) {
+  if (userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { aiModel: true },
+    })
+
+    if (
+      user?.aiModel === 'gemini-2.5-flash' ||
+      user?.aiModel === 'gemini-2.5-flash-lite'
+    ) {
+      return user.aiModel
+    }
+  }
+
+  if (
+    process.env.GEMINI_MODEL === 'gemini-2.5-flash' ||
+    process.env.GEMINI_MODEL === 'gemini-2.5-flash-lite'
+  ) {
+    return process.env.GEMINI_MODEL
+  }
+
+  return DEFAULT_GEMINI_MODEL
 }
 
 export async function generateGeminiJson<T>({
   prompt,
   schemaDescription,
   temperature = 0.2,
+  userId,
 }: GeminiGenerateJsonOptions): Promise<T> {
   const apiKey = getGeminiApiKey()
-  const model = getGeminiModel()
+  const model = await getGeminiModel(userId)
 
   try {
     const response = await createExternalApi({

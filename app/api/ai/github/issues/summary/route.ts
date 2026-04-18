@@ -37,7 +37,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = issueSummaryRequestSchema.parse(await request.json())
 
-    const summary = await githubAssistantService.summarizeIssue(body)
+    const summary = await githubAssistantService.summarizeIssue({
+      userId: user.id,
+      ...body,
+    })
 
     return NextResponse.json(summary)
   } catch (error) {

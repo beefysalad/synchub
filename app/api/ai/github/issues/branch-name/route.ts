@@ -38,7 +38,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = branchSuggestionRequestSchema.parse(await request.json())
-    const suggestions = await githubAssistantService.suggestBranchNames(body)
+    const suggestions = await githubAssistantService.suggestBranchNames({
+      userId: user.id,
+      ...body,
+    })
 
     return NextResponse.json(suggestions)
   } catch (error) {

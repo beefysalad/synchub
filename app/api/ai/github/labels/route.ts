@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
     )
 
     const suggestions = await githubAssistantService.suggestIssueLabels({
+      userId: user.id,
       repository: `${validatedRepository.owner}/${validatedRepository.repo}`,
       availableLabels: availableLabels.map((label) => label.name),
       template: body.template,

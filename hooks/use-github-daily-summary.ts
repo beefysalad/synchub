@@ -5,6 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import api from '@/lib/axios'
 import { handleApiError } from '@/lib/error-handler'
 import type {
+  GeminiModelOption,
   GithubDailySummaryQueryResponse,
   GithubDailySummaryResponse,
   GithubDailySummarySendResponse,
@@ -88,10 +89,17 @@ export function useSendGithubDailySummary() {
 
 export function useUpdateDailySummarySettings() {
   return useMutation({
-    mutationFn: async ({ discordChannelId }: { discordChannelId: string }) => {
+    mutationFn: async ({
+      discordChannelId,
+      aiModel,
+    }: {
+      discordChannelId: string
+      aiModel: GeminiModelOption
+    }) => {
       try {
         const response = await api.post('/settings/daily-summary', {
           discordChannelId,
+          aiModel,
         })
         return response.data
       } catch (error) {

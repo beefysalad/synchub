@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import type { GeminiModelOption } from '@/lib/github/types'
 import {
   useDiscordChannels,
   useGithubDailySummary,
@@ -16,10 +17,14 @@ import {
 
 export function DailySummarySettingsForm({
   initialChannelId,
+  initialAiModel,
 }: {
   initialChannelId?: string
+  initialAiModel: GeminiModelOption
 }) {
   const [selectedChannel, setSelectedChannel] = useState(initialChannelId ?? '')
+  const [selectedAiModel, setSelectedAiModel] =
+    useState<GeminiModelOption>(initialAiModel)
   const { data: channels, isLoading: isLoadingChannels } = useDiscordChannels()
   const dailySummaryQuery = useGithubDailySummaryQuery()
   const generateDailySummary = useGithubDailySummary()
@@ -34,8 +39,9 @@ export function DailySummarySettingsForm({
     try {
       await updateSettings.mutateAsync({
         discordChannelId: selectedChannel,
+        aiModel: selectedAiModel,
       })
-      toast.success('Daily summary preferences saved')
+      toast.success('AI and summary preferences saved')
     } catch {
       toast.error('Failed to save preferences')
     }
@@ -84,6 +90,28 @@ export function DailySummarySettingsForm({
         <div className="space-y-4">
           <div>
             <p className="text-muted-foreground text-xs font-medium tracking-[0.16em] uppercase">
+              AI model
+            </p>
+            <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+              Choose which Gemini model SyncHub should use for summaries and the
+              other AI helpers.
+            </p>
+          </div>
+
+          <select
+            value={selectedAiModel}
+            onChange={(e) =>
+              setSelectedAiModel(e.target.value as GeminiModelOption)
+            }
+            disabled={isSaving}
+            className="border-border bg-background focus:border-primary/50 focus:ring-primary/20 w-full rounded-2xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2"
+          >
+            <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+          </select>
+
+          <div>
+            <p className="text-muted-foreground text-xs font-medium tracking-[0.16em] uppercase">
               Channel routing
             </p>
             <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
@@ -108,7 +136,7 @@ export function DailySummarySettingsForm({
             </select>
             <Button
               onClick={handleSave}
-              disabled={isSaving || isLoadingChannels}
+              disabled={isSaving}
               className="h-11 rounded-full px-5"
             >
               {isSaving ? (
@@ -119,6 +147,12 @@ export function DailySummarySettingsForm({
               Save preference
             </Button>
           </div>
+          {!channels?.length && !isLoadingChannels ? (
+            <p className="text-muted-foreground text-xs">
+              No Discord channels are available right now. You can still save
+              your AI model preference and add channel routing later.
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -187,28 +221,6 @@ export function DailySummarySettingsForm({
                   </>
                 )}
               </Button>
-            </div>
-          </div>
-        </div>
-
-        <div className="glass-surface rounded-3xl p-5 transition-all duration-300">
-          <div className="space-y-3">
-            <p className="text-muted-foreground text-xs font-medium tracking-[0.16em] uppercase">
-              Summary state
-            </p>
-            <div className="border-border text-muted-foreground rounded-2xl border border-dashed px-4 py-4 text-sm leading-relaxed transition-all duration-300">
-              {dailySummaryQuery.isFetching ? (
-                'Checking whether a summary already exists for today...'
-              ) : currentSummary ? (
-                <>
-                  <span className="text-foreground font-medium">
-                    Today&apos;s summary is ready.
-                  </span>{' '}
-                  {currentSummary.headline}
-                </>
-              ) : (
-                'No daily summary exists for today yet. Generate one first, then send it to Telegram or Discord.'
-              )}
             </div>
           </div>
         </div>

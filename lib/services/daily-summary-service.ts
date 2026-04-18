@@ -210,6 +210,24 @@ function normalizeDailySummary(
           .filter(Boolean)
           .slice(0, 3)
       : [],
+    delivered: Array.isArray(value?.delivered)
+      ? value.delivered
+          .map((item) => truncateForChat(item, 220))
+          .filter(Boolean)
+          .slice(0, 5)
+      : [],
+    inProgress: Array.isArray(value?.inProgress)
+      ? value.inProgress
+          .map((item) => truncateForChat(item, 220))
+          .filter(Boolean)
+          .slice(0, 4)
+      : [],
+    followUps: Array.isArray(value?.followUps)
+      ? value.followUps
+          .map((item) => truncateForChat(item, 220))
+          .filter(Boolean)
+          .slice(0, 4)
+      : [],
     repositories: Array.isArray(value?.repositories)
       ? value.repositories
           .map((repository) => ({
@@ -280,6 +298,16 @@ function formatRepositoryActivityLine(
   return `Committed ${commits} times, opened ${pullRequests} PRs, and created ${issues} issues.`
 }
 
+function formatBulletSectionHtml(title: string, items: string[]) {
+  if (!items.length) {
+    return ''
+  }
+
+  return `<b>${escapeTelegramHtml(title)}</b>\n${items
+    .map((item) => `• ${escapeTelegramHtml(item)}`)
+    .join('\n')}`
+}
+
 function formatTelegramDailySummaryMessage({
   recipientName,
   dateLabel,
@@ -292,11 +320,10 @@ function formatTelegramDailySummaryMessage({
   timeZone: string
 }) {
   const insights =
-    summary.insights.length > 0
-      ? `<b>Insights</b>\n${summary.insights
-          .map((insight) => `• ${escapeTelegramHtml(insight)}`)
-          .join('\n')}`
-      : ''
+    formatBulletSectionHtml('Insights', summary.insights)
+  const delivered = formatBulletSectionHtml('Delivered', summary.delivered)
+  const inProgress = formatBulletSectionHtml('In progress', summary.inProgress)
+  const followUps = formatBulletSectionHtml('Follow-ups', summary.followUps)
 
   const sections = summary.repositories.length
     ? summary.repositories
@@ -322,6 +349,9 @@ function formatTelegramDailySummaryMessage({
     escapeTelegramHtml(summary.overview),
     '',
     ...(insights ? [insights, ''] : []),
+    ...(delivered ? [delivered, ''] : []),
+    ...(inProgress ? [inProgress, ''] : []),
+    ...(followUps ? [followUps, ''] : []),
     `<b>Repository Activity</b>`,
     sections,
   ].join('\n')
@@ -330,16 +360,19 @@ function formatTelegramDailySummaryMessage({
 function formatDiscordDailySummaryMessage({
   recipientName,
   dateLabel,
+  summary,
   timeZone,
 }: {
   recipientName: string
   dateLabel: string
+  summary: GithubDailySummaryResponse
   timeZone: string
 }) {
   return truncateDiscordMessage(
     [
       `**${getGreeting(new Date(), timeZone)} ${recipientName}**`,
       `Daily report for **${dateLabel}**`,
+      summary.overview ? `_${summary.overview}_` : '',
     ],
     1900
   )
@@ -361,15 +394,39 @@ function buildDiscordDailySummaryEmbeds({
         text: `Daily report • ${dateLabel}`,
       },
       fields: summary.insights.length
-        ? [
-            {
-              name: 'Insights',
-              value: summary.insights.map((insight) => `• ${insight}`).join('\n'),
-            },
-          ]
+        ? [{
+            name: 'Insights',
+            value: summary.insights.map((insight) => `• ${insight}`).join('\n'),
+          }]
         : [],
     },
   ]
+
+  const topSections = [
+    {
+      name: 'Delivered',
+      items: summary.delivered,
+    },
+    {
+      name: 'In progress',
+      items: summary.inProgress,
+    },
+    {
+      name: 'Follow-ups',
+      items: summary.followUps,
+    },
+  ].filter((section) => section.items.length > 0)
+
+  for (const section of topSections) {
+    embeds.push({
+      title: section.name,
+      color: 0x2f855a,
+      description: truncateDiscordMessage(
+        section.items.map((item) => `• ${item}`),
+        4000
+      ),
+    })
+  }
 
   for (const repository of summary.repositories.slice(0, 8)) {
     const activityLine = formatRepositoryActivityLine(repository)
@@ -655,6 +712,7 @@ export const dailySummaryService = {
     const summary = activities.length
       ? normalizeDailySummary(
           await githubAssistantService.summarizeDailyActivity({
+            userId: user.id,
             dateLabel,
             activities,
           }),
@@ -666,6 +724,9 @@ export const dailySummaryService = {
             overview:
               'SyncHub did not find any tracked GitHub activity for this day yet.',
             insights: [],
+            delivered: [],
+            inProgress: [],
+            followUps: [],
             repositories: [],
           },
           dateLabel
@@ -917,6 +978,7 @@ export const dailySummaryService = {
     const discordContent = formatDiscordDailySummaryMessage({
       recipientName,
       dateLabel,
+      summary,
       timeZone,
     })
     const discordEmbeds = buildDiscordDailySummaryEmbeds({

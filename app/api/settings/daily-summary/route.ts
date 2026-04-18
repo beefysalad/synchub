@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma'
 
 const dailySummarySettingsSchema = z.object({
   discordChannelId: z.string().trim().optional(),
+  aiModel: z.enum(['gemini-2.5-flash', 'gemini-2.5-flash-lite']),
 })
 
 export async function POST(request: Request) {
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { discordChannelId } = dailySummarySettingsSchema.parse(body)
+    const { discordChannelId, aiModel } = dailySummarySettingsSchema.parse(body)
 
     const user = await prisma.user.findUnique({
       where: { clerkUserId },
@@ -33,27 +34,28 @@ export async function POST(request: Request) {
     }
 
     const discordAccount = user.linkedAccounts[0]
-    if (!discordAccount) {
-      return NextResponse.json(
-        { error: 'Discord account not linked' },
-        { status: 400 }
-      )
-    }
 
-    const currentMetadata =
-      discordAccount.metadata && typeof discordAccount.metadata === 'object'
-        ? (discordAccount.metadata as Record<string, unknown>)
-        : {}
-
-    await prisma.linkedAccount.update({
-      where: { id: discordAccount.id },
-      data: {
-        metadata: {
-          ...currentMetadata,
-          dailySummaryChannelId: discordChannelId || undefined,
-        },
-      },
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { aiModel },
     })
+
+    if (discordAccount) {
+      const currentMetadata =
+        discordAccount.metadata && typeof discordAccount.metadata === 'object'
+          ? (discordAccount.metadata as Record<string, unknown>)
+          : {}
+
+      await prisma.linkedAccount.update({
+        where: { id: discordAccount.id },
+        data: {
+          metadata: {
+            ...currentMetadata,
+            dailySummaryChannelId: discordChannelId || undefined,
+          },
+        },
+      })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

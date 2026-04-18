@@ -32,6 +32,31 @@ function formatRepositoryStatsSentence(stats: {
   )}, and created ${formatCount(stats.issues, 'issue', 'issues')}.`
 }
 
+function SummaryList({
+  title,
+  items,
+}: {
+  title: string
+  items: string[]
+}) {
+  if (!items.length) {
+    return null
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {title}
+      </p>
+      <ul className="space-y-2 text-sm text-foreground/80">
+        {items.map((item) => (
+          <li key={item}>• {item}</li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 export function DailySummaryCard() {
   const dailySummaryQuery = useGithubDailySummaryQuery()
   const renderedSummary = dailySummaryQuery.data
@@ -116,6 +141,31 @@ export function DailySummaryCard() {
             ) : (
               <div className="text-muted-foreground rounded-3xl border border-dashed border-slate-300 px-5 py-8 text-sm dark:border-slate-700">
                 No repository activity was summarized for today.
+              </div>
+            )}
+
+            {(renderedSummary.delivered.length > 0 ||
+              renderedSummary.inProgress.length > 0 ||
+              renderedSummary.followUps.length > 0) && (
+              <div className="grid gap-4 lg:grid-cols-3">
+                <div className="glass-surface rounded-3xl px-5 py-5 transition-all duration-300">
+                  <SummaryList
+                    title="Delivered"
+                    items={renderedSummary.delivered}
+                  />
+                </div>
+                <div className="glass-surface rounded-3xl px-5 py-5 transition-all duration-300">
+                  <SummaryList
+                    title="In Progress"
+                    items={renderedSummary.inProgress}
+                  />
+                </div>
+                <div className="glass-surface rounded-3xl px-5 py-5 transition-all duration-300">
+                  <SummaryList
+                    title="Follow-ups"
+                    items={renderedSummary.followUps}
+                  />
+                </div>
               </div>
             )}
           </div>

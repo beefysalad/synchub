@@ -29,6 +29,7 @@ enum ReminderStatus {
 model User {
   id                String             @id @default(cuid())
   clerkUserId       String             @unique
+  aiModel           String             @default("gemini-2.5-flash-lite")
   linkedAccounts    LinkedAccount[]
   pendingLinks      PendingLink[]
   reminders         Reminder[]

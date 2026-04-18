@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = issueDraftRequestSchema.parse(await request.json())
     const draft = await githubAssistantService.draftIssueBody({
+      userId: user.id,
       repository: body.repository,
       template: body.template,
       templateBody: issueTemplates[body.template].body,

@@ -299,10 +299,17 @@ export type GithubIssueDraftResponse = {
   body: string
 }
 
+export type GeminiModelOption =
+  | 'gemini-2.5-flash'
+  | 'gemini-2.5-flash-lite'
+
 export type GithubDailySummaryRawResponse = {
   headline?: string
   overview?: string
   insights?: string[]
+  delivered?: string[]
+  inProgress?: string[]
+  followUps?: string[]
   repositories?: Array<{
     repository?: string
     stats?: {
@@ -318,6 +325,9 @@ export type GithubDailySummaryResponse = {
   headline: string
   overview: string
   insights: string[]
+  delivered: string[]
+  inProgress: string[]
+  followUps: string[]
   repositories: Array<{
     repository: string
     stats: {
