@@ -1,7 +1,7 @@
 import { formatDistanceToNow } from 'date-fns'
 import Image from 'next/image'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+
+import { GitHubMarkdown } from '@/components/shared/github-markdown'
 
 interface ConversationEntryProps {
   avatarUrl?: string
@@ -29,10 +29,8 @@ const ConversationEntry = ({
           <span className="font-semibold">{username}</span> commented{' '}
           {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
         </div>
-        <div className="prose prose-slate prose-sm dark:prose-invert max-w-none px-1 py-4">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {body || '*No description provided.*'}
-          </ReactMarkdown>
+        <div className="px-1 py-4">
+          <GitHubMarkdown>{body || '*No description provided.*'}</GitHubMarkdown>
         </div>
       </div>
     </div>

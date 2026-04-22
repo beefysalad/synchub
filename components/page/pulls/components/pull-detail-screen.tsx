@@ -22,10 +22,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 
 import { EditGitHubThreadForm } from '@/components/shared/edit-github-thread-form'
+import { GitHubMarkdown } from '@/components/shared/github-markdown'
 import { GitHubCommentForm } from '@/components/shared/github-comment-form'
 import { SectionHeader } from '@/components/shared/section-header'
 import { Button } from '@/components/ui/button'
@@ -33,7 +32,6 @@ import { Input } from '@/components/ui/input'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -222,10 +220,8 @@ function ConversationEntry({
             </span>
           </div>
         </div>
-        <div className="prose prose-slate prose-sm dark:prose-invert max-w-none px-4 py-4">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {body || '*No description provided.*'}
-          </ReactMarkdown>
+        <div className="px-4 py-4">
+          <GitHubMarkdown>{body || '*No description provided.*'}</GitHubMarkdown>
         </div>
       </div>
     </div>
