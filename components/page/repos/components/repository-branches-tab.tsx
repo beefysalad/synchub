@@ -7,6 +7,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -26,6 +27,7 @@ export function RepositoryBranchesTab({
   owner: string
   repo: string
 }) {
+  const router = useRouter()
   const { data, isLoading } = useGithubBranches({ owner, repo })
   const { data: pullTemplateData } = useGithubPullTemplate(owner, repo)
   const createPull = useCreateGithubPull()
@@ -89,6 +91,7 @@ export function RepositoryBranchesTab({
       setHasEditedBody(false)
       setSelectedHead('')
       setDraft(false)
+      router.push(`/pulls/${owner}/${repo}/${response.pull.number}`)
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Unable to create pull request'
